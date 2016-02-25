@@ -1,0 +1,233 @@
+/** Layout **/
+#remainingtags {
+	width:150px;
+	border-right:1px solid black;
+	height:100%;
+	overflow-y:auto;
+	position:absolute;
+	left:0px;
+	top:0px;
+}
+#images {
+	margin-left:150px;
+	position:relative;
+	height:100%;
+
+	/* this hides an unnecessary scrollbar */
+	overflow:hidden;
+}
+#currenttags {
+	height:22px;
+}
+#mainimage {
+	top:50px;
+	bottom:250px;
+	position:absolute;
+	width:100%;
+	overflow-y:auto;
+}
+
+#admingallery {
+	overflow-y:scroll;
+	display:none; /*initial display setting*/
+}
+
+#adminimages img {
+	margin:10px;
+	border:2px solid silver;
+	border-radius:4px;
+}
+
+#tools span {
+	margin-left:5px;
+	background-color:black;
+	color:white;
+	line-height:30px;
+	padding:3px;
+	border:1px solid black;
+	border-radius:5px;
+	cursor:hand;
+}
+
+#firstpage,#lastpage {
+	text-decoration:underline;
+}
+
+#adminimages img.tagged {
+	border-width:5px;
+	margin:3px;
+	padding:4px;
+}
+
+#image {
+	height:100%;
+	padding-top:5px;
+	box-sizing:border-box;
+}
+
+#image img {
+	display:block;
+	margin-left:auto;
+	margin-right:auto;
+}
+
+#currenttags {
+	padding-left:2px;
+	padding-right:2px;
+}
+
+#carousel {
+	width:100%;
+	height:150px;
+	bottom:0px;
+	position:absolute;
+	overflow:hidden;
+	overflow-x:scroll;
+}
+
+#carousel .block {
+	position:relative;
+	height:100%;
+}
+
+#carousel .current {
+	height:100%;
+	position:absolute;
+}
+
+#exifdata {
+	position:absolute;
+	width:80%;
+	height:80%;
+	left:10%;
+	top:10%;
+	background-color:white;
+	overflow:auto;
+}
+
+#exifdata table {
+	border:1px solid black;
+	border-collapse:collapse;
+	width:100%;
+}
+
+#exifdata table th,#exifdata table td {
+	text-align:left;
+	vertical-align:top;
+	padding:2px;
+}
+
+/*** Presentation **/
+
+body {
+	font-family:arial;
+	font-size:15px;
+}
+
+#remainingtags {
+	background-color:#D49A6A;
+}
+
+#remainingtags p, #currenttags span.tag,#remainingtags span.tag {
+background-color:silver;
+border:1px solid black;
+border-radius:10px;
+padding-left:5px;
+padding-right:12px;
+padding-top:2px;
+padding-bottom:2px;
+margin:0px 2px 4px 2px;
+cursor:hand;
+}
+
+#currenttags, #remainingtags span.heading {
+	background-color:#804515;
+	color:white;
+}
+
+#remainingtags span.heading {
+	border-bottom:1px solid silver;
+	margin-bottom:5px;
+	padding:2px;
+	display:block;
+	height:18px;
+}
+
+#currenttags span.tag {
+	display:inline-block;
+	margin-right:5px;
+}
+
+#remainingtags span.tag {
+	display:block;
+}
+
+#remainingtags span.tag.admin {
+	background-color:#AA3939;
+	color:white;
+}
+
+#remainingtags span.tag.normal {
+	background-color:#003333;
+	color:white;
+}
+
+div.full {
+	position:absolute;
+	top:50%;
+	left:50%;
+	transform: translate(-50%,-50%);
+
+	border:10px solid silver;
+	border-radius:2px;
+}
+
+#remainingtags span.tag.y,
+#currenttags span.tag.y 
+{
+	background-color:#2D882D;
+	color:white;
+}
+
+#remainingtags span.tag.m,
+#currenttags span.tag.m 
+{
+	background-color:#226666;
+	color:white;
+}
+
+#remainingtags span.tag.d,
+#currenttags span.tag.d 
+{
+	background-color:#88CC88;
+	color:black;
+}
+
+#tools span.select {
+	background-color:#004400;
+}
+
+#tools span.apply {
+	background-color:#003333;
+}
+
+#tools span:active {
+	background-color:#D46A6A;
+}
+
+#adminimages img.tagged {
+	border-color:#550000;
+}
+
+#exifdata table th,#exifdata table td {
+	border:1px solid black;
+}
+
+#exifdata tr:nth-child(even) {
+	background-color:#efefef;
+}
+
+#exifdata th {
+	background-color:green;
+	color:white;
+}

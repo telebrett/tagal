@@ -1,0 +1,12 @@
+; Note, none of these values can be quoted
+[db]
+name=name_of_db
+user=username
+pass=password
+
+;This is passed directly to the DBI constructor, currently only MySQL has been tested, but
+;the schema is simple enough that nearly any SQL database could be used, YMMV
+type=mysql
+
+[images]
+basedir=/absolute/path/to/imagebasedir
