@@ -1,3 +1,63 @@
+- Although this is a static gallery, there are server side scripts to cache your
+  image files in a database and to generate the JSON database
+- This also only supports one base path for your images, eg you cannot pull images from
+
+  /some/path/images
+  /some/path/moreimages
+
+  However symlinks should be traversable
+
+--------------------------------------------------------------------------------
+Getting started
+--------------------------------------------------------------------------------
+1. Create your database using the server/schema.sql file. This is a MySQL specific
+   file but can be easily tweaked for your DB engine of choice
+
+2. Copy config.ini.skel to config.ini and modify to set your database name and credentials
+   and also the base path of your image directory
+
+3. Run the server/import_images.pl script. Use -h or -m to see usage instructions, will
+   find all jpeg images in the configured base dir and insert them into the database. It will
+   also create a ".thumbs" directory and generate thumbnails inside any directory 
+   inside the base directory that contains jpeg images
+
+4. Run the server/generate_db.pl script. This will create the web/database.json file
+
+5. Due to browser security, you cannot access the web/index.html file using the file scheme, you
+   will have to setup a minimal web server to access these files. Below is my very simple Apache
+   configuration
+
+	Alias "/tagal" "/var/data/tagal/web"
+	<Location "/tagal">
+	 Order Allow,Deny
+	 Allow from all
+	 Require all granted
+	</Location>
+
+
+--------------------------------------------------------------------------------
+Contributing
+--------------------------------------------------------------------------------
+- I'll be happy to accept modifications from anyone, however see the note below
+  re security
+
+
+--------------------------------------------------------------------------------
+Security / credentials
+--------------------------------------------------------------------------------
+- config.ini and web/database.json are already in the .gitignore list
+- My intention is to build Amazon S3 integration, eg setting access rights
+  on images with specific tags to enable sharing amongst friends and family.
+
+  All credentials should be entered in the config.ini file, never in code directly
+  so that keys / password etc do not get exposed publicly.
+
+  I will not be reviewing commit histories when accepting patches for hard coded
+  keys / passwords
+
+--------------------------------------------------------------------------------
+Server scripts
+--------------------------------------------------------------------------------
 Run each script with -m to show a manpage, or "perldoc /path/to/script"
 
 Requires the following perl modules
