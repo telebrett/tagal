@@ -234,7 +234,7 @@ sub import_directory {
 
 				if ($row){
 					$image_id = $row->{ID};
-					my $sth_upd = $dbh->prepare('UPDATE image SET Width=?,Height=>? WHERE id = ?');
+					my $sth_upd = $dbh->prepare('UPDATE image SET Width=?,Height=? WHERE id = ?');
 					$sth_upd->execute($width,$height,$image_id);
 				}else{
 					my $sth_ins = $dbh->prepare('INSERT INTO image (Location,DateTaken,Width,Height) VALUES (?,?,?,?)');
