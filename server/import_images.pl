@@ -197,7 +197,7 @@ sub import_directory {
 
 				my $force_thumb = $OPT_REGENERATETHUMB;
 
-				if (! $force_thumb) {
+				if (! $force_thumb && -e $thumbnail) {
 					my $thumb_stat = stat($thumbnail);
 
 					my $thumb_dt = DateTime->from_epoch(epoch=>$thumb_stat->[9]);
