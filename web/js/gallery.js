@@ -25,11 +25,20 @@ var gallery;
  *
  *  - Both of these endpoints write to the database
  *
+ *  - GET /api/tags
+ *
+ *    Returns the tags and their metadata eg "__PERSON__", "__PUBLIC__"
+ *
  *  - POST /api/commit
  *    Will commit pending changes, this should have a lock to ensure that cannot be called twice, ie only one process on disk updating the actual images
  *
  *  - POST /api/revert
  *    Will revert pending changes
+ *
+ *  - PUT /api/tags/[tagid]/public - sets / clears the tag being "public"
+ *  - PUT /api/tags/[tagid]/person - sets / clears the tag being a "person"
+ *    
+ *    Note, both of the PUT tags are immediate, ie you don't need COMMIT
  *
  */
 

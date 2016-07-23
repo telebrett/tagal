@@ -117,6 +117,23 @@
 	padding:2px;
 }
 
+#selecttag {
+	width:350px;
+	height:200px;
+	margin-left:auto;
+	margin-right:auto;
+	margin-top:auto;
+
+	margin:auto;
+	position:relative;
+
+}
+
+#selecttag p.buttons {
+	position:absolute;
+	bottom:0px;
+}
+
 /*** Presentation **/
 
 body {
@@ -128,7 +145,7 @@ body {
 	background-color:#D49A6A;
 }
 
-#remainingtags p, #currenttags span.tag,#remainingtags span.tag {
+#remainingtags p, #currenttags span.tag,#remainingtags span.tag,#selectedtags span.tag {
 background-color:silver;
 border:1px solid black;
 border-radius:10px;
@@ -230,4 +247,33 @@ div.full {
 #exifdata th {
 	background-color:green;
 	color:white;
+}
+
+#selecttag {
+	background-color:white;
+	border:1px solid black;
+	border-radius:2px;
+	padding:5px;
+}
+
+#selectedtags {
+	margin-top:10px;
+	overflow:auto;
+	height:120px;
+	position:relative;
+}
+
+#selectedtags span.tag:hover {
+	background-color:#AA3939;
+	color:white;
+}
+
+#selectedtags span.tag {
+	position:relative;
+	line-height:2em;
+}
+
+#selecttag p.buttons button {
+	margin-right:5px;
+	display:inline-block;
 }
