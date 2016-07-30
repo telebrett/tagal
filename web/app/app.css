@@ -55,7 +55,7 @@ html,body {
 /** sidebar **/
 #sidebar {
   position: fixed;
-  top: 0px;
+  top: 50px;
   bottom: 0;
   left: 0;
   z-index: 1000;

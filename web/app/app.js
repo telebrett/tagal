@@ -77,7 +77,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 			//TODO - Change to limit the tags to only those that are a subset of the current tags
 			for (var i = 0; i < $scope.usedTags.length; i++) {
-				var res = tagAndLabel($scope.usedTags[i]);
+				var res = $scope.usedTags[i];
 				if (res.type == 'y') {
 					show_month = true;
 				} else if(res.type == 'm') {
@@ -105,7 +105,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 				var found = false;
 
 				for (var y = 0; y < $scope.usedTags.length; y++){
-					if (x === $scope.usedTags[y]){
+					if (x === $scope.usedTags[y].tag){
 						found = true;
 						break;
 					}
@@ -157,7 +157,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			$location.path('/welcome');
 		}
 
-		$scope.menuTags.sort(function(a,b) {
+		$scope.menuTags = $scope.menuTags.sort(function(a,b) {
 
 			if (a.type && ! b.type) {
 				//a is a "year", "month" or "day" marker
@@ -166,6 +166,18 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 				//b is a "year", "month" or "day" marker
 				return 1;
 			} else if (a.type && b.type) {
+				if (a.type != b.type) {
+					//Years before months before days
+
+					if (a.type == 'y' || b.type == 'y') {
+						return a.type == 'y' ? -1 : 1;
+					}
+
+					if (a.type == 'm' || b.type == 'm') {
+						return a.type == 'm' ? -1 : 1;
+					}
+				}
+				
 				if (a.type == 'y') {
 					//year descending
 					return a.sort > b.sort ? -1 : 1;
@@ -227,9 +239,21 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	});
 
 	$scope.addUsedTag = function(tag) {
-		$scope.usedTags.push(tag);
+		$scope.usedTags.push(tagAndLabel(tag));
 		buildGallery();
 	};
+
+	$scope.removeTag = function(tag) {
+		for (var i = 0; i < $scope.usedTags.length; i++) {
+
+			if ($scope.usedTags[i].tag == tag) {
+				$scope.usedTags.splice(i,1);
+				break;
+			}
+		}
+
+		buildGallery();
+	}
 
 })
 ;
