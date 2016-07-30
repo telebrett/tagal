@@ -17,10 +17,12 @@ angular.module('tagal.gallery', ['ngRoute'])
 
 	$scope.leftPos = 0;
 
-	var max = Math.min($scope.galleryImages.length,$scope.numToShow);
+	if ($scope.galleryImages) {
+		var max = Math.min($scope.galleryImages.length,$scope.numToShow);
 
-	for (var i = 0; i < max; i++) {
-		$scope.currentImages.push($scope.galleryImages[i]);
+		for (var i = 0; i < max; i++) {
+			$scope.currentImages.push($scope.galleryImages[i]);
+		}
 	}
 
 	function calcStartIndex() {

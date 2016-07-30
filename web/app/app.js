@@ -36,6 +36,26 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			case 'm':
 				label = monthNames[data-1];
 				break;
+			case 'd':
+				switch (data) {
+					case 1:
+					case 21:
+					case 31:
+						label = data + 'st';
+						break;
+					case 2:
+					case 22:
+						label = data + 'nd';
+						break;
+					case 3:
+					case 23:
+						label = data + 'rd';
+						break;
+					default:
+						label = data + 'th';
+						break;
+				}
+				break;
 		}
 
 		return {tag:tag,label:label,type:m[1],sort:data};
@@ -201,8 +221,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		$scope.galleryImages = [];
 		$scope.thumbWidth    = 0;
 
-		$scope.addUsedTag('y2015'); //TODO - Remove this and uncomment the line below this one
-		//buildGallery();
+		//$scope.addUsedTag('y2015'); //TODO - Remove this and uncomment the line below this one
+		buildGallery();
 
 	});
 
