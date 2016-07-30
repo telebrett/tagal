@@ -12,19 +12,15 @@ angular.module('tagal.gallery', ['ngRoute'])
 
 	$scope.numToShow = 200;
 
-	$scope.$parent.reloadGallery = function() {
+	$scope.currentImages = [];
+	$scope.currentLeft = 0;
 
-		$scope.currentImages = [];
-		$scope.currentLeft = 0;
+	$scope.leftPos = 0;
 
-		//TODO - something broken here, when the gallery is reloaded, the leftPos is NOT reset in the div
-		$scope.leftPos = 0;
+	var max = Math.min($scope.galleryImages.length,$scope.numToShow);
 
-		var max = Math.min($scope.galleryImages.length,$scope.numToShow);
-
-		for (var i = 0; i < max; i++) {
-			$scope.currentImages.push($scope.galleryImages[i]);
-		}
+	for (var i = 0; i < max; i++) {
+		$scope.currentImages.push($scope.galleryImages[i]);
 	}
 
 	function calcStartIndex() {

@@ -12,7 +12,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
   $routeProvider.otherwise({redirectTo: '/welcome'});
 }])
-.controller('tagalCtrl',function($scope,$http,$location){
+.controller('tagalCtrl',function($scope,$http,$route,$location){
 
 	function tagAndLabel(tag){
 		var m = tag.match(/^(m|d|y)(.*)$/);
@@ -124,11 +124,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			}
 
 			$location.path('/gallery');
-
-			//This seems like a horrible hack but I can't figure out to notify the child view
-			if ($scope.reloadGallery) {
-				$scope.reloadGallery();
-			}
+			$route.reload();
 
 		} else {
 			for (var i in $scope.data.tags) {
