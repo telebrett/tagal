@@ -112,3 +112,12 @@ li.tagm:hover {
 	background-color:#961512;
 	border-color:#961512;
 }
+
+li.tagd {
+	background-color:#5bc0de;
+	border-color:#1993B6;
+}
+li.tagd:hover {
+	background-color:#1993B6;
+	border-color:#1993B6;
+}
