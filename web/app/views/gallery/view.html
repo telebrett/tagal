@@ -1,0 +1,12 @@
+<div id="gallery">
+ <div id="mainimage">
+  <p>Main image goes here</p>
+ </div>
+ <div id="carousel" on-scroll="scroll()">
+  <div class="block" style="width: {{thumbWidth}}px">
+   <div class="current" style="left: {{leftPos}}px">
+    <img ng-repeat="i in currentImages" src="pictures/{{i.dir}}.thumb/{{i.image}}" height="{{i.height}}" width="{{i.width}}">
+   </div>
+  </div>
+ </div>
+</div>

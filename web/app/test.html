@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>box sizing</title>
+<style type="text/css">
+#outer {
+	height:300px;
+	border:1px solid black;
+	position:absolute;
+	top:0px;
+	left:0px;
+	width:500px;
+}
+#left {
+	height:100%;
+	width:100px;
+	background-color:red;
+	left:0px;
+	top:0px;
+	position:absolute;
+}
+#right {
+	height:100%;
+	width:100px;
+	background-color:green;
+	right:0px;
+	top:0px;
+	position:absolute;
+	padding-top:100px;
+	box-sizing:border-box;
+}
+</style>
+</head>
+<body>
+<div id="outer">
+ <div id="left">
+ </div>
+ <div id="right">
+ </div>
+</div>
