@@ -52,6 +52,12 @@ html,body {
 	padding:0px;
 }
 
+#mainimage {
+	height:100%;
+	padding-bottom:150px;
+	box-sizing:border-box;
+}
+
 /** sidebar **/
 #sidebar {
   position: fixed;

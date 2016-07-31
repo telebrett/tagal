@@ -1,2 +1,6 @@
 BUGS
 * UI - buttons for tags - too long gets cut off to the right
+* UI - image reload - the size / height is set against the old image
+
+FEATURES
+* UI - add a  count next to each tag to show how many images would be listed if the tag was clicked on

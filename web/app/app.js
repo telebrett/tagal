@@ -218,7 +218,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			left:$scope.thumbWidth,
 			width:width,
 			height:height,
-			index:image_index
+			index:image_index,
+			ratio:ratio
 		});
 
 		$scope.thumbWidth += width;

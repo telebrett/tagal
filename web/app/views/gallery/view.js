@@ -107,8 +107,39 @@ angular.module('tagal.gallery', ['ngRoute'])
 		$scope.leftPos = Math.round($scope.galleryImages[startindex].left);
 	}
 
+	$scope.viewImage = function(image) {
+
+		$scope.mainImage = image;
+
+		var ratio = image.ratio;
+
+		var height_from_maxwidth = (1/ratio) * this.mainImageWidth;
+		var width_from_maxheight = (ratio * this.mainImageHeight);
+
+		if (width_from_maxheight <= this.mainImageWidth) {
+			//max will be the height
+			image.fullHeight = this.mainImageHeight;
+			image.fullWidth = ratio * image.fullHeight;
+		}else{
+			image.fullWidth = this.mainImageWidth;
+			image.fullHeight = height_from_maxwidth;
+		}
+
+
+	}
 
 }])
+.directive('imageReady',function($parse) {
+	return {
+		restrict:'A',
+		link:function($scope,elem,attrs) {
+
+			//TODO - it is not picking up the height of the scrollbar
+			$scope.mainImageHeight = elem[0].clientHeight - 150;
+			$scope.mainImageWidth  = elem[0].clientWidth;
+		}
+	}
+})
 .directive('onScroll', function($timeout) {
     'use strict';
 
