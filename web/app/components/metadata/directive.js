@@ -49,6 +49,17 @@ angular.module('tagal.metadata',['ui.bootstrap.modal'])
 		}
 	 }
 
+	 function textVal(val) {
+
+		if (val instanceof Number) {
+			if (val.numerator && val.denominator != 1) {
+				val = val.numerator + '/' + val.denominator;
+			}
+		}
+
+		return val;
+	 }
+
 	 function transform(data) {
 
 		 var vals = [];
@@ -68,7 +79,7 @@ angular.module('tagal.metadata',['ui.bootstrap.modal'])
 		 var important = ['ExposureTime','FNumber','ISOSpeedRatings'];
 		 for (var i = 0; i < important.length; i++) {
 			 if (data[important[i]]) {
-				 vals.push({key:important[i],value:data[important[i]]});
+				 vals.push({key:important[i],value:textVal(data[important[i]])});
 				 delete data[important[i]];
 			 }
 		 }
@@ -82,18 +93,8 @@ angular.module('tagal.metadata',['ui.bootstrap.modal'])
 
 			var val = data[i];
 
-			if (val instanceof Number) {
-
-				if (val.numerator && val.denominator != 1) {
-
-					val = val.numerator + '/' + val.denominator;
-
-				}
-
-			}
-
 			if (val) {
-				vals.push({key:i,value:val});
+				vals.push({key:i,value:textVal(val)});
 			}
 
 		 }
