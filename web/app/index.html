@@ -18,6 +18,7 @@
 <body ng-controller="tagalCtrl">
  <nav class="navbar navbar-default navbar-fixed-top">
   <div class="container">
+   <span ng-if="allowModes" class="btn btn-primary btn-sm" ng-click="swapMode()">{{otherMode}}</span>
    <span ng-repeat="t in usedTags" class="btn btn-primary btn-sm tag{{t.type}}" ng-click="removeTag(t.tag)">{{t.label}}</span>
   </div>
  </nav>
@@ -44,6 +45,7 @@
   <script src="app.js"></script>
   <script src="views/welcome/view.js"></script>
   <script src="views/gallery/view.js"></script>
+  <script src="views/admin/view.js"></script>
   <script src="components/version/version.js"></script>
   <script src="components/version/version-directive.js"></script>
   <script src="components/version/interpolate-filter.js"></script>

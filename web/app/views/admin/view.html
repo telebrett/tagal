@@ -1,0 +1,8 @@
+<div id="admin">
+ <div id="tools">
+  <p>Page <select ng-change="selectPage()" ng-model="selectedPage" ng-options="option.index for option in pages track by option.index"></select></p>
+ </div>
+ <div id="images">
+  <img ng-repeat="i in currentImages" ng-src="pictures/{{i.dir}}.thumb/{{i.image}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage(i)" tagal-metadata>
+ </div>
+</div>

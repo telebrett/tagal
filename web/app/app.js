@@ -5,6 +5,7 @@ angular.module('tagal', [
   'ngRoute',
   'tagal.welcome',
   'tagal.gallery',
+  'tagal.admin',
   'tagal.version',
   'tagal.metadata',
   'ui.bootstrap',
@@ -15,6 +16,14 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
   $routeProvider.otherwise({redirectTo: '/welcome'});
 }])
 .controller('tagalCtrl',function($scope,$http,$route,$location){
+
+	//TODO - build hostname from server side config, eg database.json
+	if ($location.host() == 'htpc') {
+		$scope.allowModes = true;
+	}
+
+	$scope.otherMode = 'Admin';
+	$scope.currentMode = 'gallery';
 
 	function tagAndLabel(tag){
 		var m = tag.match(/^(m|d|y)(.*)$/);
@@ -145,8 +154,12 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 				$scope.menuTags.push(tagAndLabel(x));
 			}
 
-			$location.path('/gallery');
-			$route.reload();
+			if ($location.path() == '/welcome') {
+				$location.path('/gallery');
+				$route.reload();
+			} else {
+				$route.reload();
+			}
 
 		} else {
 			for (var i in $scope.data.tags) {
@@ -256,6 +269,19 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		}
 
 		buildGallery();
+	}
+
+	$scope.swapMode = function() {
+		if ($scope.currentMode == 'gallery') {
+			$scope.currentMode = 'admin';
+			$scope.otherMode = 'Gallery';
+		} else {
+			$scope.currentMode = 'gallery';
+			$scope.otherMode = 'Admin';
+		}
+
+		$location.path('/' + $scope.currentMode);
+		
 	}
 
 })
