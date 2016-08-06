@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('tagal.gallery', ['ngRoute'])
+angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 
 .config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/gallery', {

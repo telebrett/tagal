@@ -6,6 +6,8 @@ angular.module('tagal', [
   'tagal.welcome',
   'tagal.gallery',
   'tagal.version',
+  'tagal.metadata',
+  'ui.bootstrap',
 ]).
 config(['$locationProvider', '$routeProvider', function($locationProvider, $routeProvider) {
   $locationProvider.hashPrefix('!');
