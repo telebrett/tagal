@@ -1,5 +1,16 @@
 'use strict';
 
+/**
+ * example
+ *
+ * <img tagal-metadata ...
+ *
+ * would add a click handler to open the modal
+ *
+ * <img tagal-metadata="dblclick" ...
+ *
+ * would add a dblclick handler to open the modal
+ */
 angular.module('tagal.metadata',['ui.bootstrap.modal'])
 .directive(
  "tagalMetadata",
@@ -8,7 +19,7 @@ angular.module('tagal.metadata',['ui.bootstrap.modal'])
 
 	 return {
 		restrict: 'A',
-		link: function(scope,element) {
+		link: function(scope,element,attr) {
 
 			var loadHandler = function() {
 				element[0].exifdata = null;
@@ -39,7 +50,7 @@ angular.module('tagal.metadata',['ui.bootstrap.modal'])
 			}
 
 			element.on('load',loadHandler);
-			element.on('click',clickHandler);
+			element.on(attr.tagalMetadata ? attr.tagalMetadata : 'click',clickHandler);
 
 			scope.$on('$destroy',function() {
 				element.off('load',loadHandler);

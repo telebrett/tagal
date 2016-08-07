@@ -19,6 +19,11 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata'])
 	$scope.selectedPage = {index:0};
 	$scope.numPages = 0;
 
+	//Enumerators for the selectImages function
+	$scope.selectNone        = 0;
+	$scope.selectAll         = 1;
+	$scope.selectCurrentPage = 2;
+
 	function setCurrentImages() {
 
 		var offset = $scope.selectedPage.index;
@@ -50,4 +55,49 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata'])
 	$scope.selectPage = function() {
 		setCurrentImages();
 	}
-}]);
+
+	$scope.pager = function(inc) {
+
+		var newindex = Math.min(Math.max($scope.selectedPage.index + inc,0),$scope.numPages-1);
+
+		$scope.selectedPage = {index:newindex};
+		setCurrentImages();
+	}
+
+	$scope.selectImages = function(type) {
+		switch(type) {
+			case $scope.selectNone:
+			case $scope.selectAll:
+				for (var i = 0; i < $scope.galleryImages.length; i++) {
+					$scope.galleryImages[i].selected = (type == $scope.selectAll);
+				}
+				break;
+			case $scope.selectCurrentPage:
+				for (var i = 0; i < $scope.currentImages.length; i++) {
+					$scope.currentImages[i].selected = true;
+				}
+				break;
+		}
+	}
+}])
+.directive('adminSelect',function($route) {
+	return {
+		restrict:'A',
+		link: function(scope,element,attrs) {
+
+			//TODO - changing tags kills the selection
+
+			var clickHandler = function() {
+				scope.$parent.currentImages[attrs.adminSelect].selected = ! scope.$parent.currentImages[attrs.adminSelect].selected;
+				scope.$apply();
+			};
+
+			element.on('click',clickHandler);
+
+			scope.$on('$destroy',function() {
+				element.off('click',clickHandler);
+			});
+
+		}
+	}
+});

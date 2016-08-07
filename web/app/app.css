@@ -127,3 +127,35 @@ li.tagd:hover {
 	background-color:#1993B6;
 	border-color:#1993B6;
 }
+
+#adminimages img {
+	margin:10px;
+	border:2px solid silver;
+	border-radius:4px;
+	box-sizing:content-box;
+}
+
+#adminimages img.selected {
+	border-width:5px;
+	margin:3px;
+	padding:4px;
+	border-color:#1B7C1B;
+}
+
+span.applytags {
+	background-color:#1B7C1B;
+	border-color:#003B00;
+}
+
+span.applytags:hover {
+	background-color:#003B00;
+}
+
+span.delete {
+	background-color:#B20000;
+	border-color:#840000;
+}
+span.delete:hover {
+	background-color:#840000;
+
+}
