@@ -1,0 +1,3 @@
+To do lossless rotation run the following command in the target directory
+
+find . -name "*.JPG" | xargs -I {} exiftran -ai {}
