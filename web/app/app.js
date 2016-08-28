@@ -15,7 +15,125 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
   $routeProvider.otherwise({redirectTo: '/welcome'});
 }])
-.controller('tagalCtrl',function($scope,$http,$route,$location){
+.service('tagalImages',function($http,$route){
+
+	/**
+	 * Each element is a hash with keys
+	 * string src Image file and path, relative to /pictures
+	 * float ratio The ratio of height to width TODO width to height?
+	 * array tags array of tag names - the tags that have possibly been added / removed
+	 * array otags array of tag names - this is the list of tags that the image has on disk
+	 */
+	var _images = [];
+
+	//Note that _tags is just an index
+	var _tags   = {};
+
+	var _selected = {};
+
+	//If an image index is in either of these variables, then it is dirty
+	var _dirty    = {};
+	var _deleted  = {};
+
+	return {
+		/**
+		 * array initialTags keys are tag names, values are an array of image indexes
+		 */
+		init: function(initialTags) {
+			_tags = initialTags;
+		},
+		getImages : function() {
+			return _images;
+		},
+		addImage: function(index,src,ratio) {
+
+			//Note, setTags must be called first
+
+			_images[index] = {src:src,ratio:ratio,tags:[],otags:[]};
+
+			for (var t in _tags) {
+				if (_tags[t].indexOf(index) != -1) {
+					_images[index].tags.push(t);
+					_images[index].otags.push(t);
+				}
+			}
+		},
+		/**
+		 * array indexes array of image indexes to select / deselect
+		 * bool select
+		 */
+		selectImages: function(indexes,select) {
+			for (var i = 0; i < indexes.length; i++) {
+				if (select) {
+					_selected[indexes[i]] = true;
+				} else {
+					delete _selected[indexes[i]];
+				}
+			}
+		},
+		addTag: function(tag) {
+
+			//TODO defense in depth - ensure cannot add a year, month or day tag?
+
+			for (var image_index in _selected) {
+
+				if (_images[image_index].tags.indexOf(tag) == -1) {
+					_images[image_index].tags.push(tag);
+
+					checkDirty(image_index);
+
+					if (_tags[tag].indexOf(i) == -1) {
+						_tags[tag].push(i);
+					}
+				}
+			}
+		},
+		removeTag: function(tag) {
+			for (var image_index in selected) {
+
+				var tag_index = _images[image_index].tags.indexOf(tag);
+
+				if (tag_index != -1) {
+					_images[image_index].tags.splice(tag_index,1);
+
+					checkDirty(image_index);
+
+					var tag_image_index = _tags[tag].indexOf(image_index);
+
+					if (tag_image_index != -1) {
+						_tags[tag].splice(tag_image_index,1);
+					}
+				}
+			}
+
+		}
+		,checkDirty(image_index) {
+			//TODO - compare tags and otags
+			//       case insensitive?
+			//       certainly order not important
+
+		}
+		,deleteImages: function(indexes,cancel) {
+			for (var i = 0; i < indexes.length; i++) {
+				if (cancel) {
+					delete _deleted[indexes[i]];
+				} else {
+					_deleted[indexes[i]] = true;
+				}
+			}
+		}
+		,commit: function() {
+			//TODO - http post, _dirty images and _delete images
+
+		}
+		,reset: function() {
+			//TODO - full reload?
+		}
+		//TODO - move app functions below into here, eg tagAndLabel, functions to restrict images to remaining tags, etc
+		//     - move into a separate file
+	}
+})
+.controller('tagalCtrl',function($scope,$http,$route,$location,tagalImages){
 
 	//TODO - change galleryImages to be more global so that "selected" and changed "tags" live on regardless of if
 	//       the user selects different tags or removes all selected tags completely
@@ -247,7 +365,10 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	$http.get('database.json')
 	.then(function(res){
+
 		$scope.data = res.data;
+
+		console.log($scope.data);
 
 		$scope.usedTags      = [];
 		$scope.galleryImages = [];

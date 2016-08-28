@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('tagal.admin', ['ngRoute','tagal.metadata'])
+angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 .config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/admin', {
     templateUrl: 'views/admin/view.html',
@@ -64,6 +64,9 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata'])
 		setCurrentImages();
 	}
 
+	//TODO - investigate using a 'service' to share properties across controllers and hence keep the selected
+	//       state between changing selected tags
+
 	$scope.selectImages = function(type) {
 		switch(type) {
 			case $scope.selectNone:
@@ -74,7 +77,7 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata'])
 				break;
 			case $scope.selectCurrentPage:
 				for (var i = 0; i < $scope.currentImages.length; i++) {
-					$scope.currentImages[i].selected = true;
+					$scope.galleryImages[i].selected = true;
 				}
 				break;
 		}
@@ -100,4 +103,44 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata'])
 
 		}
 	}
-});
+})
+.controller('applyTagsCtrl',function($scope,$uibModalInstance,currentTags) {
+
+	$scope.currentTags = currentTags;
+
+	//TODO - give message why year, month, day removed?
+
+	$scope.close = function() {
+		$uibModalInstance.close();
+	}
+})
+.directive('applyTags',function($uibModal) {
+	'use strict';
+
+	return {
+		restrict:'A',
+		link: function(scope,element) {
+
+			var clickHandler = function() {
+
+				var modal = $uibModal.open({
+					animation:true,
+					templateUrl:'views/admin/applytags.html',
+					controller:'applyTagsCtrl',
+					resolve:{
+						currentTags:function() {
+							return [{tag:'foo'},{tag:'bar'}];
+						}
+					}
+				});
+			}
+
+			element.on('click',clickHandler);
+			element.on('$destroy',function() {
+				element.off('click',clickHandler);
+			});
+
+		}
+	};
+})
+;
