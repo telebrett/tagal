@@ -73,7 +73,7 @@ sub build_db {
 		$image_index++;
 	}
 
-	open (FILE,'>../web/database.json');
+	open (FILE,'>../web/app/database.json');
 	print FILE encode_json($data);
 	close FILE;
 

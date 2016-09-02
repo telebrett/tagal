@@ -8,6 +8,9 @@ CREATE TABLE setting (
 CREATE TABLE tag (
  id int(10) unsigned auto_increment
 ,Tag VARCHAR(250)
+,IsPublic tinyint(0) NOT NULL DEFAULT '0'
+,IsRestricted tinyint(0) NOT NULL DEFAULT '0'
+,IsPerson tinyint(0) NOT NULL DEFAULT '0'
 ,PRIMARY KEY(id)
 ) ENGINE=InnoDB CHARSET=UTF8;
 
