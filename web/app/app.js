@@ -368,11 +368,11 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 		$scope.data = res.data;
 
-		console.log($scope.data);
-
 		$scope.usedTags      = [];
 		$scope.galleryImages = [];
 		$scope.thumbWidth    = 0;
+
+		$scope.rootImageDir = res.data.imagedir;
 
 		//$scope.addUsedTag('y2015'); //TODO - Remove this and uncomment the line below this one
 		buildGallery();

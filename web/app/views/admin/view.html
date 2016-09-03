@@ -10,6 +10,6 @@
   </p>
  </div>
  <div id="adminimages">
-  <img ng-repeat="i in currentImages" ng-src="pictures/{{i.dir}}.thumb/{{i.image}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage(i)" tagal-metadata="dblclick" admin-select="{{$index}}" class="{{i.selected ? 'selected' : null}}">
+  <img ng-repeat="i in currentImages" ng-src="{{rootImageDir}}/{{i.dir}}.thumb/{{i.image}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage(i)" tagal-metadata="dblclick" admin-select="{{$index}}" class="{{i.selected ? 'selected' : null}}">
  </div>
 </div>

@@ -9,4 +9,10 @@ pass=password
 type=mysql
 
 [images]
+;No trailing slash
 basedir=/absolute/path/to/imagebasedir
+
+[s3]
+bucket=nameofs3bucket
+;No leading or trailing slash
+basedir=path/to/s3/imagebasedir

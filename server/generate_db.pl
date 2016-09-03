@@ -21,8 +21,9 @@ tie my %config, 'Config::IniFiles',(-file=>abs_path(dirname(abs_path($0)) . '/..
 my $PUBLIC = 0;
 my $RESTRICTED = 0;
 my $OUTPUT = undef;
+my $IMAGEDIR = 'pictures';
 
-Getopt::Long::GetOptions('public'=>\$PUBLIC,'restricted'=>\$RESTRICTED,'output=s'=>\$OUTPUT);
+Getopt::Long::GetOptions('public'=>\$PUBLIC,'restricted'=>\$RESTRICTED,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR);
 
 if ($PUBLIC && $RESTRICTED) {
 	warn "Cannot specify public and restricted\n";
@@ -50,7 +51,7 @@ get_db();
 build_db();
 
 sub build_db {
-	my $data = {images=>[],tags=>{}};
+	my $data = {imagedir=>$IMAGEDIR,images=>[],tags=>{}};
 
 	my $where = '';
 	my $join = '';
@@ -153,6 +154,7 @@ generate_db.pl
  -p[ublic] build public db
  -r[estricted] build restricted db
  -o[output] The path to to write out to
+ -i[magedir] The path that the images are in. Defaults to 'pictures'
 
  Note that public / restricted are exclusive options
 
