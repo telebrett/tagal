@@ -21,10 +21,11 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	/**
 	 * Each element is a hash with keys
-	 * string src Image file and path, relative to /pictures
-	 * float ratio The ratio of height to width TODO width to height?
-	 * array tags array of tag indexes - the tags that have possibly been added / removed
-	 * array otags array of tag indexes - this is the list of tags that the image has on disk
+	 * string s  Image file and path, relative to /pictures
+	 * float  r  The ratio of height to width TODO width to height?
+	 * array  t  array of tag indexes - the tags that have possibly been added / removed
+	 * array  ot array of tag indexes - this is the list of tags that the image has on disk
+	 * bool   s  True if the image is currently marked as selected
 	 */
 	var _images = [];
 
@@ -36,9 +37,12 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	 * object i keys are the image indexes, value is true
 	 */
 	var _tags   = [];
+
+	/**
+	 * keys are the tags, values is the index for the tag
+	 */
 	var _tagindex = {};
 
-	var _selected = {};
 
 	//If an image index is in either of these variables, then it is dirty
 	var _dirty    = {};
@@ -85,15 +89,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	}
 
 	function addImage(index,img) {
-
-		_images[index] = {src:img[0],ratio:img[1],tags:[],otags:[]};
-
-		//for (var t in _tags) {
-		//	if (_tags[t].indexOf(index) != -1) {
-		//		_images[index].tags.push(t);
-		//		_images[index].otags.push(t);
-		//	}
-		//}
+		_images[index] = {s:img[0],r:img[1],t:[],ot:[]};
 	};
 
 	function addTag(key,val,metadata) {
@@ -133,15 +129,10 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 		for (var i = 0; i < _tags.length; i++) {
 			for (var imageIndex in _tags[i].i) {
-				_images[imageIndex].tags.push(i);
-				_images[imageIndex].otags.push(i);
+				_images[imageIndex].t.push(i);
+				_images[imageIndex].ot.push(i);
 			}
 		}
-
-		console.dir(_images);
-		console.dir(_tags);
-		console.dir(_tagindex);
-
 	}
 
 	return {
@@ -175,9 +166,9 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		selectImages: function(indexes,select) {
 			for (var i = 0; i < indexes.length; i++) {
 				if (select) {
-					_selected[indexes[i]] = true;
+					_images[indexes[i]].s = true;
 				} else {
-					delete _selected[indexes[i]];
+					delete _images[indexes[i]].s;
 				}
 			}
 		},
@@ -187,8 +178,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 			for (var image_index in _selected) {
 
-				if (_images[image_index].tags.indexOf(tag) == -1) {
-					_images[image_index].tags.push(tag);
+				if (_images[image_index].t.indexOf(tag) == -1) {
+					_images[image_index].t.push(tag);
 
 					checkDirty(image_index);
 
@@ -201,10 +192,10 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		removeTag: function(tag) {
 			for (var image_index in selected) {
 
-				var tag_index = _images[image_index].tags.indexOf(tag);
+				var tag_index = _images[image_index].t.indexOf(tag);
 
 				if (tag_index != -1) {
-					_images[image_index].tags.splice(tag_index,1);
+					_images[image_index].t.splice(tag_index,1);
 
 					checkDirty(image_index);
 
@@ -392,6 +383,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	}
 	
+	//TODO - remove
 	function addImage(image_index){
 
 		//Images are stored by index as an array. First element is the src, second
@@ -435,6 +427,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			alert('Failed to load');
 		}
 	);
+
+	//TODO - update everything below to the service
 
 	$scope.addUsedTag = function(tag) {
 		$scope.usedTags.push(tagAndLabel(tag));
