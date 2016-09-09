@@ -23,13 +23,20 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	 * Each element is a hash with keys
 	 * string src Image file and path, relative to /pictures
 	 * float ratio The ratio of height to width TODO width to height?
-	 * array tags array of tag names - the tags that have possibly been added / removed
-	 * array otags array of tag names - this is the list of tags that the image has on disk
+	 * array tags array of tag indexes - the tags that have possibly been added / removed
+	 * array otags array of tag indexes - this is the list of tags that the image has on disk
 	 */
 	var _images = [];
 
-	//Note that _tags is just an index
-	var _tags   = {};
+	/**
+	 * Each element is a hash with keys
+	 * string t The tag name
+	 * string l The label name, optional
+	 * object m Metadata for the tag, note key only exists if there is metadata
+	 * object i keys are the image indexes, value is true
+	 */
+	var _tags   = [];
+	var _tagindex = {};
 
 	var _selected = {};
 
@@ -42,73 +49,99 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	var _currentTags   = [];
 	var _remainingTags = [];
 
-	function tagAndLabel(tag){
-		var m = tag.match(/^(m|d|y)(.*)$/);
+	var monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
-		//Three element array
-		//
-		// first is the label for the tag
-		// Second is the "type" of tag eg y for year, m for month
-		// Third is the numeric sort
+	function buildDateLabel(key,datetype) {
 
-		if (! m){
-			return {tag:tag,label:tag,type:undefined,sort:undefined};
-		}
+		key = parseInt(key,10);
 
-		var monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
-
-		var label = parseInt(m[2],10);
-		var data = label;
-
-		switch (m[1]){
-			case 'm':
-				label = monthNames[data-1];
+		switch (datetype){
+			case 'month':
+				return monthNames[key-1];
 				break;
-			case 'd':
-				switch (data) {
+			case 'day':
+				switch (key) {
 					case 1:
 					case 21:
 					case 31:
-						label = data + 'st';
+						return key + 'st';
 						break;
 					case 2:
 					case 22:
-						label = data + 'nd';
+						return key + 'nd';
 						break;
 					case 3:
 					case 23:
-						label = data + 'rd';
+						return key + 'rd';
 						break;
 					default:
-						label = data + 'th';
+						return key + 'th';
 						break;
 				}
 				break;
+			default:
+				return key;
 		}
+	}
 
-		return {tag:tag,label:label,type:m[1],sort:data};
+	function addImage(index,img) {
 
+		_images[index] = {src:img[0],ratio:img[1],tags:[],otags:[]};
+
+		//for (var t in _tags) {
+		//	if (_tags[t].indexOf(index) != -1) {
+		//		_images[index].tags.push(t);
+		//		_images[index].otags.push(t);
+		//	}
+		//}
 	};
 
-	function addImage(index,src,ratio) {
+	function addTag(key,val,metadata) {
 
-		_images[index] = {src:src,ratio:ratio,tags:[],otags:[]};
+		var o = {t:key,i:{}};
 
-		for (var t in _tags) {
-			if (_tags[t].indexOf(index) != -1) {
-				_images[index].tags.push(t);
-				_images[index].otags.push(t);
+		for (var i = 0; i < val.length; i++) {
+			o.i[val[i]] = true;
+		}
+
+		if (metadata) {
+			o.m = metadata;
+
+			if (o.m.datetype) {
+				o.l = buildDateLabel(key,o.m.datetype);
 			}
 		}
+
+		_tags.push(o);
+		_tagindex[key] = _tags.length;
+
 	};
 
 	function loadDB(res) {
-		console.log('load DB called');
-		console.log(res);
-
 		rootImageDir = res.data.imagedir;
 
-		//TODO - need to set the rootImageDir in the main scope
+		for (var i in res.data.tags) {
+			addTag(i,res.data.tags[i],res.data.tagmetadata[i]);
+		}
+
+		var index = 0;
+		var img;
+
+		while (img = res.data.images.shift()) {
+			addImage(index++,img);
+		}
+
+		for (var i = 0; i < _tags.length; i++) {
+			for (var imageIndex in _tags[i].i) {
+				_images[imageIndex].tags.push(i);
+				_images[imageIndex].otags.push(i);
+			}
+		}
+
+		console.dir(_images);
+		console.dir(_tags);
+		console.dir(_tagindex);
+
 	}
 
 	return {
@@ -116,20 +149,25 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		 * array initialTags keys are tag names, values are an array of image indexes
 		 */
 		init: function(dbfile) {
-			//TODO - promises? how do I get it to trigger the 'then'?
-			//     - return the $
+
+			var deferred = $q.defer();
+
 			$http.get(dbfile)
 			.then(
 				loadDB,
 				function(){
-					return $q.reject()}
-				)
+					deferred.reject('Failed to load database');
+				}
+			)
 			.then(
 				function(){
-					return rootImageDir;
+					deferred.resolve(rootImageDir);
 				}
 			);
+			
+			return deferred.promise;
 		},
+
 		/**
 		 * array indexes array of image indexes to select / deselect
 		 * bool select
@@ -388,7 +426,15 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		
 	}
 
-	tagalImages.init('database.json');
+	tagalImages.init('database.json')
+	.then(
+		function(rootDir){
+			$scope.rootImageDir = rootDir;
+		},
+		function(reason) {
+			alert('Failed to load');
+		}
+	);
 
 	$scope.addUsedTag = function(tag) {
 		$scope.usedTags.push(tagAndLabel(tag));

@@ -51,7 +51,7 @@ get_db();
 build_db();
 
 sub build_db {
-	my $data = {imagedir=>$IMAGEDIR,images=>[],tags=>{}};
+	my $data = {imagedir=>$IMAGEDIR,images=>[],tags=>{},tagmetadata=>{}};
 
 	my $where = '';
 	my $join = '';
@@ -72,7 +72,7 @@ sub build_db {
 	}
 
 	#Note, these two statements MUST be ordered the same
-	my $sth_tags = $dbh->prepare("SELECT t.Tag,it.ImageID FROM tag t JOIN image_tag it ON it.TagID = t.id JOIN image i ON i.id = it.ImageID $where ORDER BY i.DateTaken,i.id");
+	my $sth_tags = $dbh->prepare("SELECT t.Tag,it.ImageID,t.IsPublic FROM tag t JOIN image_tag it ON it.TagID = t.id JOIN image i ON i.id = it.ImageID $where ORDER BY i.DateTaken,i.id");
 	$sth_tags->execute();
 
 	my $sth_image = $dbh->prepare("SELECT i.*,YEAR(i.DateTaken) AS YearTaken,MONTH(i.DateTaken) AS MonthTaken,DAYOFMONTH(i.DateTaken) AS DayOfMonthTaken FROM image i $join GROUP BY i.id ORDER BY i.DateTaken,i.id");
@@ -90,18 +90,23 @@ sub build_db {
 
 		push @{$data->{images}},[$image->{LOCATION},$size_ratio];
 
-		my $ytag = 'y' . $image->{YEARTAKEN};
-		my $mtag = 'm' . $image->{MONTHTAKEN};
-		my $dtag = 'd' . $image->{DAYOFMONTHTAKEN};
+		#TODO - Check for valid date
+
+		my $ytag = $image->{YEARTAKEN};
+		my $mtag = $image->{MONTHTAKEN};
+		my $dtag = $image->{DAYOFMONTHTAKEN};
 
 		if (! defined $data->{tags}->{$ytag}){
 			$data->{tags}->{$ytag} = [];
+			$data->{tagmetadata}->{$ytag} = {datetype=>'year'};
+		}
+		if (! defined $data->{tags}->{$mtag}){
+			$data->{tags}->{$mtag} = [];
+			$data->{tagmetadata}->{$mtag} = {datetype=>'month'};
 		}
 		if (! defined $data->{tags}->{$dtag}){
 			$data->{tags}->{$dtag} = [];
-		}
-		if (! defined $data->{tags}->{$dtag}){
-			$data->{tags}->{$dtag} = [];
+			$data->{tagmetadata}->{$dtag} = {datetype=>'day'};
 		}
 
 		#write out the psuedo tag for the date the image was taken
@@ -116,6 +121,10 @@ sub build_db {
 			}
 
 			push @{$data->{tags}->{$cur_tag->{TAG}}},$image_index;
+
+			if ($cur_tag->{ISPUBLIC}) {
+				$data->{tagmetadata}->{$cur_tag->{TAG}} = {public=>1};
+			}
 
 			$cur_tag = $sth_tags->fetchrow_hashref;
 		}
