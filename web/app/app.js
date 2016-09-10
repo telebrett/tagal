@@ -52,6 +52,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	var _currentImages = [];
 	var _currentTags   = [];
 	var _remainingTags = [];
+	var _selected      = {};
 
 	var monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
@@ -92,12 +93,30 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		_images[index] = {s:img[0],r:img[1],t:[],ot:[]};
 	};
 
-	function addTag(key,val,metadata) {
+	/**
+	 * @param string key
+	 * @param array imageIndexes
+	 * @param object metadata
+	 *
+	 * @returns false|int the tag index
+	 */
+	function addTag(key,imageIndexes,metadata,initialLoad) {
+
+		if (_tagindex[key] !== undefined) {
+			return false;
+		}
+
+		var tagIndex = _tags.length + 1;
 
 		var o = {t:key,i:{}};
 
-		for (var i = 0; i < val.length; i++) {
-			o.i[val[i]] = true;
+		for (var i = 0; i < imageIndexes.length; i++) {
+			o.i[imageIndexes[i]] = true;
+			_images[imageIndexes[i]].t.push(tagIndex);
+
+			if (initialLoad) {
+				_images[imageIndexes[i]].ot.push(tagIndex);
+			}
 		}
 
 		if (metadata) {
@@ -109,30 +128,25 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		}
 
 		_tags.push(o);
-		_tagindex[key] = _tags.length;
+		_tagindex[key] = tagIndex;
+
+		return tagIndex;
 
 	};
 
 	function loadDB(res) {
 		rootImageDir = res.data.imagedir;
 
-		for (var i in res.data.tags) {
-			addTag(i,res.data.tags[i],res.data.tagmetadata[i]);
-		}
-
 		var index = 0;
 		var img;
-
 		while (img = res.data.images.shift()) {
 			addImage(index++,img);
 		}
 
-		for (var i = 0; i < _tags.length; i++) {
-			for (var imageIndex in _tags[i].i) {
-				_images[imageIndex].t.push(i);
-				_images[imageIndex].ot.push(i);
-			}
+		for (var i in res.data.tags) {
+			addTag(i,res.data.tags[i],res.data.tagmetadata[i],true);
 		}
+
 	}
 
 	return {
@@ -167,45 +181,34 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			for (var i = 0; i < indexes.length; i++) {
 				if (select) {
 					_images[indexes[i]].s = true;
+					_selected[indexes[i]] = true;
 				} else {
 					delete _images[indexes[i]].s;
+					delete _selected[indexes[i]];
 				}
 			}
 		},
 		addTag: function(tag) {
 
-			//TODO defense in depth - ensure cannot add a year, month or day tag?
+			var imageIndexes = [];
 
-			for (var image_index in _selected) {
-
-				if (_images[image_index].t.indexOf(tag) == -1) {
-					_images[image_index].t.push(tag);
-
-					checkDirty(image_index);
-
-					if (_tags[tag].indexOf(i) == -1) {
-						_tags[tag].push(i);
-					}
-				}
+			for (var i in _selected) {
+				imageIndexes.push(i);
 			}
+
+			if (addTag(tag,imageIndexes,{'new':true}) === false) {
+				return false;
+			}
+
+			for (var i in _selected) {
+				checkDirty(i);
+			}
+
+			return true;
+
 		},
 		removeTag: function(tag) {
-			for (var image_index in selected) {
-
-				var tag_index = _images[image_index].t.indexOf(tag);
-
-				if (tag_index != -1) {
-					_images[image_index].t.splice(tag_index,1);
-
-					checkDirty(image_index);
-
-					var tag_image_index = _tags[tag].indexOf(image_index);
-
-					if (tag_image_index != -1) {
-						_tags[tag].splice(tag_image_index,1);
-					}
-				}
-			}
+			//TODO - update
 
 		}
 		,checkDirty(image_index) {
@@ -215,6 +218,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 		}
 		,deleteImages: function(indexes,cancel) {
+			//TODO - update
 			for (var i = 0; i < indexes.length; i++) {
 				if (cancel) {
 					delete _deleted[indexes[i]];
