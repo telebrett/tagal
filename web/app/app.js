@@ -31,17 +31,18 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	/**
 	 * Each element is a hash with keys
-	 * string t The tag name
-	 * string l The label name, optional
-	 * object m Metadata for the tag, note key only exists if there is metadata
-	 * object i keys are the image indexes, value is true
+	 * string t  The tag name
+	 * string ty The tag type
+	 * string l  The label name, optional
+	 * object m  Metadata for the tag, note key only exists if there is metadata
+	 * object i  keys are the image indexes, value is true
 	 */
 	var _tags   = [];
 
 	/**
 	 * keys are the tags, values is the index for the tag
 	 */
-	var _tagindex = {};
+	var _tagIndex = {};
 
 
 	//If an image index is in either of these variables, then it is dirty
@@ -94,7 +95,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	};
 
 	/**
-	 * @param string key
+	 * @param string keyva
 	 * @param array imageIndexes
 	 * @param object metadata
 	 *
@@ -102,11 +103,11 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	 */
 	function addTag(key,imageIndexes,metadata,initialLoad) {
 
-		if (_tagindex[key] !== undefined) {
+		if (_tagIndex[key] !== undefined) {
 			return false;
 		}
 
-		var tagIndex = _tags.length + 1;
+		var tagIndex = _tags.length;
 
 		var o = {t:key,i:{}};
 
@@ -128,7 +129,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		}
 
 		_tags.push(o);
-		_tagindex[key] = tagIndex;
+		_tagIndex[key] = tagIndex;
 
 		return tagIndex;
 
@@ -137,6 +138,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	function loadDB(res) {
 		rootImageDir = res.data.imagedir;
 
+		_remainingTags = [];
+
 		var index = 0;
 		var img;
 		while (img = res.data.images.shift()) {
@@ -144,10 +147,77 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		}
 
 		for (var i in res.data.tags) {
-			addTag(i,res.data.tags[i],res.data.tagmetadata[i],true);
+			_remainingTags.push(addTag(i,res.data.tags[i],res.data.tagmetadata[i],true));
 		}
 
 	}
+
+	/**
+	 * object a See tag definition above
+	 * object b see tag definition above
+	 */
+	function sortTags(a,b) {
+		if (a.m && a.m.datetype && (! b.m || ! b.m.datetype)) {
+			//a is a "year", "month" or "day" marker
+			return -1;
+		} else if (b.m && b.m.datetype && (! a.m || ! a.m.datetype)) {
+			//b is a "year", "month" or "day" marker
+			return 1;
+		} else if (a.m && a.m.datetype && b.m && b.m.datetype) {
+			if (a.m.datetype != b.m.datetype) {
+				//Years before months before days
+
+				if (a.m.datetype == 'year' || b.m.datetype == 'year') {
+					return a.m.datetype == 'year' ? -1 : 1;
+				}
+
+				if (a.m.datetype == 'month' || b.m.datetype == 'month') {
+					return a.m.datetype == 'month' ? -1 : 1;
+				}
+			}
+
+			var as = parseInt(a.t);
+			var bs = parseInt(b.t);
+			
+			if (a.m.datetype == 'year') {
+				//year descending
+				return as > bs ? -1 : 1;
+			} else {
+				//both is a "month" or "day" marker
+				return as < bs ? -1 : 1;
+			}
+		}
+
+		var al = a.l !== undefined ? a.l : a.t
+		var bl = b.l !== undefined ? b.l : b.t
+
+		return al.toLowerCase() < bl.toLowerCase() ? -1 : 1;
+	}
+
+	function niceTag(tag) {
+
+		var o = {
+			index:_tagIndex[tag.t],
+			label:tag.l === undefined ? tag.t : tag.l,
+		};
+
+		if (tag.m && tag.m.datetype) {
+			switch (tag.m.datetype) {
+				case 'year':
+					o.type = 'y';
+					break;
+				case 'month':
+					o.type = 'm';
+					break;
+				case 'day':
+					o.type = 'd';
+					break;
+			}
+		}
+
+		return o;
+	}
+
 
 	return {
 		/**
@@ -234,8 +304,88 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		,reset: function() {
 			//TODO - full reload?
 		}
-		//TODO - move app functions below into here, eg tagAndLabel, functions to restrict images to remaining tags, etc
-		//     - move into a separate file
+		,getRemainingTags: function() {
+
+			var showMonth = false;
+			var showDay   = false;
+
+			for (var i = 0; i < _currentTags.length; i++) {
+				var tag = _tags[_currentTags[i]];
+
+				if (tag.m && tag.m.datetype) {
+					switch (tag.m.datetype) {
+						case 'year':
+							showMonth = true;
+							break;
+						case 'month':
+							showDay = true;
+							break;
+					}
+				}
+			}
+
+			var unsorted = [];
+
+			for (var i = 0; i < _remainingTags.length; i++) {
+				var tag = _tags[_remainingTags[i]];
+
+				if (tag.m && tag.m.datetype) {
+					switch (tag.m.datetype) {
+						case 'month':
+							if (! showMonth) {
+								continue;
+							}
+							break;
+						case 'day':
+							if (! showDay) {
+								continue;
+							}
+							break;
+					}
+				}
+
+				unsorted.push(tag);
+			}
+
+			var sorted = unsorted.sort(sortTags);
+
+			var o = [];
+
+			for (var i = 0; i < sorted.length; i++) {
+				o.push(niceTag(sorted[i]));
+			}
+			return o;
+		}
+		,getCurrentTags: function() {
+			var o = [];
+
+			for (var i = 0; i < _currentTags.length; i++) {
+				o.push(niceTag(_tags[_currentTags[i]]));
+			}
+
+			return o;
+		}
+		,selectTag : function(index) {
+
+			if (_currentTags.indexOf(index) !== -1) {
+				return;
+			}
+
+			_currentTags.push(index);
+
+			console.dir(_images);
+			console.dir(_tags);
+
+			if (_currentTags.length == 1) {
+				var images = array();
+			} else {
+				//_currentImages is an array of imageIndex
+				
+			}
+
+			//TODO - filter _remainingTags
+
+		}
 	}
 })
 .controller('tagalCtrl',function($scope,$route,$location,tagalImages){
@@ -295,6 +445,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 				var found = false;
 
+							showDay = true;
+							break;
 				for (var y = 0; y < $scope.usedTags.length; y++){
 					if (x === $scope.usedTags[y].tag){
 						found = true;
@@ -352,39 +504,6 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			$location.path('/welcome');
 		}
 
-		$scope.menuTags = $scope.menuTags.sort(function(a,b) {
-
-			if (a.type && ! b.type) {
-				//a is a "year", "month" or "day" marker
-				return -1;
-			} else if (b.type && ! a.type) {
-				//b is a "year", "month" or "day" marker
-				return 1;
-			} else if (a.type && b.type) {
-				if (a.type != b.type) {
-					//Years before months before days
-
-					if (a.type == 'y' || b.type == 'y') {
-						return a.type == 'y' ? -1 : 1;
-					}
-
-					if (a.type == 'm' || b.type == 'm') {
-						return a.type == 'm' ? -1 : 1;
-					}
-				}
-				
-				if (a.type == 'y') {
-					//year descending
-					return a.sort > b.sort ? -1 : 1;
-				} else {
-					//both is a "month" or "day" marker
-					return a.sort < b.sort ? -1 : 1;
-				}
-			}
-
-			return a.label.toLowerCase() < b.label.toLowerCase() ? -1 : 1;
-		});
-
 	}
 	
 	//TODO - remove
@@ -426,6 +545,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	.then(
 		function(rootDir){
 			$scope.rootImageDir = rootDir;
+			$scope.menuTags = tagalImages.getRemainingTags();
 		},
 		function(reason) {
 			alert('Failed to load');
@@ -434,9 +554,9 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	//TODO - update everything below to the service
 
-	$scope.addUsedTag = function(tag) {
-		$scope.usedTags.push(tagAndLabel(tag));
-		buildGallery();
+	$scope.addUsedTag = function(tagIndex) {
+		tagalImages.selectTag(tagIndex);
+		$scope.usedTags = tagalImages.getCurrentTags();
 	};
 
 	$scope.removeTag = function(tag) {
@@ -457,6 +577,9 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			$scope.otherMode = 'Gallery';
 		} else {
 			$scope.currentMode = 'gallery';
+				if (a.metadata.datetype == 'm' || b.metadata.datetype == 'm') {
+					return a.metadata.datetype == 'm' ? -1 : 1;
+				}
 			$scope.otherMode = 'Admin';
 		}
 

@@ -19,14 +19,14 @@
  <nav class="navbar navbar-default navbar-fixed-top">
   <div class="container">
    <span ng-if="allowModes" class="btn btn-primary btn-sm" ng-click="swapMode()">{{otherMode}}</span>
-   <span ng-repeat="t in usedTags" class="btn btn-primary btn-sm tag{{t.type}}" ng-click="removeTag(t.tag)">{{t.label}}</span>
+   <span ng-repeat="t in usedTags" class="btn btn-primary btn-sm tag{{t.type}}" ng-click="removeTag(tag.index)">{{t.label}}</span>
   </div>
  </nav>
  <div class="container-fluid">
   <div class="row">
    <div class="col-sm-3 col-md-2 sidebar" id="sidebar">
     <ul id="menuTags">
-	 <li ng-repeat="t in menuTags" class="btn btn-primary btn-sm btn-block tag{{t.type}}" ng-click="addUsedTag(t.tag)">{{t.label}}</li>
+	 <li ng-repeat="t in menuTags" class="btn btn-primary btn-sm btn-block tag{{t.type}}" ng-click="addUsedTag(t.index)">{{t.label}}</li>
 	</ul>
 	</div>
    </div>
