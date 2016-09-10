@@ -1,11 +1,11 @@
 <div id="gallery">
  <div id="mainimage" image-ready="setHeight()">
-  <img ng-src="{{rootImageDir}}/{{mainImage.dir}}{{mainImage.image}}" height="{{mainImage.fullHeight}}" width="{{mainImage.fullWidth}}" tagal-metadata>
+  <img ng-src="{{mainImage.src}}" height="{{mainImage.height}}" width="{{mainImage.width}}" tagal-metadata>
  </div>
  <div id="carousel" on-scroll="scroll()">
   <div class="block" style="width: {{thumbWidth}}px">
    <div class="current" style="left: {{leftPos}}px">
-    <img ng-repeat="i in currentImages" ng-src="{{rootImageDir}}/{{i.dir}}.thumb/{{i.image}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage(i)">
+    <img ng-repeat="i in currentImages" ng-src="{{i.src}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage(i.index)">
    </div>
   </div>
  </div>

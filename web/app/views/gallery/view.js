@@ -8,124 +8,30 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	controller: 'galleryCtrl'
   });
 }])
-.controller('galleryCtrl',['$scope',function($scope){
+.controller('galleryCtrl',['$scope','tagalImages',function($scope,tagalImages){
 
-	$scope.numToShow = 200;
+	//Note, the thumbnail height calcs / set to show are in the tagalImages service
+	//this is to minimise copying large arrays
+
+	$scope.thumbWidth = tagalImages.setThumbnailHeights(150);
 
 	$scope.currentImages = [];
 	$scope.currentLeft = 0;
-
 	$scope.leftPos = 0;
+	$scope.numToShow = 200;
 
-	if ($scope.galleryImages) {
-		var max = Math.min($scope.galleryImages.length,$scope.numToShow);
-
-		for (var i = 0; i < max; i++) {
-			$scope.currentImages.push($scope.galleryImages[i]);
-		}
-	}
-
-	function calcStartIndex() {
-		var startindex = 0;
-
-		var left = Math.floor($scope.currentLeft);
-			
-		//TODO - admin_mode - not reliant on left position, but a specific index
-		if (left > 0) {
-			var search = Math.floor(left / 200);
-
-			if (search > 0 ){
-				if (search >= $scope.galleryImages.length) {
-					//Way too far to the right
-					search = $scope.galleryImages.length;
-					while (--search > 0) {
-						possible = $scope.galleryImages[search];
-						possible_right = possible.left + possible.width;
-
-						if (possible.left <= left && possible_right > left) {
-							startindex = search;
-							break;
-						}
-					}
-				} else {
-					var possible = $scope.galleryImages[search];
-
-					var possible_right = possible.left + possible.width;
-
-					if (possible.left <= left && possible_right > left) {
-						startindex = search;
-					} else {
-
-						if (possible_right > left) {
-							//we are to the right of where we want to be, go backwards
-							while (--search > 0) {
-								possible = $scope.galleryImages[search];
-								possible_right = possible.left + possible.width;
-
-								if (possible.left <= left && possible_right > left) {
-									startindex = search;
-									break;
-								}
-							}
-							
-						} else {
-							while (++search <= $scope.galleryImages.length) {
-								possible = $scope.galleryImages[search];
-								possible_right = possible.left + possible.width;
-
-								if (possible.left <= left && possible_right > left) {
-									startindex = search;
-									break;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return startindex;
-
-	}
-
+	$scope.currentImages = tagalImages.getThumbnails($scope.currentLeft,$scope.numToShow);
 
 	$scope.scroll = function() {
+		var left = Math.floor($scope.currentLeft);
 
-		var startindex = calcStartIndex();
+		$scope.currentImages = tagalImages.getThumbnails($scope.currentLeft,$scope.numToShow);
 
-		$scope.currentImages = [];
-
-		for (var i = 0; i < $scope.numToShow; i++) {
-			var ix = i+startindex;
-			if (ix >= $scope.galleryImages.length) {
-				break;
-			}
-
-			$scope.currentImages.push($scope.galleryImages[ix]);
-		}
-
-		$scope.leftPos = Math.round($scope.galleryImages[startindex].left);
+		$scope.leftPos = Math.round($scope.currentImages[0].left);
 	}
 
-	$scope.viewImage = function(image) {
-
-		$scope.mainImage = image;
-
-		var ratio = image.ratio;
-
-		var height_from_maxwidth = (1/ratio) * this.mainImageWidth;
-		var width_from_maxheight = (ratio * this.mainImageHeight);
-
-		if (width_from_maxheight <= this.mainImageWidth) {
-			//max will be the height
-			image.fullHeight = this.mainImageHeight;
-			image.fullWidth = ratio * image.fullHeight;
-		}else{
-			image.fullWidth = this.mainImageWidth;
-			image.fullHeight = height_from_maxwidth;
-		}
-
-
+	$scope.viewImage = function(image_index) {
+		$scope.mainImage = tagalImages.getImage(image_index,this.mainImageWidth,this.mainImageHeight);
 	}
 
 }])
