@@ -459,6 +459,10 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		}
 		,selectTag : function(index) {
 
+			//TODO - BUG, click 2016 then January - October tag shows
+			//       BUG, click 2016 - where are the Easter photos?
+			//       BUG, click 2016, Bogong, August, 21st, then deselect 21st - all images shown
+
 			if (_currentTags.indexOf(index) !== -1) {
 				return;
 			}
