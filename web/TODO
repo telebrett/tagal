@@ -6,3 +6,7 @@ FEATURES
 * UI - add a  count next to each tag to show how many images would be listed if the tag was clicked on
 * UI - "notag" add a tag to the UI that can be selected that only shows images with no tags - could then filter further down using the year / month / day tags. Probably only when in "admin" mode
 * Ratings - do image tags support a rating? Cursory glance says no, but you could just add a "quality" tag, ie not a special tag.
+* UI - display tags for an image
+* UI - galleries, consist of
+       tags - which tags the gallery consists of
+	   image for thumbnail

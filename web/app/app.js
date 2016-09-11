@@ -135,7 +135,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			o.m = metadata;
 
 			if (o.m.datetype) {
-				o.l = buildDateLabel(key,o.m.datetype);
+				o.l = buildDateLabel(o.m.dateval,o.m.datetype);
 			}
 		}
 
@@ -156,6 +156,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		while (img = res.data.images.shift()) {
 			addImage(index++,img);
 		}
+
+		console.dir(res.data.tags);
 
 		for (var i in res.data.tags) {
 			_remainingTags.push(addTag(i,res.data.tags[i],res.data.tagmetadata[i],true));
@@ -187,8 +189,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 				}
 			}
 
-			var as = parseInt(a.t);
-			var bs = parseInt(b.t);
+			var as = parseInt(a.m.dateval);
+			var bs = parseInt(b.m.dateval);
 			
 			if (a.m.datetype == 'year') {
 				//year descending
@@ -473,7 +475,23 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 				_currentImages = Object.keys(_tags[index].i);
 			} else {
 				var ts = _tags[index].i;
-				_currentImages = _currentImages.filter(function(v){return ts[v]});
+				_currentImages = _currentImages.filter(function(v){return ts[v] !== undefined});
+
+				/*
+				var found = {};
+
+				for (var i = 0; i < _currentImages.length; i++) {
+
+					for (var x in _images[_currentImages[i]].t) {
+						if (found[x] == undefined) {
+							//console.dir(_tags[x]);
+							console.dir(_images[_currentImages[i]]);
+							found[x] = true;
+						}
+					}
+
+				}
+				*/
 			}
 
 			setRemainingTags();
@@ -608,146 +626,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	$scope.otherMode = 'Admin';
 	$scope.currentMode = 'gallery';
-
-	function buildGallery() {
-
-		var show_month,show_day = false;
-
-		$scope.menuTags = [];
-
-		var images;
-
-		$scope.galleryImages = [];
-		$scope.thumbWidth = 0;
-
-		if ($scope.usedTags.length > 0) {
-
-			//TODO - Change to limit the tags to only those that are a subset of the current tags
-			for (var i = 0; i < $scope.usedTags.length; i++) {
-				var res = $scope.usedTags[i];
-				if (res.type == 'y') {
-					show_month = true;
-				} else if(res.type == 'm') {
-					show_day = true;
-				};
-
-
-				if (i == 0) {
-					images = $scope.data.tags[res.tag];
-				} else {
-					images = images.filter(function(val){
-
-						if (this.indexOf(val) !== -1){
-							return true;
-						}
-
-						return false;
-						
-					},$scope.data.tags[res.tag]);
-				}
-			}
-
-			var possible_tags = {};
-			for (var x in $scope.data.tags) {
-
-				var found = false;
-
-							showDay = true;
-							break;
-				for (var y = 0; y < $scope.usedTags.length; y++){
-					if (x === $scope.usedTags[y].tag){
-						found = true;
-						break;
-					}
-				}
-
-				if (! found){
-					possible_tags[x] = 0;
-				}
-			}
-
-			var remaining_tags = {};
-
-			var max = 10000;
-
-			for (var i = 0; i < images.length; i++){
-				if (i < max) {
-					addImage(images[i]);
-				}
-
-				for (var x in possible_tags){
-					if ($scope.data.tags[x].indexOf(images[i]) !== -1){
-						remaining_tags[x] = true;
-					}
-				}
-			}
-
-			for (var x in remaining_tags) {
-				var tag = tagAndLabel(x);
-				if (
-					tag.type == 'm' && ! show_month
-					|| tag.type == 'd' && ! show_day
-				) {
-					continue;
-				}
-				$scope.menuTags.push(tagAndLabel(x));
-			}
-
-			if ($location.path() == '/welcome') {
-				$location.path('/' + $scope.currentMode);
-				$route.reload();
-			} else {
-				$route.reload();
-			}
-
-		} else {
-			for (var i in $scope.data.tags) {
-				var res = tagAndLabel(i);
-				if (! res.type || res.type == 'y') {
-					$scope.menuTags.push(res);
-				}
-			}
-
-			$location.path('/welcome');
-		}
-
-	}
 	
-	//TODO - remove
-	function addImage(image_index){
-
-		//Images are stored by index as an array. First element is the src, second
-		//element is the ratio of the height compared to the width;
-
-		//Height is the definer
-		var height = 150;
-
-		var ratio = $scope.data.images[image_index][1];
-		var width = ratio * height;
-
-		var src = $scope.data.images[image_index][0];
-
-		var parts = src.match(/\/(\d{4}\/\d{2}\/\d{2}\/)(.*)?/);
-
-		//Images of the form foo.jpg, not yyy-mm-dd etc
-		if (! parts) {
-			return;
-		}
-
-		$scope.galleryImages.push({
-			dir:parts[1],
-			image:parts[2],
-			left:$scope.thumbWidth,
-			width:width,
-			height:height,
-			index:image_index,
-			ratio:ratio
-		});
-
-		$scope.thumbWidth += width;
-		
-	}
-
 	tagalImages.init('database.json')
 	.then(
 		function(rootDir){

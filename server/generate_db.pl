@@ -92,21 +92,21 @@ sub build_db {
 
 		#TODO - Check for valid date
 
-		my $ytag = $image->{YEARTAKEN};
-		my $mtag = $image->{MONTHTAKEN};
-		my $dtag = $image->{DAYOFMONTHTAKEN};
+		my $ytag = '__year__ ' . $image->{YEARTAKEN};
+		my $mtag = '__month__' . $image->{MONTHTAKEN};
+		my $dtag = '__day__'   . $image->{DAYOFMONTHTAKEN};
 
 		if (! defined $data->{tags}->{$ytag}){
 			$data->{tags}->{$ytag} = [];
-			$data->{tagmetadata}->{$ytag} = {datetype=>'year'};
+			$data->{tagmetadata}->{$ytag} = {datetype=>'year','dateval'=>$image->{YEARTAKEN}};
 		}
 		if (! defined $data->{tags}->{$mtag}){
 			$data->{tags}->{$mtag} = [];
-			$data->{tagmetadata}->{$mtag} = {datetype=>'month'};
+			$data->{tagmetadata}->{$mtag} = {datetype=>'month','dateval'=>$image->{MONTHTAKEN}};
 		}
 		if (! defined $data->{tags}->{$dtag}){
 			$data->{tags}->{$dtag} = [];
-			$data->{tagmetadata}->{$dtag} = {datetype=>'day'};
+			$data->{tagmetadata}->{$dtag} = {datetype=>'day','dateval'=>$image->{DAYOFMONTHTAKEN}};
 		}
 
 		#write out the psuedo tag for the date the image was taken
@@ -122,6 +122,7 @@ sub build_db {
 
 			push @{$data->{tags}->{$cur_tag->{TAG}}},$image_index;
 
+			#TODO - this should be outside of the image/tag loop
 			if ($cur_tag->{ISPUBLIC}) {
 				$data->{tagmetadata}->{$cur_tag->{TAG}} = {public=>1};
 			}
