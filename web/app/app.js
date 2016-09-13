@@ -625,8 +625,6 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 })
 .controller('tagalCtrl',function($scope,$route,$location,tagalImages){
 
-	//TODO - change galleryImages to be more global so that "selected" and changed "tags" live on regardless of if
-	//       the user selects different tags or removes all selected tags completely
 	//     - optionally also write to local storage so that page reloads do not clear the state
 
 	//TODO - build hostname from server side config, eg database.json
@@ -675,6 +673,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	}
 
 	$scope.swapMode = function() {
+
+		//TODO - bug, label shows 'Admin' but actually in gallery mode in some cases
 
 		if ($scope.currentMode == 'gallery') {
 			$scope.currentMode = 'admin';
