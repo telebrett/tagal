@@ -157,8 +157,6 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			addImage(index++,img);
 		}
 
-		console.dir(res.data.tags);
-
 		for (var i in res.data.tags) {
 			_remainingTags.push(addTag(i,res.data.tags[i],res.data.tagmetadata[i],true));
 		}
@@ -461,10 +459,6 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		}
 		,selectTag : function(index) {
 
-			//TODO - BUG, click 2016 then January - October tag shows
-			//       BUG, click 2016 - where are the Easter photos?
-			//       BUG, click 2016, Bogong, August, 21st, then deselect 21st - all images shown
-
 			if (_currentTags.indexOf(index) !== -1) {
 				return;
 			}
@@ -476,22 +470,6 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			} else {
 				var ts = _tags[index].i;
 				_currentImages = _currentImages.filter(function(v){return ts[v] !== undefined});
-
-				/*
-				var found = {};
-
-				for (var i = 0; i < _currentImages.length; i++) {
-
-					for (var x in _images[_currentImages[i]].t) {
-						if (found[x] == undefined) {
-							//console.dir(_tags[x]);
-							console.dir(_images[_currentImages[i]]);
-							found[x] = true;
-						}
-					}
-
-				}
-				*/
 			}
 
 			setRemainingTags();
@@ -516,12 +494,18 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 				return;
 			}
 
-			var images = {};
+			var images;
 
 			for (var i = 0; i < _currentTags.length; i++) {
+				var newimages = {};
 				for (var x in _tags[_currentTags[i]].i) {
-					images[x] = true;
+					if (i > 0 && ! images[x]) {
+						continue;
+					}
+					newimages[x] = true;
 				}
+
+				images = newimages;
 			}
 
 			for (var i in images) {
