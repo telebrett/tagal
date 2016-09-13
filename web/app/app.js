@@ -310,6 +310,28 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	}
 
+	function getThumbnailWindow(start_index,count) {
+
+		var win = [];
+
+		var end_index   = Math.min(_currentImages.length,start_index + count);
+
+		for (var i = start_index; i < end_index; i++) {
+			var image = _images[_currentImages[i]];
+			win.push({
+				src      :_rootImageDir + '/' + image.p + '/.thumb/' + image.f,
+				width    : image.tw,
+				height   : image.th,
+				index    : _currentImages[i],
+				left     : image.tl,
+				selected : _selected[_currentImages[i]]
+			});
+		}
+
+		return win;
+
+	}
+
 
 	return {
 		/**
@@ -336,12 +358,20 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		},
 
 		/**
-		 * array indexes array of image indexes to select / deselect
-		 * bool select
+		 * true|array indexes array of image indexes to select / deselect. If true then all current images are set
+		 * bool If true will set selected, if false will deselect, if undefined will toggle
 		 */
 		selectImages: function(indexes,select) {
+
+			if (indexes === true) {
+				indexes = _currentImages;
+			}
+
 			for (var i = 0; i < indexes.length; i++) {
-				if (select) {
+
+				var is = select === undefined ? (! _images[indexes[i]].s) : select;
+
+				if (is) {
 					_images[indexes[i]].s = true;
 					_selected[indexes[i]] = true;
 				} else {
@@ -551,25 +581,21 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		 * @returns array Each element is a hash with keys src, height, width, index, left
 		 *
 		 */
-		,getThumbnails(left,count) {
-
-			var win = [];
+		,getThumbnailsByLeft(left,count) {
 
 			var start_index = calcStartIndex(left);
-			var end_index   = Math.min(_currentImages.length,start_index + count);
 
-			for (var i = start_index; i < end_index; i++) {
-				var image = _images[_currentImages[i]];
-				win.push({
-					src   :_rootImageDir + '/' + image.p + '/.thumb/' + image.f,
-					width : image.tw,
-					height: image.th,
-					index : _currentImages[i],
-					left  : image.tl
-				});
-			}
+			return getThumbnailWindow(start_index,count);
 
-			return win;
+		}
+		,getNumPages(pageSize) {
+			return Math.ceil(_currentImages.length / pageSize);
+		}
+		,getThumbnailsByPage(pageOffset,count) {
+
+			var start_index = count * pageOffset;
+
+			return getThumbnailWindow(start_index,count);
 
 		}
 		,getImage(index,maxWidth,maxHeight) {

@@ -13,6 +13,7 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	//Note, the thumbnail height calcs / set to show are in the tagalImages service
 	//this is to minimise copying large arrays
 
+	//This is the total thumbnail width
 	$scope.thumbWidth = tagalImages.setThumbnailHeights(150);
 
 	$scope.currentImages = [];
@@ -20,12 +21,12 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	$scope.leftPos = 0;
 	$scope.numToShow = 200;
 
-	$scope.currentImages = tagalImages.getThumbnails($scope.currentLeft,$scope.numToShow);
+	$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
 
 	$scope.scroll = function() {
 		var left = Math.floor($scope.currentLeft);
 
-		$scope.currentImages = tagalImages.getThumbnails($scope.currentLeft,$scope.numToShow);
+		$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
 
 		$scope.leftPos = Math.round($scope.currentImages[0].left);
 	}

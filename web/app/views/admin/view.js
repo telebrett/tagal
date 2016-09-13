@@ -7,7 +7,7 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 	controller: 'adminCtrl'
   });
 }])
-.controller('adminCtrl',['$scope',function($scope){
+.controller('adminCtrl',['$scope','tagalImages',function($scope,tagalImages){
 
 	//TODO - metadata modal height
 	//     - double click for metadata model?
@@ -15,41 +15,37 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 	//     - increase numToShow - just low for dev purposes
 	//     - adding a new tag reloads gallery
 
+	function setCurrentImages(updateExisting) {
+		var images = tagalImages.getThumbnailsByPage($scope.selectedPage.index,$scope.numToShow);
+
+		if (! updateExisting) {
+			$scope.currentImages = images;
+			return;
+		}
+
+		//Replacing $scope.currentImages causes the images to "blink"
+		for (var i = 0; i < images.length; i++) {
+			$scope.currentImages[i].selected = images[i].selected;
+		}
+	}
+
 	$scope.numToShow = 50;
 	$scope.selectedPage = {index:0};
-	$scope.numPages = 0;
 
 	//Enumerators for the selectImages function
 	$scope.selectNone        = 0;
 	$scope.selectAll         = 1;
 	$scope.selectCurrentPage = 2;
 
-	function setCurrentImages() {
+	//Minimise passing around large sets of data
+	tagalImages.setThumbnailHeights(150);
+	$scope.numPages      = tagalImages.getNumPages($scope.numToShow);
+	
+	setCurrentImages();
 
-		var offset = $scope.selectedPage.index;
-
-		var start = $scope.numToShow * offset;
-		var max = Math.min($scope.galleryImages.length, start+$scope.numToShow);
-
-		$scope.currentImages = [];
-
-		for (var i = start; i < max; i++) {
-			$scope.currentImages.push($scope.galleryImages[i]);
-		}
-
-	}
-
-	if ($scope.galleryImages) {
-		$scope.numPages = Math.ceil($scope.galleryImages.length / $scope.numToShow);
-
-		setCurrentImages();
-
-		$scope.pages = [];
-		for (var i = 0; i < $scope.numPages; i++) {
-			$scope.pages.push({index:i});
-		}
-	} else {
-		$scope.pages = [{index:0}];
+	$scope.pages = [{index:0}];
+	for (var i = 1; i < $scope.numPages; i++) {
+		$scope.pages.push({index:i});
 	}
 
 	$scope.selectPage = function() {
@@ -64,34 +60,36 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 		setCurrentImages();
 	}
 
-	//TODO - investigate using a 'service' to share properties across controllers and hence keep the selected
-	//       state between changing selected tags
-
 	$scope.selectImages = function(type) {
 		switch(type) {
 			case $scope.selectNone:
 			case $scope.selectAll:
-				for (var i = 0; i < $scope.galleryImages.length; i++) {
-					$scope.galleryImages[i].selected = (type == $scope.selectAll);
-				}
+				tagalImages.selectImages(true,(type == $scope.selectAll));
 				break;
 			case $scope.selectCurrentPage:
+				var indexes = [];
 				for (var i = 0; i < $scope.currentImages.length; i++) {
-					$scope.galleryImages[i].selected = true;
+					indexes.push($scope.currentImages[i].index);
 				}
+				tagalImages.selectImages(indexes,true);
 				break;
 		}
+		setCurrentImages(true);
 	}
+
+	$scope.resetImages = function(updateExisting) {
+		setCurrentImages(updateExisting);
+	}
+
 }])
-.directive('adminSelect',function($route) {
+.directive('adminSelect',function($route,tagalImages) {
 	return {
 		restrict:'A',
 		link: function(scope,element,attrs) {
 
-			//TODO - changing tags kills the selection
-
 			var clickHandler = function() {
-				scope.$parent.currentImages[attrs.adminSelect].selected = ! scope.$parent.currentImages[attrs.adminSelect].selected;
+				tagalImages.selectImages([attrs.adminSelect]);
+				scope.resetImages(true);
 				scope.$apply();
 			};
 
