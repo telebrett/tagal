@@ -1,0 +1,25 @@
+<div class="modal-header">
+ <h3 class="modal-title">Apply tags</h3>
+</div>
+<div class="modal-body">
+ <div ng-if="selectedTags.length > 0">
+  <h5>Delete tags</h5>
+  <p><span ng-repeat="i in selectedTags" class="btn btn-primary btn-xs" title="delete">{{i.label}}</span></p>
+ </div>
+ <h4>Add tags</h4>
+ <div class="form-group">
+  <label for="newtag">New tag:</label>
+  <input type="text" ng-model="newTag" uib-typeahead="tag as tag.label for tag in remainingTags | filter:$viewValue | limitTo:10" class="form-control" />
+ </div>
+ <div>
+  <div ng-repeat="letter in alpha" class="btn-group" uib-dropdown>
+	 <button type="button" class="btn btn-primary btn-xs" uib-dropdown-toggle id="remainingTag-drop-down-{{$index}}">{{letter.label}}</button>
+	 <ul class="dropdown-menu" uib-dropdown-menu role="menu" aria-labelledby="remainingTag-drop-down-{{$index}}">
+	  <li ng-repeat="t in letter.tags" role="menuitem"><a href="#">{{t.label}}</a></li>
+	 </ul>
+  </div>
+ </div>
+</div>
+<div class="modal-footer">
+ <button class="btn btn-primary" type="button" ng-click="close()">Close</button>
+</div>

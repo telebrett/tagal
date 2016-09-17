@@ -102,9 +102,31 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 		}
 	}
 })
-.controller('applyTagsCtrl',function($scope,$uibModalInstance,currentTags) {
+.controller('applyTagsCtrl',function($scope,$uibModalInstance,tags) {
 
-	$scope.currentTags = currentTags;
+	$scope.selectedTags = tags.selectedTags;
+	$scope.remainingTags = tags.remainingTags;
+	$scope.newTag = undefined;
+
+	$scope.alpha = [];
+	for (var i = 0; i < 26; i++) {
+
+		var letter = {
+			label:String.fromCharCode(i+65),
+			tags:[]
+		};
+
+		for (var x = 0; x < $scope.remainingTags.length; x++) {
+
+			if ($scope.remainingTags[x].label[0].toUpperCase() == letter.label) {
+				letter.tags.push($scope.remainingTags[x]);
+			}
+		}
+
+		if (letter.tags.length > 0) {
+			$scope.alpha.push(letter);
+		}
+	}
 
 	//TODO - give message why year, month, day removed?
 
@@ -112,7 +134,7 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 		$uibModalInstance.close();
 	}
 })
-.directive('applyTags',function($uibModal) {
+.directive('applyTags',function($uibModal,tagalImages) {
 	'use strict';
 
 	return {
@@ -121,13 +143,23 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 
 			var clickHandler = function() {
 
+				//TODO - add both ways of existing tags. Typeahead search, but also an A-Z listing
+				
+				//Display number of selected images
+				//currentTags - this shows all tags that ANY of the selected images have - possibly with a count 
+				//remainingTags - full tags minus currentTags - this is used for an auto complete on the search
+				
+				//TODO - Remove this once dev is complete, only manually clearing the cache works
+				var d = new Date();
+				var templateURL = 'views/admin/applytags.html?cachebust=' + d.getTime();
+
 				var modal = $uibModal.open({
 					animation:true,
-					templateUrl:'views/admin/applytags.html',
+					templateUrl:templateURL,
 					controller:'applyTagsCtrl',
 					resolve:{
-						currentTags:function() {
-							return [{tag:'foo'},{tag:'bar'}];
+						tags:function() {
+							return tagalImages.getSelectedTags(true);
 						}
 					}
 				});

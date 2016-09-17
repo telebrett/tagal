@@ -1,5 +1,7 @@
 'use strict';
 
+//TODO - use uib-carousel for the main image
+
 angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 
 .config(['$routeProvider', function($routeProvider) {

@@ -411,7 +411,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		,reset: function() {
 			//TODO - full reload?
 		}
-		,getRemainingTags: function() {
+		,getRemainingTags: function(realTagsOnly) {
 
 			var showMonth = false;
 			var showDay   = false;
@@ -437,6 +437,9 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 				var tag = _tags[_remainingTags[i]];
 
 				if (tag.m && tag.m.datetype) {
+					if (realTagsOnly) {
+						continue;
+					}
 					switch (tag.m.datetype) {
 						case 'month':
 							if (! showMonth) {
@@ -463,14 +466,54 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			}
 			return o;
 		}
-		,getCurrentTags: function() {
+		,getCurrentTags: function(realTagsOnly) {
 			var o = [];
 
 			for (var i = 0; i < _currentTags.length; i++) {
+				if (realTagsOnly && _tags[_currentTags[i]].m && _tags[_currentTags[i]].m.datetype) {
+					continue;
+				}
+
 				o.push(niceTag(_tags[_currentTags[i]]));
 			}
 
 			return o;
+		}
+		,getSelectedTags: function(realTagsOnly) {
+
+			//Returns to tag lists, one which are the tags which ANY of the selected images have
+			//The other is the remaining tags
+
+			var selectedTags = {};
+
+			for (var image_index in _selected) {
+
+				for (var tag_index in _images[image_index].t) {
+					if (_images[image_index].t[tag_index]) {
+						selectedTags[tag_index] = true;
+					}
+				}
+
+			}
+
+			var r = {
+				selectedTags:[],
+				remainingTags:[],
+			}
+
+			for (var tag_index = 0; tag_index < _tags.length; tag_index++) {
+				if (realTagsOnly && _tags[tag_index].m && _tags[tag_index].m.datetype) {
+					continue;
+				}
+				if (selectedTags[tag_index]) {
+					r.selectedTags.push(niceTag(_tags[tag_index]));
+				} else {
+					r.remainingTags.push(niceTag(_tags[tag_index]));
+				}
+			}
+
+			return r;
+
 		}
 		,selectTag : function(index) {
 
