@@ -1,13 +1,19 @@
 <div id="admin">
  <div id="tools" class="btn-group" role="group">
-  <p class="form-inline">Page <select class="form-control" ng-change="selectPage()" ng-model="selectedPage" ng-options="option.index for option in pages track by option.index"></select>&nbsp;<span class="btn btn-primary btn-sm" ng-click="pager(-1)">&lt;</span>
+  <div class="form-inline">Page <select class="form-control" ng-change="selectPage()" ng-model="selectedPage" ng-options="option.index for option in pages track by option.index"></select>&nbsp;<span class="btn btn-primary btn-sm" ng-click="pager(-1)">&lt;</span>
   <span class="btn btn-primary btn-sm" ng-click="pager(+1)">&gt;</span>
-  <span class="btn btn-primary btn-sm" ng-click="selectImages(selectNone)">Select none</span>
-  <span class="btn btn-primary btn-sm" ng-click="selectImages(selectAll)">Select all</span>
-  <span class="btn btn-primary btn-sm" ng-click="selectImages(selectCurrentPage)">Select page</span>
+  <div class="btn-group" uib-dropdown>
+   <button type="button" class="btn btn-primary btn-sm" uib-dropdown-toggle id="selecttype">Select <span class="caret"></span></button>
+   <ul class="dropdown-menu" uib-dropdown-menu role="menu" aria-labelledby="selecttype">
+    <li role="menuitem"><a href="" ng-click="selectImages(selectCurrentPage)">Current page</a></li>
+    <li role="menuitem"><a href="" ng-click="selectImages(selectAll)">All</a></li>
+    <li role="menuitem"><a href="" ng-click="selectImages(selectNone)">None</a></li>
+   </ul>
+  </div>
+  <span class="btn btn-primary btn-sm" ng-click="toggleShowSelected()">Show selected</span>
   <span class="btn btn-primary btn-sm applytags" apply-tags>Apply tags</span>
   <span class="btn btn-primary btn-sm delete">Delete</span>
-  </p>
+  </div>
  </div>
  <div id="adminimages">
   <img ng-repeat="i in currentImages" ng-src="{{i.src}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage(i)" tagal-metadata="dblclick" admin-select="{{i.index}}" class="{{i.selected ? 'selected' : null}}">

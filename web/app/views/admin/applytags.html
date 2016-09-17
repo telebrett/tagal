@@ -9,13 +9,13 @@
  <h4>Add tags</h4>
  <div class="form-group">
   <label for="newtag">New tag:</label>
-  <input type="text" ng-model="newTag" uib-typeahead="tag as tag.label for tag in remainingTags | filter:$viewValue | limitTo:10" class="form-control" />
+  <input type="text" ng-model="newTag" ng-enter="enterTag()" typeahead-on-select="selectedTag($item)" uib-typeahead="tag as tag.label for tag in remainingTags | filter:$viewValue | limitTo:10" class="form-control" />
  </div>
  <div>
   <div ng-repeat="letter in alpha" class="btn-group" uib-dropdown>
-	 <button type="button" class="btn btn-primary btn-xs" uib-dropdown-toggle id="remainingTag-drop-down-{{$index}}">{{letter.label}}</button>
+	 <button type="button" class="btn btn-primary" uib-dropdown-toggle id="remainingTag-drop-down-{{$index}}">{{letter.label}}</button>
 	 <ul class="dropdown-menu" uib-dropdown-menu role="menu" aria-labelledby="remainingTag-drop-down-{{$index}}">
-	  <li ng-repeat="t in letter.tags" role="menuitem"><a href="#">{{t.label}}</a></li>
+	  <li ng-repeat="t in letter.tags" role="menuitem"><a href="" ng-click="addTag(t.label,t.index)">{{t.label}}</a></li>
 	 </ul>
   </div>
  </div>

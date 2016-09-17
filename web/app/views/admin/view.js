@@ -32,6 +32,8 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 	$scope.numToShow = 50;
 	$scope.selectedPage = {index:0};
 
+	$scope.viewSelected = false;
+
 	//Enumerators for the selectImages function
 	$scope.selectNone        = 0;
 	$scope.selectAll         = 1;
@@ -79,6 +81,15 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 
 	$scope.resetImages = function(updateExisting) {
 		setCurrentImages(updateExisting);
+	}
+
+	$scope.toggleShowSelected = function() {
+		$scope.viewSelected = ! $scope.viewSelected;
+
+		//Going go have to reset the number of pages, change what clicking
+		//on an image does etc
+
+		alert('TODO');
 	}
 
 }])
@@ -132,6 +143,26 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 
 	$scope.close = function() {
 		$uibModalInstance.close();
+	}
+
+	$scope.enterTag = function() {
+		$scope.addTag($scope.newTag);
+	}
+
+	$scope.selectedTag = function($item) {
+		$scope.addTag($item.label,$item.index);
+	}
+
+	/**
+	 * @param string label
+	 * @param int index The index of the tag. Will be undefined for typed in tags and also typeahead tags
+	 */
+	$scope.addTag = function(label,index) {
+		console.log('Add new tag ' + label);
+		if (index !== undefined) {
+			console.log('With index ' + index);
+		}
+
 	}
 })
 .directive('applyTags',function($uibModal,tagalImages) {
