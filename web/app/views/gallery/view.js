@@ -25,6 +25,7 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 
 	$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
 
+
 	$scope.scroll = function() {
 		var left = Math.floor($scope.currentLeft);
 
@@ -33,8 +34,17 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 		$scope.leftPos = Math.round($scope.currentImages[0].left);
 	}
 
-	$scope.viewImage = function(image_index) {
-		$scope.mainImage = tagalImages.getImage(image_index,this.mainImageWidth,this.mainImageHeight);
+	$scope.viewImage = function(currentImages_index) {
+
+		if (currentImages_index == 'prev') {
+			$scope.mainImageIndex = Math.max(0,$scope.mainImageIndex-1);
+		} else if(currentImages_index == 'next') {
+			$scope.mainImageIndex = Math.min($scope.currentImages.length-1,$scope.mainImageIndex+1);
+		} else {
+			$scope.mainImageIndex = currentImages_index;
+		}
+
+		$scope.mainImage = tagalImages.getImage($scope.currentImages[$scope.mainImageIndex].index,this.mainImageWidth,this.mainImageHeight);
 	}
 
 }])
@@ -46,6 +56,11 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 			//TODO - it is not picking up the height of the scrollbar
 			$scope.mainImageHeight = elem[0].clientHeight - 150;
 			$scope.mainImageWidth  = elem[0].clientWidth;
+
+			if ($scope.currentImages.length > 0) {
+				$scope.viewImage(0);
+			}
+
 		}
 	}
 })

@@ -640,10 +640,11 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			if (width_from_maxheight <= maxWidth) {
 				//max will be the height
 				fullImage.height = maxHeight;
-				fullImage.width  = image.r * image.height;
+				fullImage.width  = image.r * maxHeight;
 			}else{
 				fullImage.width  = maxWidth;
 				fullImage.height = height_from_maxwidth;
+				console.log('set b ' + fullImage.width);
 			}
 			
 			return fullImage;
