@@ -136,20 +136,17 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 		_remainingTags = [];
 
-		//TODO - wouldn't it be better if the image ids were maintained, that
-		//       way when changes are made, the server doesn't have to do a search
-		//       it could be path based, but that seems a little silly
-		//
-		//       however, tags are still by label, as we can add new tags, but the
-		//       user can't add new images
 		var index = 0;
 		var img;
-		while (img = res.data.images.shift()) {
-			addImage(index++,img);
+
+		for (var i in res.data.images) {
+			addImage(i,res.data.images[i]);
+			delete res.data.images[i];
 		}
 
 		for (var i in res.data.tags) {
 			_remainingTags.push(addTag(i,res.data.tags[i],res.data.tagmetadata[i],true));
+			delete res.data.tags[i];
 		}
 
 	}

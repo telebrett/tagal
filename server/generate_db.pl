@@ -51,7 +51,7 @@ get_db();
 build_db();
 
 sub build_db {
-	my $data = {imagedir=>$IMAGEDIR,images=>[],tags=>{},tagmetadata=>{}};
+	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{}};
 
 	my $where = '';
 	my $join = '';
@@ -80,7 +80,6 @@ sub build_db {
 
 	my $cur_tag = $sth_tags->fetchrow_hashref;
 
-	my $image_index = 0;
 	while (my $image = $sth_image->fetchrow_hashref){
 
 		my $size_ratio = 0;
@@ -88,7 +87,7 @@ sub build_db {
 			$size_ratio = $image->{WIDTH} / $image->{HEIGHT};
 		}
 
-		push @{$data->{images}},[$image->{LOCATION},$size_ratio];
+		$data->{images}->{$image->{ID}} = [$image->{LOCATION},$size_ratio];
 
 		#TODO - Check for valid date
 
@@ -110,9 +109,9 @@ sub build_db {
 		}
 
 		#write out the psuedo tag for the date the image was taken
-		push @{$data->{tags}->{$ytag}},$image_index;
-		push @{$data->{tags}->{$mtag}},$image_index;
-		push @{$data->{tags}->{$dtag}},$image_index;
+		push @{$data->{tags}->{$ytag}},$image->{ID};
+		push @{$data->{tags}->{$mtag}},$image->{ID};
+		push @{$data->{tags}->{$dtag}},$image->{ID};
 
 		while($cur_tag && $cur_tag->{IMAGEID} == $image->{ID}){
 
@@ -120,7 +119,7 @@ sub build_db {
 				$data->{tags}->{$cur_tag->{TAG}} = [];
 			}
 
-			push @{$data->{tags}->{$cur_tag->{TAG}}},$image_index;
+			push @{$data->{tags}->{$cur_tag->{TAG}}},$image->{ID};
 
 			#TODO - this should be outside of the image/tag loop
 			if ($cur_tag->{ISPUBLIC}) {
@@ -130,7 +129,6 @@ sub build_db {
 			$cur_tag = $sth_tags->fetchrow_hashref;
 		}
 
-		$image_index++;
 	}
 
 	open (FILE,'>' . $OUTPUT);
