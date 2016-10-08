@@ -30,8 +30,6 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	tagalImages.init('database.json')
 	.then(
 		function(rootDir){
-			//TODO - can we get rid of this variable?
-			$scope.rootImageDir = rootDir;
 			$scope.menuTags = tagalImages.getRemainingTags();
 		},
 		function(reason) {
