@@ -115,31 +115,42 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 })
 .controller('applyTagsCtrl',function($scope,$uibModalInstance,tags) {
 
-	$scope.selectedTags = tags.selectedTags;
-	$scope.remainingTags = tags.remainingTags;
-	$scope.newTag = undefined;
 
-	$scope.alpha = [];
-	for (var i = 0; i < 26; i++) {
+	function buildAlpha() {
+		$scope.alpha = [];
+		for (var i = 0; i < 26; i++) {
 
-		var letter = {
-			label:String.fromCharCode(i+65),
-			tags:[]
-		};
+			var letter = {
+				label:String.fromCharCode(i+65),
+				tags:[]
+			};
 
-		for (var x = 0; x < $scope.remainingTags.length; x++) {
+			for (var x = 0; x < $scope.remainingTags.length; x++) {
 
-			if ($scope.remainingTags[x].label[0].toUpperCase() == letter.label) {
-				letter.tags.push($scope.remainingTags[x]);
+				if ($scope.remainingTags[x].label[0].toUpperCase() == letter.label) {
+					letter.tags.push($scope.remainingTags[x]);
+				}
 			}
-		}
 
-		if (letter.tags.length > 0) {
-			$scope.alpha.push(letter);
+			if (letter.tags.length > 0) {
+				$scope.alpha.push(letter);
+			}
 		}
 	}
 
+	$scope.selectedTags = tags.selectedTags;
+	$scope.remainingTags = tags.remainingTags;
+
+	//This gets set by the textbox
+	$scope.newTag = undefined;
+
+	buildAlpha();
+
 	//TODO - give message why year, month, day removed?
+	
+	$scope.applyChanges = function() {
+
+	}
 
 	$scope.close = function() {
 		$uibModalInstance.close();
@@ -147,6 +158,7 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 
 	$scope.enterTag = function() {
 		$scope.addTag($scope.newTag);
+		$scope.newTag = '';
 	}
 
 	$scope.selectedTag = function($item) {
@@ -158,11 +170,41 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 	 * @param int index The index of the tag. Will be undefined for typed in tags and also typeahead tags
 	 */
 	$scope.addTag = function(label,index) {
-		console.log('Add new tag ' + label);
+		$scope.selectedTags.push({label:label,index:index});
+
 		if (index !== undefined) {
-			console.log('With index ' + index);
+			for (var i = 0; i < $scope.remainingTags.length; i++) {
+				if ($scope.remainingTags[i].index == index) {
+					$scope.remainingTags.splice(i,1);
+					break;
+				}
+			}
+
+			buildAlpha();
+		}
+	}
+
+	//TODO - disable the Apply tags button if no images selected
+
+	$scope.removeTag = function(x) {
+
+		for (var i = 0; i < $scope.selectedTags.length; i++) {
+			if (x.index === undefined) {
+				if ($scope.selectedTags[i].index === undefined && $scope.selectedTags[i].label == x.label) {
+					$scope.selectedTags.splice(i,1);
+					break;
+				}
+			} else {
+				if ($scope.selectedTags[i].index == x.index) {
+					var removed = $scope.selectedTags.splice(i,1);
+					$scope.remainingTags.push(removed.pop());
+					buildAlpha();
+					break;
+				}
+			}
 		}
 
+		
 	}
 })
 .directive('applyTags',function($uibModal,tagalImages) {
@@ -174,8 +216,6 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 
 			var clickHandler = function() {
 
-				//TODO - add both ways of existing tags. Typeahead search, but also an A-Z listing
-				
 				//Display number of selected images
 				//currentTags - this shows all tags that ANY of the selected images have - possibly with a count 
 				//remainingTags - full tags minus currentTags - this is used for an auto complete on the search

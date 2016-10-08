@@ -4,7 +4,7 @@
 <div class="modal-body">
  <div ng-if="selectedTags.length > 0">
   <h5>Delete tags</h5>
-  <p><span ng-repeat="i in selectedTags" class="btn btn-primary btn-xs" title="delete">{{i.label}}</span></p>
+  <p><span ng-repeat="i in selectedTags" class="btn btn-primary btn-xs" title="delete" ng-click="removeTag(i)">{{i.label}}</span></p>
  </div>
  <h4>Add tags</h4>
  <div class="form-group">
@@ -21,5 +21,6 @@
  </div>
 </div>
 <div class="modal-footer">
+ <button class="btn btn-primary" type="button" ng-click="applyChanges()">Apply</button>
  <button class="btn btn-primary" type="button" ng-click="close()">Close</button>
 </div>
