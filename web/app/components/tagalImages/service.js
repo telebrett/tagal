@@ -9,8 +9,8 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 	 * string  p  Image path, relative to /pictures
 	 * string  f  Image filename eg 'foo.jpg'
 	 * float   r  The ratio of height to width TODO width to height?
-	 * object  t  array of tag indexes - the tags that have possibly been added / removed
-	 * object  ot array of tag indexes - this is the list of tags that the image has on disk
+	 * object  t  hash of tag indexes - the tags that have possibly been added / removed
+	 * object  ot hash of tag indexes - this is the list of tags that the image has on disk
 	 * bool    s  True if the image is currently marked as selected
 	 *
 	 * The following keys are set by setThumbnails and will change - eg tl
@@ -386,15 +386,46 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 			return true;
 
-		},
-		removeTag: function(tag) {
-			//TODO - update
-
 		}
-		,checkDirty(image_index) {
-			//TODO - compare tags and otags
-			//       case insensitive?
-			//       certainly order not important
+		/**
+		 * Note that the tag index may be undefined, in which case, assign a negative id from the next one
+		 *
+		 * @param array taglist array of objects with keys index, and label
+		 * @param array delete_tag_list array of tag indexes to ensure the image does not have
+		 */
+		,setSelectedTags: function(tag_list,delete_tag_list) {
+
+			var all_dirty = false;
+
+			var selectedKeys = Object.keys(_selected);
+
+			for (var i = 0; i < tag_list.length; i++) {
+				if (tag_list[i].index === undefined) {
+					//Build a new tag, this handles _images, _tags, _tagIndex
+					var nt = addTag(tag_list[i].label,selectedKeys,{},false);
+					all_dirty = true;
+				} else {
+					for (var x = 0; x < selectedKeys.length; x++) {
+						if (! _images[selectedKeys[x]].t[tag_list[i].index]) {
+							_images[selectedKeys[x]].t[tag_list[i].index] = true;
+							_tags[tag_list[i].index].i[selectedKeys[x]] = true;
+							_dirty[selectedKeys[x]] = true;
+						}
+					}
+				}
+			}
+
+			for (var i = 0; i < delete_tag_list.length; i++) {
+				for (var x = 0; x < selectedKeys.length; x++) {
+					if (_images[selectedKeys[x]].t[delete_tag_list[i].index]) {
+						delete _images[selectedKeys[x]].t[delete_tag_list[i].index];
+						delete _tags[delete_tag_list[i].index].i[selectedKeys[x]];
+						_dirty[selectedKeys[x]] = true;
+					}
+				}
+			}
+
+			setRemainingTags();
 
 		}
 		,deleteImages: function(indexes,cancel) {
@@ -484,7 +515,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		}
 		,getSelectedTags: function(realTagsOnly) {
 
-			//Returns to tag lists, one which are the tags which ANY of the selected images have
+			//Returns two tag lists, one which are the tags which ANY of the selected images have
 			//The other is the remaining tags
 
 			var selectedTags = {};
@@ -493,7 +524,11 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 				for (var tag_index in _images[image_index].t) {
 					if (_images[image_index].t[tag_index]) {
-						selectedTags[tag_index] = true;
+						if (selectedTags[tag_index]) {
+							selectedTags[tag_index]++;
+						} else {
+							selectedTags[tag_index] = 1;
+						}
 					}
 				}
 
@@ -502,14 +537,18 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			var r = {
 				selectedTags:[],
 				remainingTags:[],
-			}
+				numberSelected:Object.keys(_selected).length
+			};
 
 			for (var tag_index = 0; tag_index < _tags.length; tag_index++) {
 				if (realTagsOnly && _tags[tag_index].m && _tags[tag_index].m.datetype) {
 					continue;
 				}
+
 				if (selectedTags[tag_index]) {
-					r.selectedTags.push(niceTag(_tags[tag_index]));
+					var nice = niceTag(_tags[tag_index]);
+					nice.count = selectedTags[tag_index];
+					r.selectedTags.push(nice);
 				} else {
 					r.remainingTags.push(niceTag(_tags[tag_index]));
 				}

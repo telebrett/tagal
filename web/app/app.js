@@ -37,7 +37,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		}
 	);
 
-	function showGallery() {
+	$scope.showGallery = function() {
 		$scope.usedTags = tagalImages.getCurrentTags();
 		$scope.menuTags = tagalImages.getRemainingTags();
 
@@ -54,12 +54,12 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	$scope.addUsedTag = function(tagIndex) {
 		tagalImages.selectTag(tagIndex);
-		showGallery();
+		this.showGallery();
 	};
 
 	$scope.removeTag = function(tagIndex) {
 		tagalImages.deselectTag(tagIndex);
-		showGallery();
+		this.showGallery();
 	}
 
 	$scope.swapMode = function() {

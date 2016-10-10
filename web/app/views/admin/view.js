@@ -14,6 +14,7 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 	//     - double click to show full image?
 	//     - increase numToShow - just low for dev purposes
 	//     - adding a new tag reloads gallery
+	//     - "Show dirty" mode, list the on disk tags vs the live tags
 
 	function setCurrentImages(updateExisting) {
 		var images = tagalImages.getThumbnailsByPage($scope.selectedPage.index,$scope.numToShow);
@@ -113,8 +114,9 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 		}
 	}
 })
-.controller('applyTagsCtrl',function($scope,$uibModalInstance,tags) {
+.controller('applyTagsCtrl',function($scope,$route,$uibModalInstance,tagalImages,tags,originalScope) {
 
+	//TODO BUG - Click on a letter, then click inside the textbox, JS error re $apply being NULL
 
 	function buildAlpha() {
 		$scope.alpha = [];
@@ -138,10 +140,18 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 		}
 	}
 
-	$scope.selectedTags = tags.selectedTags;
-	$scope.remainingTags = tags.remainingTags;
+	$scope.selectedTags   = tags.selectedTags;
+	$scope.remainingTags  = tags.remainingTags;
 
-	//This gets set by the textbox
+	//Array of tag objects specifically added
+	//If we just sent the remainingTags then you open where
+	//one image has a tag and "Apply tags" would then set the tag against all selected
+	var _addedTags   = [];
+
+	//Array of tab objects deleted
+	var _deletedTags = [];
+
+	//This is tied to the textbox for search
 	$scope.newTag = undefined;
 
 	buildAlpha();
@@ -149,7 +159,14 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 	//TODO - give message why year, month, day removed?
 	
 	$scope.applyChanges = function() {
+		console.log('Adding');
+		console.dir(_addedTags);
+		console.log('Deleting');
+		console.dir(_deletedTags);
 
+		tagalImages.setSelectedTags(_addedTags,_deletedTags);
+		$uibModalInstance.close();
+		originalScope.showGallery();
 	}
 
 	$scope.close = function() {
@@ -170,17 +187,38 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 	 * @param int index The index of the tag. Will be undefined for typed in tags and also typeahead tags
 	 */
 	$scope.addTag = function(label,index) {
-		$scope.selectedTags.push({label:label,index:index});
 
-		if (index !== undefined) {
-			for (var i = 0; i < $scope.remainingTags.length; i++) {
-				if ($scope.remainingTags[i].index == index) {
-					$scope.remainingTags.splice(i,1);
+		_addedTags.push({label:label,index:index});
+
+		$scope.selectedTags.push({label:label,index:index,count:tags.numberSelected});
+
+		for (var i = 0; i < _deletedTags.length; i++) {
+			if (index === undefined) {
+				if (_deletedTags[i].index === undefined && _deletedTags[i].label.toLowerCase() == label.toLowerCase()) {
+					_deletedTags.splice(i,1);
+					break;
+				}
+			} else {
+				if (_deletedTags[i].index == index) {
+					_deletedTags.splice(i,1);
 					break;
 				}
 			}
+		}
 
-			buildAlpha();
+		for (var i = 0; i < $scope.remainingTags.length; i++) {
+			if (index === undefined) {
+				if ($scope.remainingTags[i].index === undefined && $scope.remainingTags[i].label.toLowerCase() == label.toLowerCase()) {
+					$scope.remainingTags.splice(i,1);
+					break;
+				}
+			} else {
+				if ($scope.remainingTags[i].index == index) {
+					$scope.remainingTags.splice(i,1);
+					buildAlpha();
+					break;
+				}
+			}
 		}
 	}
 
@@ -188,13 +226,42 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 
 	$scope.removeTag = function(x) {
 
+		for (var i = 0; i < _addedTags.length; i++) {
+			if (x.index === undefined) {
+				if (_addedTags[i].index === undefined && _addedTags[i].label.toLowerCase() == x.label.toLowerCase()) {
+					_addedTags.splice(i,1);
+					break;
+				}
+			} else {
+				if (_addedTags[i].index == x.index) {
+					_addedTags.splice(i,1);
+					break;
+				}
+			}
+		}
+
+		if (x.index !== undefined) {
+			var found = false;
+			for (var i = 0; i < _deletedTags.length; i++) {
+				if (_deletedTags[i].index == x.index) {
+					found = true;
+					break;
+				}
+			}
+
+			if (! found) {
+				_deletedTags.push(x);
+			}
+		}
+
 		for (var i = 0; i < $scope.selectedTags.length; i++) {
 			if (x.index === undefined) {
-				if ($scope.selectedTags[i].index === undefined && $scope.selectedTags[i].label == x.label) {
+				if ($scope.selectedTags[i].index === undefined && $scope.selectedTags[i].label.toLowerCase() == x.label.toLowerCase()) {
 					$scope.selectedTags.splice(i,1);
 					break;
 				}
 			} else {
+
 				if ($scope.selectedTags[i].index == x.index) {
 					var removed = $scope.selectedTags.splice(i,1);
 					$scope.remainingTags.push(removed.pop());
@@ -231,7 +298,8 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 					resolve:{
 						tags:function() {
 							return tagalImages.getSelectedTags(true);
-						}
+						},
+						originalScope:scope
 					}
 				});
 			}

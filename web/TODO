@@ -4,7 +4,7 @@ BUGS
 
 FEATURES
 * UI - add a  count next to each tag to show how many images would be listed if the tag was clicked on
-* UI - "notag" add a tag to the UI that can be selected that only shows images with no tags - could then filter further down using the year / month / day tags. Probably only when in "admin" mode
+* UI - "notag" add a tag to the UI that can be selected that only shows images with no tags (except auto date tags) - could then filter further down using the year / month / day tags. Probably only when in "admin" mode
 * Ratings - do image tags support a rating? Cursory glance says no, but you could just add a "quality" tag, ie not a special tag.
 * UI - display tags for an image
 * UI - galleries, consist of
@@ -15,3 +15,4 @@ FEATURES
 * UI - Full screen view of an image
 * UI - Download images as zip, not sure if achievable in JS, can we generate a TAR file in JS?
 * UI - Admin mode, prior to commit, show pages of images with changes
+* UI - Tag groups "people", "activities"
