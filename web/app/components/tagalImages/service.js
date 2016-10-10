@@ -397,7 +397,15 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 			var all_dirty = false;
 
-			var selectedKeys = Object.keys(_selected);
+			var selectedKeys = [];
+
+			for (var i = 0; i < _currentImages.length; i++) {
+				if (! _selected[_currentImages[i]]) {
+					continue;
+				}
+
+				selectedKeys.push(_currentImages[i]);
+			}
 
 			for (var i = 0; i < tag_list.length; i++) {
 				if (tag_list[i].index === undefined) {
@@ -520,10 +528,17 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 			var selectedTags = {};
 
-			for (var image_index in _selected) {
+			var num_selected = 0;
 
-				for (var tag_index in _images[image_index].t) {
-					if (_images[image_index].t[tag_index]) {
+			for (var i = 0; i < _currentImages.length; i++) {
+				if (! _selected[_currentImages[i]]) {
+					continue;
+				}
+
+				num_selected++;
+
+				for (var tag_index in _images[_currentImages[i]].t) {
+					if (_images[_currentImages[i]].t[tag_index]) {
 						if (selectedTags[tag_index]) {
 							selectedTags[tag_index]++;
 						} else {
@@ -537,7 +552,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			var r = {
 				selectedTags:[],
 				remainingTags:[],
-				numberSelected:Object.keys(_selected).length
+				numberSelected:num_selected,
 			};
 
 			for (var tag_index = 0; tag_index < _tags.length; tag_index++) {

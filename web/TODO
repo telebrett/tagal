@@ -16,3 +16,10 @@ FEATURES
 * UI - Download images as zip, not sure if achievable in JS, can we generate a TAR file in JS?
 * UI - Admin mode, prior to commit, show pages of images with changes
 * UI - Tag groups "people", "activities"
+*
+* UI - Local storage
+*      Save the timestamp of the database.json file
+*      Save _tags, _tagIndex, _dirty - this should probably be enough as _tags a hash of image ids
+*      Need to be able to detect a new database.json file and merge the local state with the new database.json
+*
+*      Note a new database on the server could mean the image ids don't match, not much that can be done for that

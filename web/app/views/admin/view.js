@@ -11,10 +11,18 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 
 	//TODO - metadata modal height
 	//     - double click for metadata model?
-	//     - double click to show full image?
+	//     - double click to show full image - this would be better than metadata, metadata
+	//       could be show in a table to the right
 	//     - increase numToShow - just low for dev purposes
 	//     - adding a new tag reloads gallery
 	//     - "Show dirty" mode, list the on disk tags vs the live tags
+	//       Move "Show dirty", "Show selected" to top bar, probably in the same selector eg a drop button
+	//
+	//       Show 
+	//        By tags
+	//        Dirty
+	//        Selected
+	//     
 
 	function setCurrentImages(updateExisting) {
 		var images = tagalImages.getThumbnailsByPage($scope.selectedPage.index,$scope.numToShow);
@@ -142,6 +150,7 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 
 	$scope.selectedTags   = tags.selectedTags;
 	$scope.remainingTags  = tags.remainingTags;
+	$scope.numberSelected = tags.numberSelected;
 
 	//Array of tag objects specifically added
 	//If we just sent the remainingTags then you open where
@@ -159,11 +168,6 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 	//TODO - give message why year, month, day removed?
 	
 	$scope.applyChanges = function() {
-		console.log('Adding');
-		console.dir(_addedTags);
-		console.log('Deleting');
-		console.dir(_deletedTags);
-
 		tagalImages.setSelectedTags(_addedTags,_deletedTags);
 		$uibModalInstance.close();
 		originalScope.showGallery();
