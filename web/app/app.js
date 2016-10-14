@@ -27,9 +27,9 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	$scope.otherMode = 'Admin';
 	$scope.currentMode = 'gallery';
 	
-	tagalImages.init('database.json')
+	tagalImages.init('database.json',$scope.allowModes)
 	.then(
-		function(rootDir){
+		function(){
 			$scope.menuTags = tagalImages.getRemainingTags();
 		},
 		function(reason) {

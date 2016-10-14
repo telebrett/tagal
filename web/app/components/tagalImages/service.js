@@ -3,6 +3,7 @@
 angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 	var _rootImageDir;
+	var _useLocalStorage;
 
 	/**
 	 * Each element is a hash with keys
@@ -134,8 +135,6 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 	function loadDB(res) {
 		_rootImageDir = res.data.imagedir;
 
-		_remainingTags = [];
-
 		var index = 0;
 		var img;
 
@@ -145,7 +144,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		}
 
 		for (var i in res.data.tags) {
-			_remainingTags.push(addTag(i,res.data.tags[i],res.data.tagmetadata[i],true));
+			addTag(i,res.data.tags[i],res.data.tagmetadata[i],true);
 			delete res.data.tags[i];
 		}
 
@@ -220,19 +219,26 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 	//Sets the remainingTags from the tags from the _currentImages
 	//but not already selected
 	function setRemainingTags() {
-		var image_tags = {};
-
-		for (var i = 0; i < _currentImages.length; i++) {
-			for (var tag_index in _images[_currentImages[i]].t) {
-				image_tags[tag_index] = true;
-			}
-		}
 
 		_remainingTags = new Array();
 
-		for (var tag_index in image_tags) {
-			if (_currentTags.indexOf(parseInt(tag_index,10)) == -1) {
-				_remainingTags.push(tag_index);
+		if (_currentTags.length == 0) {
+			_remainingTags = Object.keys(_tags);
+		} else {
+
+			var image_tags = {};
+
+			for (var i = 0; i < _currentImages.length; i++) {
+				for (var tag_index in _images[_currentImages[i]].t) {
+					image_tags[tag_index] = true;
+				}
+			}
+
+
+			for (var tag_index in image_tags) {
+				if (_currentTags.indexOf(parseInt(tag_index,10)) == -1) {
+					_remainingTags.push(tag_index);
+				}
 			}
 		}
 	}
@@ -320,12 +326,67 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 	}
 
+	function setLocalStorage() {
+
+		if (! _useLocalStorage) {
+			return;
+		}
+
+		//TODO - timestamp or hash of the JSON file
+
+		localStorage.setItem('dirty'   ,JSON.stringify(_dirty));
+		localStorage.setItem('deleted' ,JSON.stringify(_deleted));
+		localStorage.setItem('tags'    ,JSON.stringify(_tags));
+		localStorage.setItem('tagIndex',JSON.stringify(_tagIndex));
+
+		var image_tags = {};
+		for (var image_index in _dirty) {
+			image_tags[image_index] = _images[image_index].t;
+		}
+
+		localStorage.setItem('imageTags',JSON.stringify(image_tags));
+	}
+
+	function mergeLocalStorage() {
+
+		//TODO - appears to be a bug where _month_ appears as a tag
+
+		try {
+			if (localStorage.key('dirty') !== undefined) {
+
+				_dirty    = JSON.parse(localStorage.getItem('dirty'));
+				_deleted  = JSON.parse(localStorage.getItem('deleted'));
+				_tags     = JSON.parse(localStorage.getItem('tags'));
+				_tagIndex = JSON.parse(localStorage.getItem('tagIndex'));
+
+				var image_tags = JSON.parse(localStorage.getItem('imageTags'));
+
+				for (var image_index in image_tags) {
+					_images[image_index].t = image_tags[image_index];
+				}
+			}
+		} catch(err) {
+			console.log('Failed to load from local storage ' + err.message);
+		}
+
+
+
+	}
 
 	return {
 		/**
-		 * array initialTags keys are tag names, values are an array of image indexes
+		 * string dbfile Path to the JSON database
+		 * bool mergeLocalStorage wether to load uncommitted changes from local storage or not
 		 */
-		init: function(dbfile) {
+		init: function(dbfile,useLocalStorage) {
+
+			if (useLocalStorage) {
+				if (typeof(localStorage) !== undefined) {
+					_useLocalStorage = true;
+				} else {
+					alert('Local storage not available');
+				}
+			}
 
 			var deferred = $q.defer();
 
@@ -333,12 +394,16 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			.then(
 				loadDB,
 				function(){
+					//Possibly change this to a promise as well, user might
+					//have to make decisions re losing changes
 					deferred.reject('Failed to load database');
 				}
 			)
 			.then(
 				function(){
-					deferred.resolve(_rootImageDir);
+					mergeLocalStorage();
+					setRemainingTags();
+					deferred.resolve();
 				}
 			);
 			
@@ -432,6 +497,8 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 					}
 				}
 			}
+
+			setLocalStorage();
 
 			setRemainingTags();
 

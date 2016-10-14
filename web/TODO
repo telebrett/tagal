@@ -19,7 +19,7 @@ FEATURES
 *
 * UI - Local storage
 *      Save the timestamp of the database.json file
-*      Save _tags, _tagIndex, _dirty - this should probably be enough as _tags a hash of image ids
+*      Save _tags, _tagIndex, _dirty - this should probably be enough as _tags has a hash of image ids
 *      Need to be able to detect a new database.json file and merge the local state with the new database.json
 *
 *      Note a new database on the server could mean the image ids don't match, not much that can be done for that
