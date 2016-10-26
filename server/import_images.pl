@@ -114,7 +114,7 @@ sub get_sth {
 		return $sth_find;
 	}
 
-	$sth_find = $dbh->prepare('SELECT i.*,IF(it.ImageID IS NULL,0,1) AS HasTags FROM image i LEFT JOIN image_tag it ON i.id = it.ImageID AND it.Written WHERE i.Location = ? GROUP BY i.id');
+	$sth_find = $dbh->prepare('SELECT i.*,IF(it.ImageID IS NULL,0,1) AS HasTags FROM image i LEFT JOIN image_tag it ON i.id = it.ImageID WHERE i.Location = ? GROUP BY i.id');
 	return $sth_find;
 	
 }
@@ -286,7 +286,7 @@ sub import_directory {
 						push @ins_val,$image_id,$tag_id;
 					}
 
-					$dbh->do("INSERT INTO image_tag (ImageID,TagID,Written) VALUES " . join(',',map{'(?,?,1)'} @tag_ids),{},@ins_val);
+					$dbh->do("INSERT INTO image_tag (ImageID,TagID) VALUES " . join(',',map{'(?,?)'} @tag_ids),{},@ins_val);
 
 				}
 

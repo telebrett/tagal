@@ -74,7 +74,7 @@ Getopt::Long
 Pod::Usage
 Config::IniFiles
 
-As well as the "aws" cli tools
+As well as the "aws" cli tools and the 'exiftran' CLI tool
 
 It will look for config.ini in the directly below the server, see config.ini.skel
 

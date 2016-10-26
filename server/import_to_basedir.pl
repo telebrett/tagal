@@ -5,8 +5,10 @@ use DateTime;
 use File::stat qw(stat);
 use File::Path qw(make_path);
 use File::Basename;
+use File::Compare qw(compare);
 use Image::ExifTool qw(:Public);
 use Image::Magick;
+use Digest::MD5::File qw(file_md5);
 
 use Getopt::Long;
 use Pod::Usage;
@@ -106,11 +108,38 @@ sub import_directory {
 					next;
 				}
 
-				my $new_file_name = "$destdir/$1/$2/$3/$1-$2-$3-$4:$5:$6.JPG";
+				my $new_file_name_part = "$destdir/$1/$2/$3/$1-$2-$3-$4:$5:$6";
+
+				my $new_file_name = "$new_file_name_part.JPG";
 
 				if (-f $new_file_name) {
-					print "File {$new_file_name} already exists - skipping\n";
-					next;
+
+					my $max_dupe_name = 0;
+
+					my @possible_dupes = glob "$new_file_name_part*.JPG";
+
+					my $is_dupe = 0;
+
+					foreach my $possible_dupe (@possible_dupes) {
+						if ($possible_dupe =~ m/-(\d+).JPG$/) {
+							$max_dupe_name = $1;
+						}
+
+						if (is_dupe($possible_dupe,$fullpath)) {
+							$is_dupe = 1;
+							last;
+						}
+					}
+
+					if ($is_dupe) {
+							print "File {$new_file_name} already exists - skipping\n";
+							next;
+					}
+
+					$new_file_name = $new_file_name_part . '-' . ++$max_dupe_name . '.JPG';
+
+					print "Rewriting as $new_file_name\n";
+
 				}
 
 				foreach my $tag(@OPT_TAGS) {
@@ -125,11 +154,14 @@ sub import_directory {
 
 				my $success = $tool->WriteInfo($fullpath,$new_file_name);
 
+				#TODO - find a native perl lossless rotation, ensure it rewrites the EXIF orientation tag but leaves all others alone
+				system('exiftran','-ai',$new_file_name);
+
 				if ($success) {
 					if ($OPT_REMOVEIMAGE) {
 						unlink($fullpath);
+						print "Deleted $fullpath\n";
 					}
-					print "Deleted $fullpath\n";
 					print "Created $new_file_name\n";
 				} else {
 					print "Failed writing tags for $new_file_name\n";
@@ -143,6 +175,52 @@ sub import_directory {
 	}
 
 	closedir($dh);
+
+}
+
+sub is_dupe {
+	my $image_a = shift;
+	my $image_b = shift;
+
+	my $tmp_a = '/tmp/dedupe_image_a';
+	my $tmp_b = '/tmp/dedupe_image_b';
+
+	if (-f $tmp_a) {
+			unlink($tmp_a);
+	}
+
+	if (-f $tmp_b) {
+			unlink($tmp_b);
+	}
+
+	#Clear the keywords and write temporary files
+	my $tool = new Image::ExifTool;
+	$tool->ExtractInfo($image_a);
+	$tool->SetNewValue('Keywords');
+	$tool->WriteInfo($image_a,$tmp_a);
+
+	$tool = new Image::ExifTool;
+	$tool->ExtractInfo($image_b);
+	$tool->SetNewValue('Keywords');
+	$tool->WriteInfo($image_b,$tmp_b);
+
+	#note, at first glance it appears that running exiftran gives the exact same results if done
+	#more than once against the same source file eg
+	# cp source.jpg a.jpg
+	# cp source.jpb b.jpg
+	#
+	# exitran -ai a.jpg b.jpg
+	#
+	# md5sum a.jpg b.jpg
+	#
+	#outputs the same hash
+	system('exiftran','-ai',$tmp_a,$tmp_b);
+
+	if (compare($tmp_a,$tmp_b) == 0) {
+		return 1;
+	}
+
+	return 0;
 
 }
 

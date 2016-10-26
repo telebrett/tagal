@@ -24,7 +24,6 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 	/**
 	 * Each element is a hash with keys
 	 * string t  The tag name
-	 * string ty The tag type
 	 * string l  The label name, optional
 	 * object m  Metadata for the tag, note key only exists if there is metadata
 	 * object i  keys are the image indexes, value is true
@@ -350,8 +349,12 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 	function mergeLocalStorage() {
 
 		//TODO - appears to be a bug where _month_ appears as a tag
+		//       nope, thats a bug where NaN is lost in the JSON
 
 		try {
+			//TODO - reenable
+			console.log('skipping local storage - remove this line');
+			return;
 			if (localStorage.key('dirty') !== undefined) {
 
 				_dirty    = JSON.parse(localStorage.getItem('dirty'));
@@ -410,11 +413,50 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			return deferred.promise;
 		},
 
+		commit: function() {
+
+			var data = {images:{},tags:{}};
+
+			for (var image_index in _dirty) {
+
+				data.images[image_index] = [];
+
+				for (var tag_index in _images[image_index].t) {
+
+					if (_tags[tag_index].m && _tags[tag_index].m.datetype) {
+						continue;
+					}
+
+					data.images[image_index].push(tag_index);
+				}
+
+			}
+
+			for (var tag_index in _tags) {
+
+				if (_tags[tag_index].m && _tags[tag_index].m.datetype) {
+					continue;
+				}
+
+				var o = {t:_tags[tag_index].t};
+				if (_tags[tag_index].m) {
+					o.m = _tags[tag_index].m;
+				}
+
+				data.tags[tag_index] = o;
+			}
+
+			console.dir(data);
+
+			//TODO - delete images
+
+		}
+
 		/**
 		 * true|array indexes array of image indexes to select / deselect. If true then all current images are set
 		 * bool If true will set selected, if false will deselect, if undefined will toggle
 		 */
-		selectImages: function(indexes,select) {
+		,selectImages: function(indexes,select) {
 
 			if (indexes === true) {
 				indexes = _currentImages;
@@ -512,10 +554,6 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 					_deleted[indexes[i]] = true;
 				}
 			}
-		}
-		,commit: function() {
-			//TODO - http post, _dirty images and _delete images
-
 		}
 		,reset: function() {
 			//TODO - full reload?

@@ -71,6 +71,14 @@ angular.module('tagal.admin', ['ngRoute','tagal.metadata','ui.bootstrap.modal'])
 		setCurrentImages();
 	}
 
+	$scope.commit = function() {
+
+		if (confirm('Are you sure you want to commit these change?')) {
+			tagalImages.commit();
+		}
+
+	}
+
 	$scope.selectImages = function(type) {
 		switch(type) {
 			case $scope.selectNone:
