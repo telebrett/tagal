@@ -1,7 +1,7 @@
 BUGS
 * UI - buttons for tags - too long gets cut off to the right
 * UI - image reload - the size / height is set against the old image
-* UI - Images are not in chronological order
+* UI - Images are not in chronological order - mainly fixed, within the same second still not ordered
 
 FEATURES
 * UI - add a  count next to each tag to show how many images would be listed if the tag was clicked on
@@ -16,7 +16,8 @@ FEATURES
 * UI - Full screen view of an image
 * UI - Download images as zip, not sure if achievable in JS, can we generate a TAR file in JS?
 * UI - Admin mode, prior to commit, show pages of images with changes
-* UI - Tag categories "people", "activities" etc
+* UI - Tag categories "people", "activities", "Year" etc
+*      This will be required as the tag sizes grow
 *
 * UI - Local storage
 *      Save the timestamp of the database.json file

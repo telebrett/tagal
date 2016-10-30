@@ -8,6 +8,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 	/**
 	 * Each element is a hash with keys
 	 * string  p  Image path, relative to /pictures
+	 * int     o  sort order of the image
 	 * string  f  Image filename eg 'foo.jpg'
 	 * float   r  The ratio of height to width TODO width to height?
 	 * object  t  hash of tag indexes - the tags that have possibly been added / removed
@@ -87,7 +88,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 		var path = img[0].match(/^(.*)\/(.*)$/);
 
-		_images[index] = {p:path[1],f:path[2],r:img[1],t:{},ot:{}};
+		_images[index] = {p:path[1],f:path[2],r:img[1],t:{},ot:{},o:img[2]};
 	};
 
 	/**
@@ -677,6 +678,10 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			return r;
 
 		}
+		/**
+		 * Adds a tag to the current selection of tags and restricts
+		 * the current set of images to those that contain the tag
+		 */
 		,selectTag : function(index) {
 
 			if (_currentTags.indexOf(index) !== -1) {
@@ -691,6 +696,20 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 				var ts = _tags[index].i;
 				_currentImages = _currentImages.filter(function(v){return ts[v] !== undefined});
 			}
+
+			_currentImages.sort(function(a_index,b_index) {
+				var a_o = _images[a_index].o;
+				var b_o = _images[b_index].o;
+
+				if (a_o == b_o) {
+					return 0;
+				} else if(a_o < b_o) {
+					return -1;
+				} else {
+					return 1;
+				}
+
+			});
 
 			setRemainingTags();
 

@@ -75,7 +75,7 @@ sub build_db {
 	my $sth_tags = $dbh->prepare("SELECT t.Tag,it.ImageID,t.IsPublic FROM tag t JOIN image_tag it ON it.TagID = t.id JOIN image i ON i.id = it.ImageID $where ORDER BY i.DateTaken,i.id");
 	$sth_tags->execute();
 
-	my $sth_image = $dbh->prepare("SELECT i.*,YEAR(i.DateTaken) AS YearTaken,MONTH(i.DateTaken) AS MonthTaken,DAYOFMONTH(i.DateTaken) AS DayOfMonthTaken FROM image i $join GROUP BY i.id ORDER BY i.DateTaken,i.id");
+	my $sth_image = $dbh->prepare("SELECT i.*,YEAR(i.DateTaken) AS YearTaken,MONTH(i.DateTaken) AS MonthTaken,DAYOFMONTH(i.DateTaken) AS DayOfMonthTaken,UNIX_TIMESTAMP(i.DateTaken) AS SortOrder FROM image i $join GROUP BY i.id ORDER BY i.DateTaken,i.id");
 	$sth_image->execute();
 
 	my $cur_tag = $sth_tags->fetchrow_hashref;
@@ -87,7 +87,11 @@ sub build_db {
 			$size_ratio = $image->{WIDTH} / $image->{HEIGHT};
 		}
 
-		$data->{images}->{$image->{ID}} = [$image->{LOCATION},$size_ratio];
+		#TODO - there is an EXIF tag which contains the image index, eg IMG1345, this could be used to sort images which are taken in the 
+		#       same second, eg high speed continous mode, could possible sort by camera as well as it is possible for two images from
+		#       different cameras
+
+		$data->{images}->{$image->{ID}} = [$image->{LOCATION},$size_ratio,$image->{SORTORDER}];
 
 		#TODO - Check for valid date
 
