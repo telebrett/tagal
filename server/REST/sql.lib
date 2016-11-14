@@ -1,0 +1,349 @@
+<?php
+
+abstract class SQL {
+
+	const VERB_SELECT = 'SELECT';
+	const VERB_DELETE = 'DELETE';
+	const VERB_UPDATE = 'UPDATE';
+	const VERB_INSERT = 'INSERT';
+
+	const JA = '___JOINALIAS___';
+	const IN = 'IN';
+
+	protected static $verb;
+
+	protected $db;
+	protected $sth;
+
+	protected $positional_args;
+
+	private $table;
+	private $alias = 'o';
+
+	private $joincount = 0;
+
+	private $cols            = array();
+	private $joins           = array();
+	private $where_clauses   = array();
+	private $groupby_clauses = array();
+	private $having_clauses  = array();
+	private $orderby_clauses = array();
+
+	private $limit_size;
+	private $limit_offset;
+
+	/*
+	 * @param PDO $db
+	 * @param string $table
+	 */
+	public function __construct($db,$table) {
+		static::$verb = preg_replace('/_SQL$/','',get_class($this));
+
+		$this->db    = $db;
+		$this->table = $table;
+	}
+
+	public function getAlias() {
+		return $this->alias;
+	
+	}
+
+	public function __toString() {
+
+		$SQL = static::$verb;
+
+		$this->position_args = array();
+
+		switch (static::$verb) {
+			case self::VERB_SELECT:
+			case self::VERB_DELETE:
+				$SQL .= ' ' . $this->buildColumns() . "\n";
+				$SQL .= "FROM {$this->table} {$this->alias}\n";
+				$SQL .= $this->buildJoins();
+				break;
+			case self::VERB_UPDATE:
+				$SQL .= "{$this->table} {$this->alias}\n";
+				$SQL .= $this->buildJoins();
+				$SQL .= $this->buildColumns();
+				break;
+			case self::VERB_INSERT:
+				return $this->buildInsert();
+		}
+
+		$SQL .= $this->buildWhere();
+		$SQL .= $this->buildGroupby();
+		$SQL .= $this->buildHaving();
+		$SQL .= $this->buildOrderby();
+		$SQL .= $this->buildLimit();
+
+		return array($SQL,$this->positional_args);
+
+		//SELECT * FROM foo JOIN ... WHERE ... GROUP BY ... ORDER BY ... LIMIT ...
+		//DELETE * FROM foo JOIN ... WHERE ... GROUP BY ... ORDER BY ... LIMIT ...
+		//UPDATE ... JOIN ... SET x=y WHERE ...
+		//INSERT INTO foo (a,b,c) VALUES (a,b,c);
+
+	}
+
+	public function exec() {
+
+		$this->sth = $this->db->prepare($this);
+
+		if (! $this->sth) {
+			return FALSE;
+		}
+
+		$result = $this->sth->execute($this->positional_args);
+
+		return $result;
+	}
+
+	/**
+	 * @param string $string The column definition to add, eg c.*, f.Name
+	 * @param array $args Variables for ? positional arguments
+	 */
+	public function col($string,$args=array()) {
+		$this->cols[] = array($string,$args);
+	}
+
+	/**
+	 * Adds a JOIN
+	 *
+	 * @returns string the alias for the join
+	 */
+	public function join($table,$criteria,$left=FALSE,$args=array()) {
+
+		$alias = '_j' . $this->joincount++;
+
+		$criteria = str_replace(self::JA,$alias,$criteria);
+
+		$join = " JOIN {$table} {$alias} ON {$criteria}";
+
+		if ($left) {
+			$join = ' LEFT ' . $join;
+		}
+
+		$this->joins[] = array($join,$args);
+
+		return $alias;
+
+	}
+
+	/**
+	 * @param string $criteria Note this gets wrapped in () automatically
+	 */
+	public function where($criteria,$args=array()) {
+		$this->where_clauses[] = array("({$this->criteria($criteria,$args)})",$args);
+	}
+
+	public function groupby($criteria,$args=array()) {
+		$this->groupby_clauses[] = array("$criteria",$args);
+	}
+
+	public function having($criteria,$args=array()) {
+		$this->having_clauses[] = array("({$this->criteria($criteria,$args)})",$args);
+	}
+
+	public function orderby($criteria,$args=array()) {
+		$this->orderby_clauses[] = array("$criteria",$args);
+	}
+
+	public function limit($size,$offset=0) {
+		$this->limit_size = $size;
+		$this->limit_offset = $offset;
+	}
+
+	private function criteria($criteria,&$args) {
+
+		if (is_string($criteria)) {
+			return $criteria;
+		}
+
+		switch ($criteria[0]) {
+			case self::IN:
+				return $criteria[1] . ' IN (' . implode(',',array_map(function(){ return '?';},$args)) . ')';
+		}
+
+		trigger_error('Unknown criteria ' . $criteria[0],E_USER_ERROR);
+
+	}
+
+	private function buildColumns() {
+		return $this->addString($this->cols,', ');
+	}
+
+	private function buildJoins() {
+		return $this->addString($this->joins,"\n");
+	}
+
+	private function buildWhere() {
+		return $this->addString($this->where_clauses,' AND ','WHERE');
+	}
+
+	private function buildHaving() {
+		return $this->addString($this->having_clauses,' AND ','HAVING');
+	}
+
+	private function buildGroupby() {
+		return $this->addString($this->groupby_clauses,', ','GROUP BY');
+	}
+
+	private function buildOrderby() {
+		return $this->addString($this->orderby_clauses,', ','ORDER BY');
+	}
+
+	private function buildLimit() {
+		if ($this->limit_size) {
+
+			$string = 'LIMIT ?';
+			$this->positional_arg[] = $this->limit_size;
+
+			if ($this->limit_offset) {
+				$string .= ' OFFSET ?';
+				$this->positional_arg[] = $this->limit_offset;
+			}
+
+			return $string;
+		}
+
+		return '';
+	}
+
+	private function addString($data,$separator,$prepend=NULL) {
+
+		$final_data = array();
+
+		foreach ($data as $d) {
+
+			$final_data[] = $d[0];
+
+			if (isset($d[1])) {
+				foreach ((array)$d[1] as $pos_arg) {
+					$this->positional_args[] = $pos_arg;
+				}
+			}
+		}
+
+		$return_string = implode($separator,$final_data);
+
+		if ($return_string) {
+
+			if ($prepend) {
+				$return_string = $prepend . ' ' . $return_string;
+			}
+
+			return $return_string;
+		}
+
+		return '';
+
+	}
+
+
+
+}
+
+class UPDATE_SQL extends SQL {}
+class DELETE_SQL extends SQL {}
+
+class SELECT_SQL extends SQL {
+
+	public function get() {
+		$this->limit(1);
+
+		return $this->getnext();
+
+	}
+
+	public function getnext() {
+
+		if ($this->sth) {
+
+			return $this->sth->fetchObject();
+
+		} else {
+			if ( ! $this->exec()) {
+				return FALSE;
+			}
+
+			//infinite loop detection in case of bad code
+			if ( ! $this->sth ) {
+				return FALSE;
+			}
+
+			return $this->getnext();
+
+		}
+
+	}
+	
+}
+
+class INSERT_SQL extends SQL {
+
+	private $multi = FALSE;
+	private $multiData = array();
+
+	private $ignore = FALSE;
+
+	public function __construct($db,$table,$ignore=FALSE) {
+		$this->ignore = $ignore;
+
+		parent::_construct($db,$table);
+	}
+
+	public function addData($data) {
+		$this->multi = true();
+		$this->multiData[] = $data;
+	}
+
+	public function exec() {
+
+		$result = $parent->exec();
+
+		if ($result) {
+			return $this->db->lastInsertId();
+		}
+
+		return FALSE;
+
+	}
+
+	protected function buildInsert() {
+
+		$SQL = 'INSERT ' . ($this->ignore ? 'IGNORE ' : '') . 'INTO ' . $this->table;
+
+		$cols = array();
+		$data_template = array();
+
+		foreach ($this->columns as $col) {
+			$cols[] = $col[0];
+			$data_template[] = '?';
+
+			if (! $this->multi) {
+				$this->positional_args[] = $col[1];
+			}
+		}
+
+		$SQL .= ' (' . implode(',',$cols) . ') VALUES ';
+		$data_template = '(' . implode(',',$data_template) . ')';
+
+		if ($this->multi) {
+			foreach ($this->multiData as $row_index => $row) {
+				foreach ($row as $v) {
+					$this->positional_args[] = $v;
+				}
+
+				if ($row_index) {
+					$SQL .= ',';
+				};
+
+				$SQL .= $data_template;
+			}
+			
+		} else {
+			$SQL .= $data_template;
+		}
+
+	}
+}
