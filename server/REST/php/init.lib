@@ -1,0 +1,132 @@
+<?php
+
+require_once('sql.lib');
+
+class REST {
+
+	protected static $GET_ARGS  = array();
+	protected static $POST_ARGS = array();
+
+	protected $db;
+
+	public function __construct($db) {
+		$this->db = $db;
+	}
+
+	public static function handle () {
+
+		$rest_class = get_called_class();
+
+		$handler = new $rest_class(self::get_db());
+
+		$method = $_SERVER['REQUEST_METHOD'];
+
+		if (! method_exists($handler,$method)) {
+			self::send_error_message("$method not supported for $rest_class");
+		}
+
+		$arguments = array();
+
+		$source = $list = NULL;
+
+		switch ($method) {
+			case 'POST':
+				$source =& $_POST;
+				$list   =  static::$POST_ARGS;
+				break;
+			case 'GET':
+				$source =& $_GET;
+				$list   =  static::$GET_ARGS;
+				break;
+		}
+
+		$required_args_error_message = array();
+
+		foreach ($list as $arg_name => $required) {
+			if (array_key_exists($arg_name,$source)) {
+				$arguments[$arg_name] = $source[$arg_name];
+			} else if($required) {
+				$required_args_error_message[] = $arg_name;
+			}
+		}
+
+		if (! empty($required_args_error_message)) {
+			self::send_error_message('Missing required arguments ' . implode(', ',$required_args_error_message));
+		}
+
+		call_user_func_array(array($handler,$method),$arguments);
+
+	}
+
+	protected function die_error_message($message) {
+
+		error_log($message);
+
+		http_response_code(500);
+		exit(0);
+
+	}
+
+	protected function send_error_message($message,$code=400) {
+
+		//TODO - rollback DB if required
+
+		if ($message) {
+			print $message . "\n";
+			//TODO - custom header?
+			//     - JSON?
+
+		}
+		http_response_code($code);
+		exit(0);
+	}
+
+	/**
+	 * @returns PDO
+	 */
+	private function get_db() {
+
+		//TODO - mkpath
+		$config_file = '../../../config.ini';
+
+		if (
+			   ! file_exists($config_file)
+			|| ! is_readable($config_file)
+			|| ($config = parse_ini_file($config_file,TRUE)) === FALSE
+		) {
+			self::die_error_message('Invalid config file ' . $config_file,500);
+		}
+
+		//defaults
+		$connection['type'] = 'mysql';
+		$connection['host'] = 'localhost';
+
+		foreach ($config as $section => $values) {
+			if (strtolower($section) == 'db') {
+				foreach ($values as $key => $value) {
+					$connection[strtolower($key)] = $value;
+				}
+				break;
+			}
+		}
+
+		if (
+			   ! isset($connection['type'])
+			|| ! isset($connection['host'])
+			|| ! isset($connection['name'])
+			|| ! isset($connection['user'])
+			|| ! isset($connection['pass'])
+		) {
+			die_error_message('Invalid database config',500);
+		}
+
+		try {
+			$dbh = new PDO($connection['type'] . ':host=' . $connection['host'] . ';dbname=' . $connection['name'],$connection['user'],$connection['pass']);
+		} catch(PDOException $e) {
+			die_error_message($e->getMessage(),500);
+		}
+
+	}
+}
+
+
