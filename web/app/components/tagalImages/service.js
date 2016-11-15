@@ -447,7 +447,20 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 				data.tags[tag_index] = o;
 			}
 
-			console.dir(data);
+			//TODO - make the api url dynamic
+			
+			var post_config = {
+				headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+			};
+
+			$http.post('/tagalapi/images','data=' + JSON.stringify(data),post_config).then(
+				function success(response) {
+					alert('Success');
+				},
+				function error(response) {
+					alert('Failed');
+				}
+			);
 
 			//TODO - delete images
 

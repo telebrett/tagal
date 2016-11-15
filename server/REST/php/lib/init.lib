@@ -31,7 +31,21 @@ class REST {
 
 		switch ($method) {
 			case 'POST':
-				$source =& $_POST;
+				
+				//PHP does not understand application/json,
+				//thought about using the PECL json_post but that would require
+				//a system wide change or a specific PHP handler, eg php-fpm, too much effort required
+
+				if (isset($_POST['data'])) {
+					$source = json_decode($_POST['data'],TRUE);
+
+					if ($source === NULL) {
+						self::send_error_message('Invalid JSON');
+					}
+				} else {
+					self::send_error_message('missing json encoded \'data\' variable');
+				}
+
 				$list   =  static::$POST_ARGS;
 				break;
 			case 'GET':
@@ -67,7 +81,7 @@ class REST {
 
 	}
 
-	protected function send_error_message($message,$code=400) {
+	protected static function send_error_message($message,$code=400) {
 
 		//TODO - rollback DB if required
 
@@ -84,10 +98,10 @@ class REST {
 	/**
 	 * @returns PDO
 	 */
-	private function get_db() {
+	private static function get_db() {
 
 		//TODO - mkpath
-		$config_file = '../../../config.ini';
+		$config_file = '../../../../config.ini';
 
 		if (
 			   ! file_exists($config_file)
@@ -117,13 +131,14 @@ class REST {
 			|| ! isset($connection['user'])
 			|| ! isset($connection['pass'])
 		) {
-			die_error_message('Invalid database config',500);
+			self::die_error_message('Invalid database config',500);
 		}
 
 		try {
 			$dbh = new PDO($connection['type'] . ':host=' . $connection['host'] . ';dbname=' . $connection['name'],$connection['user'],$connection['pass']);
+			return $dbh;
 		} catch(PDOException $e) {
-			die_error_message($e->getMessage(),500);
+			self::die_error_message($e->getMessage(),500);
 		}
 
 	}

@@ -17,20 +17,20 @@ abstract class SQL {
 
 	protected $positional_args;
 
-	private $table;
-	private $alias = 'o';
+	protected $table;
+	protected $alias = 'o';
 
 	private $joincount = 0;
 
-	private $cols            = array();
-	private $joins           = array();
-	private $where_clauses   = array();
-	private $groupby_clauses = array();
-	private $having_clauses  = array();
-	private $orderby_clauses = array();
+	protected $cols            = array();
+	protected $joins           = array();
+	protected $where_clauses   = array();
+	protected $groupby_clauses = array();
+	protected $having_clauses  = array();
+	protected $orderby_clauses = array();
 
-	private $limit_size;
-	private $limit_offset;
+	protected $limit_size;
+	protected $limit_offset;
 
 	/*
 	 * @param PDO $db
@@ -52,7 +52,7 @@ abstract class SQL {
 
 		$SQL = static::$verb;
 
-		$this->position_args = array();
+		$this->positional_args = array();
 
 		switch (static::$verb) {
 			case self::VERB_SELECT:
@@ -62,7 +62,7 @@ abstract class SQL {
 				$SQL .= $this->buildJoins();
 				break;
 			case self::VERB_UPDATE:
-				$SQL .= "{$this->table} {$this->alias}\n";
+				$SQL .= " {$this->table} {$this->alias}\n";
 				$SQL .= $this->buildJoins();
 				$SQL .= $this->buildColumns();
 				break;
@@ -76,7 +76,7 @@ abstract class SQL {
 		$SQL .= $this->buildOrderby();
 		$SQL .= $this->buildLimit();
 
-		return array($SQL,$this->positional_args);
+		return $SQL;
 
 		//SELECT * FROM foo JOIN ... WHERE ... GROUP BY ... ORDER BY ... LIMIT ...
 		//DELETE * FROM foo JOIN ... WHERE ... GROUP BY ... ORDER BY ... LIMIT ...
@@ -87,6 +87,10 @@ abstract class SQL {
 
 	public function exec() {
 
+		//TODO - Remove this
+		error_log('SQL ' . $this . "\n");
+		error_log('ARGS ' . var_export($this->positional_args,TRUE) . "\n");
+
 		$this->sth = $this->db->prepare($this);
 
 		if (! $this->sth) {
@@ -94,6 +98,12 @@ abstract class SQL {
 		}
 
 		$result = $this->sth->execute($this->positional_args);
+
+		if ($result === FALSE) {
+			error_log('Error in SQL');
+			error_log('Statement ' . $this);
+			error_log(var_export($this->sth->errorInfo(),true));
+		}
 
 		return $result;
 	}
@@ -149,6 +159,10 @@ abstract class SQL {
 	}
 
 	public function limit($size,$offset=0) {
+		if (! is_int($size) || ! is_int($offset)) {
+			trigger_error('$size and $offset must be ints');
+			return FALSE;
+		}
 		$this->limit_size = $size;
 		$this->limit_offset = $offset;
 	}
@@ -195,12 +209,11 @@ abstract class SQL {
 	private function buildLimit() {
 		if ($this->limit_size) {
 
-			$string = 'LIMIT ?';
-			$this->positional_arg[] = $this->limit_size;
+			//Cannot use positional arguments for limit or offset
+			$string = 'LIMIT ' . $this->limit_size;
 
 			if ($this->limit_offset) {
-				$string .= ' OFFSET ?';
-				$this->positional_arg[] = $this->limit_offset;
+				$string .= ' OFFSET ' . $this->limit_offset;
 			}
 
 			return $string;
@@ -232,7 +245,7 @@ abstract class SQL {
 				$return_string = $prepend . ' ' . $return_string;
 			}
 
-			return $return_string;
+			return $return_string . "\n";
 		}
 
 		return '';
@@ -243,7 +256,6 @@ abstract class SQL {
 
 }
 
-class UPDATE_SQL extends SQL {}
 class DELETE_SQL extends SQL {}
 
 class SELECT_SQL extends SQL {
@@ -279,6 +291,18 @@ class SELECT_SQL extends SQL {
 	
 }
 
+class UPDATE_SQL extends SQL {
+
+	public function col($column,$value=NULL,$raw=FALSE) {
+		if (! $raw) {
+			$column = "SET {$column} = ?";
+		}
+			
+		parent::col($column,$value);
+	}
+
+}
+
 class INSERT_SQL extends SQL {
 
 	private $multi = FALSE;
@@ -289,17 +313,17 @@ class INSERT_SQL extends SQL {
 	public function __construct($db,$table,$ignore=FALSE) {
 		$this->ignore = $ignore;
 
-		parent::_construct($db,$table);
+		parent::__construct($db,$table);
 	}
 
 	public function addData($data) {
-		$this->multi = true();
+		$this->multi = true;
 		$this->multiData[] = $data;
 	}
 
 	public function exec() {
 
-		$result = $parent->exec();
+		$result = parent::exec();
 
 		if ($result) {
 			return $this->db->lastInsertId();
@@ -316,7 +340,7 @@ class INSERT_SQL extends SQL {
 		$cols = array();
 		$data_template = array();
 
-		foreach ($this->columns as $col) {
+		foreach ($this->cols as $col) {
 			$cols[] = $col[0];
 			$data_template[] = '?';
 
@@ -344,6 +368,8 @@ class INSERT_SQL extends SQL {
 		} else {
 			$SQL .= $data_template;
 		}
+
+		return $SQL;
 
 	}
 }
