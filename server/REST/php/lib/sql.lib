@@ -10,7 +10,7 @@ abstract class SQL {
 	const JA = '___JOINALIAS___';
 	const IN = 'IN';
 
-	protected static $verb;
+	protected $verb;
 
 	protected $db;
 	protected $sth;
@@ -37,7 +37,8 @@ abstract class SQL {
 	 * @param string $table
 	 */
 	public function __construct($db,$table) {
-		static::$verb = preg_replace('/_SQL$/','',get_class($this));
+
+		$this->verb = preg_replace('/_SQL$/','',get_class($this));
 
 		$this->db    = $db;
 		$this->table = $table;
@@ -50,11 +51,11 @@ abstract class SQL {
 
 	public function __toString() {
 
-		$SQL = static::$verb;
+		$SQL = $this->verb;
 
 		$this->positional_args = array();
 
-		switch (static::$verb) {
+		switch ($this->verb) {
 			case self::VERB_SELECT:
 			case self::VERB_DELETE:
 				$SQL .= ' ' . $this->buildColumns() . "\n";
@@ -88,8 +89,8 @@ abstract class SQL {
 	public function exec() {
 
 		//TODO - Remove this
-		error_log('SQL ' . $this . "\n");
-		error_log('ARGS ' . var_export($this->positional_args,TRUE) . "\n");
+		//error_log('SQL ' . $this . "\n");
+		//error_log('ARGS ' . var_export($this->positional_args,TRUE) . "\n");
 
 		$this->sth = $this->db->prepare($this);
 
@@ -100,8 +101,8 @@ abstract class SQL {
 		$result = $this->sth->execute($this->positional_args);
 
 		if ($result === FALSE) {
-			error_log('Error in SQL');
-			error_log('Statement ' . $this);
+			error_log('Error in ' . get_class($this));
+			error_log('Statement ' . $this->__toString());
 			error_log(var_export($this->sth->errorInfo(),true));
 		}
 
@@ -326,6 +327,9 @@ class INSERT_SQL extends SQL {
 		$result = parent::exec();
 
 		if ($result) {
+			if ($this->multi) {
+				return TRUE;
+			}
 			return $this->db->lastInsertId();
 		}
 

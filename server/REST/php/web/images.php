@@ -45,14 +45,12 @@ class REST_Images extends REST {
 			self::send_error_message('Could not update images');
 		}
 
-		//if (! $this->db->commit()) {
-		//TODO - put the commit back, I'll error log all database statements to check correctness
-		if (TRUE) {
+		if (! $this->db->commit()) {
 			$this->db->rollback();
 			self::send_error_message('Could not commit transaction');
 		}
 
-		if ( ! $this->start_background_process) {
+		if ( ! $this->start_background_process()) {
 			self::send_error_message('Could not start background process to update images');
 		}
 
@@ -60,8 +58,12 @@ class REST_Images extends REST {
 		exit(0);
 	}
 
+	private function start_background_process() {
+		//TODO - build
+		return TRUE;
+	}
+
 	private function set_tags_sql() {
-		//TODO - this is broken
 		$sql = new INSERT_SQL($this->db,'image_tag',TRUE);
 
 		$sql->col('ImageID');
@@ -140,6 +142,8 @@ class REST_Images extends REST {
 
 					if ($set_tags_count++ > 1000) {
 						if (! $set_tags_sql->exec()) {
+							error_log('HERE');
+
 							return FALSE;
 						}
 						$set_tags_sql = $this->set_tags_sql();
@@ -158,24 +162,20 @@ class REST_Images extends REST {
 		}
 
 		if (! $this->delete_all_tags($delete_all_tags)) {
-			error_log(__LINE__);
 			return FALSE;
 		}
-
 
 		if (! $this->set_dirty($dirty)) {
-			error_log(__LINE__);
 			return FALSE;
 		}
-
-		error_log(__LINE__);
-		error_log($set_tags_count);
 
 		if ($set_tags_count) {
 			if (! $set_tags_sql->exec()) {
 				return FALSE;
 			}
 		}
+
+		return TRUE;
 
 	}
 
