@@ -265,7 +265,7 @@ sub import_directory {
 				#clear existing tags
 				if ($row && $row->{HASTAGS}){
 					#delete tags for the image
-					$dbh->do('DELETE FROM image_tag WHERE ImageID = ? AND Written = 1',{},$image_id);
+					$dbh->do('DELETE FROM image_tag WHERE ImageID = ?',{},$image_id);
 				}
 				if (scalar @keywords > 0){
 

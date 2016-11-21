@@ -1,0 +1,2 @@
+Use Devel::NYTProf to figure out why import_images.pl is so slow for existing directories
+

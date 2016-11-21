@@ -2,6 +2,7 @@ BUGS
 * UI - buttons for tags - too long gets cut off to the right
 * UI - image reload - the size / height is set against the old image
 * UI - Images are not in chronological order - mainly fixed, within the same second still not ordered
+* UI - When tagging, clicking on "Apply tags" resets the page index
 
 FEATURES
 * UI - add a  count next to each tag to show how many images would be listed if the tag was clicked on
@@ -11,7 +12,7 @@ FEATURES
 * UI - galleries, consist of
        tags - which tags the gallery consists of
 	   image for thumbnail
-* Special dates, birthdays, christmas, NYE. Birthdays could be tied to people as well
+* Special dates, birthdays, christmas,/var/data/pictures/autocopy/2014/01/01/2014-01-01-06:48:54-.JPG NYE. Birthdays could be tied to people as well
 * UI - Add tag as a negative, eg I want to see everything in August 2016 that is NOT tagged with 'Bogong'. Probably achieve this with an X mark in the top corner
 * UI - Full screen view of an image
 * UI - Download images as zip, not sure if achievable in JS, can we generate a TAR file in JS?
@@ -25,3 +26,4 @@ FEATURES
 *
 *      Note a new database on the server could mean the image ids don't match, not much that can be done for that
 * UI - Need to block edits after a commit and prior to a reload somehow
+* UI - Tags could be geocoded for those images that are not. eg "Jounama Creek"

@@ -2,8 +2,6 @@
 /**
  * Extremely simple endpoint
  * 
- * TODO - Possibly add an end point for tags, the metadata could go there
- *
  * POST - technically this should be a PUT
  * 
  * images will contain the list of modified images. The value is the complete list of tags for that image, ie this will remove tags
@@ -117,6 +115,9 @@ class REST_Images extends REST {
 		$set_tags_sql = $this->set_tags_sql();
 		$set_tags_count = 0;
 
+		$delete_other_tags_sql = $this->delete_other_tags_sql();
+		$delete_other_tags_count = 0;
+
 		foreach ($images as $image_id => $tag_index_list) {
 
 			$dirty[] = $image_id;
@@ -132,24 +133,43 @@ class REST_Images extends REST {
 				}
 			} else {
 
+				$delete_other_tags = array();
+				$delete_other_tag_ids = array($image_id);
+
 				foreach ($tag_index_list as $tag_index) {
+
+					$delete_other_tags[] = '?';
+
 					if (! isset($this->tag_ids[$tag_index])) {
 						trigger_error('Could not find tag for ' . $tag_index,E_USER_ERROR);
 						return FALSE;
 					}
 
-					$set_tags_sql->addData(array($image_id,$this->tag_ids[$tag_index]));
+					$delete_other_tag_ids[] = (int)$this->tag_ids[$tag_index];
+
+					$set_tags_sql->addData(array($image_id,(int)$this->tag_ids[$tag_index]));
 
 					if ($set_tags_count++ > 1000) {
 						if (! $set_tags_sql->exec()) {
-							error_log('HERE');
-
 							return FALSE;
 						}
 						$set_tags_sql = $this->set_tags_sql();
 						$set_tags_count = 0;
 					}
 				}
+
+				$delete_other_tags_count += count(array_keys($tag_index_list));
+				$delete_other_tags_sql->where('(ImageID = ? AND TagID NOT IN (' . join(',',$delete_other_tags) . '))',$delete_other_tag_ids);
+
+				if ($delete_other_tags_count > 1000) {
+					if ($delete_other_tags_sql->exec() === FALSE) {
+						return FALSE;
+					}
+
+					$delete_other_tags_sql = $this->delete_other_tags_sql();
+					$delete_other_tags_count = 0;
+				}
+
 
 			}
 
@@ -169,6 +189,13 @@ class REST_Images extends REST {
 			return FALSE;
 		}
 
+		if ($delete_other_tags_count) {
+			if ($delete_other_tags_sql->exec() === FALSE) {
+				return FALSE;
+			}
+		}
+
+
 		if ($set_tags_count) {
 			if (! $set_tags_sql->exec()) {
 				return FALSE;
@@ -177,6 +204,13 @@ class REST_Images extends REST {
 
 		return TRUE;
 
+	}
+
+	private function delete_other_tags_sql() {
+		$sql = new DELETE_SQL($this->db,'image_tag');
+		$sql->setOrWheres();
+
+		return $sql;
 	}
 
 	private function set_dirty($image_ids) {

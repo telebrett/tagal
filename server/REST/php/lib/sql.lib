@@ -29,6 +29,8 @@ abstract class SQL {
 	protected $having_clauses  = array();
 	protected $orderby_clauses = array();
 
+	private $or_wheres = FALSE;
+
 	protected $limit_size;
 	protected $limit_offset;
 
@@ -47,6 +49,13 @@ abstract class SQL {
 	public function getAlias() {
 		return $this->alias;
 	
+	}
+
+	/**
+	 * If called, then individual where clauses are OR'd together, not AND'd
+	 */
+	public function setOrWheres() {
+		$this->or_wheres = TRUE;
 	}
 
 	public function __toString() {
@@ -89,8 +98,8 @@ abstract class SQL {
 	public function exec() {
 
 		//TODO - Remove this
-		//error_log('SQL ' . $this . "\n");
-		//error_log('ARGS ' . var_export($this->positional_args,TRUE) . "\n");
+		error_log('SQL ' . $this . "\n");
+		error_log('ARGS ' . var_export($this->positional_args,TRUE) . "\n");
 
 		$this->sth = $this->db->prepare($this);
 
@@ -183,7 +192,7 @@ abstract class SQL {
 
 	}
 
-	private function buildColumns() {
+	protected function buildColumns() {
 		return $this->addString($this->cols,', ');
 	}
 
@@ -192,7 +201,7 @@ abstract class SQL {
 	}
 
 	private function buildWhere() {
-		return $this->addString($this->where_clauses,' AND ','WHERE');
+		return $this->addString($this->where_clauses,($this->or_wheres ? ' OR ' : ' AND '),'WHERE');
 	}
 
 	private function buildHaving() {
@@ -257,7 +266,15 @@ abstract class SQL {
 
 }
 
-class DELETE_SQL extends SQL {}
+class DELETE_SQL extends SQL {
+
+	protected function buildColumns() {
+		if (empty($this->cols)) {
+			return $this->getAlias() . '.*';
+		}
+	}
+	
+}
 
 class SELECT_SQL extends SQL {
 
