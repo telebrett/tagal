@@ -18,7 +18,7 @@
 <body ng-controller="tagalCtrl">
  <nav class="navbar navbar-default navbar-fixed-top">
   <div class="container">
-   <span ng-if="allowModes" class="btn btn-primary btn-sm" ng-click="swapMode()">{{otherMode}}</span>
+   <span ng-if="APIAvailable" class="btn btn-primary btn-sm" ng-click="swapMode()">{{otherMode}}</span>
    <span ng-repeat="t in usedTags" class="btn btn-primary btn-sm tag{{t.type}}" ng-click="removeTag(t.index)">{{t.label}}</span>
   </div>
  </nav>

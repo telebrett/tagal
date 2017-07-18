@@ -79,6 +79,9 @@ REST API
 --------------------------------------------------------------------------------
 php
 See server/REST/site.conf for apache configuration
+
+Requires the following PECL modules
+imagick
 --------------------------------------------------------------------------------
 
 

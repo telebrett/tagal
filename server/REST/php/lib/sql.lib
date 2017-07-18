@@ -97,9 +97,9 @@ abstract class SQL {
 
 	public function exec() {
 
-		//TODO - Remove this
-		error_log('SQL ' . $this . "\n");
-		error_log('ARGS ' . var_export($this->positional_args,TRUE) . "\n");
+		//TODO - Make this configurable
+		//error_log('SQL ' . $this . "\n");
+		//error_log('ARGS ' . var_export($this->positional_args,TRUE) . "\n");
 
 		$this->sth = $this->db->prepare($this);
 

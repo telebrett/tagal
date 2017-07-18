@@ -1,7 +1,5 @@
 'use strict';
 
-//TODO - use uib-carousel for the main image
-
 angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 
 .config(['$routeProvider', function($routeProvider) {
@@ -21,10 +19,12 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	$scope.currentImages = [];
 	$scope.currentLeft = 0;
 	$scope.leftPos = 0;
-	$scope.numToShow = 200;
+
+	//TODO - Make this configurable, smaller number means faster initial page load
+	//       but fast scrolling means thumbnails may not be preloaded
+	$scope.numToShow = 50;
 
 	$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
-
 
 	$scope.scroll = function() {
 		var left = Math.floor($scope.currentLeft);
@@ -45,6 +45,10 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 		}
 
 		$scope.mainImage = tagalImages.getImage($scope.currentImages[$scope.mainImageIndex].index,this.mainImageWidth,this.mainImageHeight);
+
+		if ($scope.APIAvailable) {
+			$scope.mainImage.src = $scope.mainImage.previewSrc;
+		}
 	}
 
 }])

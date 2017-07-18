@@ -21,13 +21,13 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
 	//TODO - build hostname from server side config, eg database.json
 	if ($location.host() == 'htpc') {
-		$scope.allowModes = true;
+		$scope.APIAvailable = true;
 	}
 
 	$scope.otherMode = 'Admin';
 	$scope.currentMode = 'gallery';
 	
-	tagalImages.init('database.json',$scope.allowModes)
+	tagalImages.init('database.json',$scope.APIAvailable)
 	.then(
 		function(){
 			$scope.menuTags = tagalImages.getRemainingTags();

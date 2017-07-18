@@ -114,6 +114,8 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 			if (initialLoad) {
 				_images[imageIndexes[i]].ot[tagIndex] = true;
+			} else {
+				_dirty[imageIndexes[i]] = true;
 			}
 		}
 
@@ -828,19 +830,20 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 				src : _rootImageDir + '/' + image.p + '/' + image.f
 			};
 
-			var height_from_maxwidth = (1/image.r) * maxWidth;
-			var width_from_maxheight = (image.r * maxHeight);
+			var height_from_maxwidth = Math.round((1/image.r) * maxWidth);
+			var width_from_maxheight = Math.round((image.r * maxHeight));
 
 			if (width_from_maxheight <= maxWidth) {
 				//max will be the height
 				fullImage.height = maxHeight;
-				fullImage.width  = image.r * maxHeight;
+				fullImage.width  = Math.round(image.r * maxHeight);
 			}else{
 				fullImage.width  = maxWidth;
 				fullImage.height = height_from_maxwidth;
-				console.log('set b ' + fullImage.width);
 			}
-			
+
+			fullImage.previewSrc = '/tagalapi/preview/' + index + '/' + fullImage.width + '/' + fullImage.height; 
+
 			return fullImage;
 
 		}

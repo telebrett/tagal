@@ -4,20 +4,25 @@ require_once('sql.lib');
 
 class REST {
 
+	protected static $URL_MATCH = array();
+
 	protected static $GET_ARGS  = array();
 	protected static $POST_ARGS = array();
 
+	private $_config;
 	protected $db;
 
-	public function __construct($db) {
-		$this->db = $db;
+	public function __construct() {
+
+		$this->load_config();
+		$this->load_db();
 	}
 
 	public static function handle () {
 
 		$rest_class = get_called_class();
 
-		$handler = new $rest_class(self::get_db());
+		$handler = new $rest_class();
 
 		$method = $_SERVER['REQUEST_METHOD'];
 
@@ -28,6 +33,13 @@ class REST {
 		$arguments = array();
 
 		$source = $list = NULL;
+
+		$url_match = NULL;
+		if (array_key_exists($method,static::$URL_MATCH)) {
+			$url_match = static::$URL_MATCH[$method];
+		} else if (array_key_exists('',static::$URL_MATCH)) {
+			$url_match = static::$URL_MATCH[''];
+		}
 
 		switch ($method) {
 			case 'POST':
@@ -54,13 +66,24 @@ class REST {
 				break;
 		}
 
+		if ($url_match) {
+			if (preg_match($url_match,$_SERVER['REQUEST_URI'],$m)) {
+				$arguments = $m;
+				array_shift($arguments);
+			} else {
+				self::send_error_message('Must match ' . $url_match);
+			}
+		}
+
 		$required_args_error_message = array();
 
 		foreach ($list as $arg_name => $required) {
 			if (array_key_exists($arg_name,$source)) {
-				$arguments[$arg_name] = $source[$arg_name];
+				$arguments[] = $source[$arg_name];
 			} else if($required) {
 				$required_args_error_message[] = $arg_name;
+			} else {
+				$arguments[] = NULL;
 			}
 		}
 
@@ -68,7 +91,46 @@ class REST {
 			self::send_error_message('Missing required arguments ' . implode(', ',$required_args_error_message));
 		}
 
+
 		call_user_func_array(array($handler,$method),$arguments);
+
+	}
+
+	private function load_config() {
+		//TODO - mkpath
+		$config_file = '../../../../config.ini';
+
+		if (
+			   ! file_exists($config_file)
+			|| ! is_readable($config_file)
+			|| ($this->_config = parse_ini_file($config_file,TRUE)) === FALSE
+		) {
+			self::die_error_message('Invalid config file ' . $config_file,500);
+		}
+
+		$this->_config = array_change_key_case($this->_config,CASE_LOWER);
+
+		foreach ($this->_config as $section => $values) {
+			$this->_config[$section] = array_change_key_case($values,CASE_LOWER);
+		}
+	}
+
+	protected function config($section,$key) {
+		$section = strtolower($section);
+
+		if (! array_key_exists($section,$this->_config)) {
+			self::die_error_message("Section {$section} does not exist in config");
+		}
+
+		if ($key === NULL) {
+			return $this->_config[$section];
+		}
+
+		if (! array_key_exists($key,$this->_config[$section])) {
+			self::die_error_message("Key {$key} does not exist in section {$section} in config");
+		}
+
+		return $this->_config[$section][$key];
 
 	}
 
@@ -98,30 +160,14 @@ class REST {
 	/**
 	 * @returns PDO
 	 */
-	private static function get_db() {
-
-		//TODO - mkpath
-		$config_file = '../../../../config.ini';
-
-		if (
-			   ! file_exists($config_file)
-			|| ! is_readable($config_file)
-			|| ($config = parse_ini_file($config_file,TRUE)) === FALSE
-		) {
-			self::die_error_message('Invalid config file ' . $config_file,500);
-		}
+	private function load_db() {
 
 		//defaults
 		$connection['type'] = 'mysql';
 		$connection['host'] = 'localhost';
 
-		foreach ($config as $section => $values) {
-			if (strtolower($section) == 'db') {
-				foreach ($values as $key => $value) {
-					$connection[strtolower($key)] = $value;
-				}
-				break;
-			}
+		foreach ($this->config('db',NULL) as $key => $value) {
+			$connection[$key] = $value;
 		}
 
 		if (
@@ -135,8 +181,7 @@ class REST {
 		}
 
 		try {
-			$dbh = new PDO($connection['type'] . ':host=' . $connection['host'] . ';dbname=' . $connection['name'],$connection['user'],$connection['pass']);
-			return $dbh;
+			$this->db = new PDO($connection['type'] . ':host=' . $connection['host'] . ';dbname=' . $connection['name'],$connection['user'],$connection['pass']);
 		} catch(PDOException $e) {
 			self::die_error_message($e->getMessage(),500);
 		}
