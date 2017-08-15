@@ -4,10 +4,16 @@
    <div class="carousel-inner">
     <div class="ng-scope ng-isolate-scope item active">
 	 <div class="text-center">
+	  <div class="nav">
+       <span aria-hidden="true" class="glyphicon glyphicon-chevron-left" ng-click="viewImage('prev')" ng-show="mainImageIndex > 0"></span>
+       <span aria-hidden="true" class="glyphicon glyphicon-chevron-right" ng-click="viewImage('next')" ng-show="mainImageIndex != (currentImages.length-1)"></span>
+       <span aria-hidden="true" class="glyphicon glyphicon-download" ng-click="download()"></span>
+	  </div>
       <img ng-src="{{mainImage.src}}" height="{{mainImage.height}}" width="{{mainImage.width}}" tagal-metadata>
 	 </div>
 	</div>
    </div>
+   <!--
    <a role="button" href="" class="left carousel-control">
     <span aria-hidden="true" class="glyphicon glyphicon-chevron-left" ng-click="viewImage('prev')" ng-show="mainImageIndex > 0">
 	<span class="sr-only">Previous</span>
@@ -16,6 +22,7 @@
     <span aria-hidden="true" class="glyphicon glyphicon-chevron-right" ng-click="viewImage('next')" ng-show="mainImageIndex != (currentImages.length-1)">
 	<span class="sr-only">Next</span>
    </a>
+   -->
   </div>
  </div>
  <div id="carousel" on-scroll="scroll()">

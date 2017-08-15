@@ -34,6 +34,11 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 		$scope.leftPos = Math.round($scope.currentImages[0].left);
 	}
 
+	$scope.download = function() {
+		//TODO - change to open in a new window
+		window.location = $scope.mainImage.fullsrc;
+	}
+
 	$scope.viewImage = function(currentImages_index) {
 
 		if (currentImages_index == 'prev') {
@@ -45,6 +50,8 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 		}
 
 		$scope.mainImage = tagalImages.getImage($scope.currentImages[$scope.mainImageIndex].index,this.mainImageWidth,this.mainImageHeight);
+
+		$scope.mainImage.fullsrc = $scope.mainImage.src;
 
 		if ($scope.APIAvailable) {
 			$scope.mainImage.src = $scope.mainImage.previewSrc;

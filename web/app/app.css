@@ -58,6 +58,16 @@ html,body {
 	box-sizing:border-box;
 }
 
+#mainimage div.nav {
+	position:absolute;
+	right:0px;
+	top:0px;
+}
+
+#mainimage div.nav span.glyphicon {
+	cursor:pointer;
+}
+
 /** sidebar **/
 #sidebar {
   position: fixed;
@@ -159,3 +169,7 @@ span.delete:hover {
 	background-color:#840000;
 
 }
+
+#mainimage div.nav {
+	color:black;
+	font-size:2em;
