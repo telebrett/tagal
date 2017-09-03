@@ -3,6 +3,7 @@ use strict;
 
 #todo - need to be able to revoke
 #aws s3api put-object-acl --bucket MyBucket --key file.txt --grant-full-control emailaddress=user1@example.com,emailaddress=user2@example.com --grant-read uri=http://acs.amazonaws.com/groups/global/AllUsers
+#     - Look at using "tags". see https://docs.aws.amazon.com/AmazonS3/latest/dev/object-tagging.html
 
 use DBI;
 use Data::Dumper;

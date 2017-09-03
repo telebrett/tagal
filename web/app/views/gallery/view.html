@@ -28,7 +28,7 @@
  <div id="carousel" on-scroll="scroll()">
   <div class="block" style="width: {{thumbWidth}}px">
    <div class="current" style="left: {{leftPos}}px">
-    <img ng-repeat="i in currentImages" ng-src="{{i.src}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage($index)">
+    <img ng-repeat="i in currentImages" ng-src="{{i.src}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage($index)" on-load="loadThumb($event,$index)">
    </div>
   </div>
  </div>

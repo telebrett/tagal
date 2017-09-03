@@ -49,6 +49,10 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 	var _thumbnailAvgWidth;
 
+	//todo - set this to the S3.Bucket.
+	var _s3 = null;
+	var _s3_bucket = null;
+
 	var monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
 	function buildDateLabel(key,datetype) {
@@ -315,7 +319,9 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		for (var i = start_index; i < end_index; i++) {
 			var image = _images[_currentImages[i]];
 			win.push({
-				src      :_rootImageDir + '/' + image.p + '/.thumb/' + image.f,
+				//src      : _rootImageDir + '/' + image.p + '/.thumb/' + image.f,
+				src      : 'spacer.png',
+				s3src    : _rootImageDir + '/autocopy' + image.p + '/.thumb/' + image.f,
 				width    : image.tw,
 				height   : image.th,
 				index    : _currentImages[i],
@@ -385,6 +391,35 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		 * bool mergeLocalStorage wether to load uncommitted changes from local storage or not
 		 */
 		init: function(dbfile,useLocalStorage) {
+
+			console.log('testing s3');
+
+			//TODO - ask for these credentials
+			var creds = new AWS.Credentials({
+				'accessKeyId':'REDACTED',
+				'secretAccessKey':'REDACTED'
+			});
+
+			_s3 = new AWS.S3({
+				'credentials':creds,
+				'region':'ap-southeast-2'
+			});
+
+			//var s3obj = _s3.getObject({
+			//	Bucket:'bgmc-htpcbackup-syd',
+			//	Key:'pictures/autocopy/2017/04/16/.thumb/2017-04-16-09:18:10.JPG'
+			//},function(err,data){
+			//	if (err) {
+			//		console.log(err,err.stack);
+			//	} else {
+			//		console.log('retrieved');
+			//		console.log(data);
+			//	}
+			//});
+
+			//end s3 test
+			
+			//todo - autodetect if hosted by s3, possibly in the app
 
 			if (useLocalStorage) {
 				if (typeof(localStorage) !== undefined) {
@@ -845,6 +880,32 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			fullImage.previewSrc = '/tagalapi/preview/' + index + '/' + fullImage.width + '/' + fullImage.height; 
 
 			return fullImage;
+
+		}
+		,s3SRC(s3path) {
+
+			var deferred = $q.defer();
+
+			//The responsecachecontrol means the file is cached for a very long time
+
+			_s3.getObject({
+				Bucket:'bgmc-htpcbackup-syd',
+				Key:s3path,
+				ResponseCacheControl:'max-age=10368000, private'
+			},function(err,file){
+				if (err) {
+					deferred.reject(err);
+				} else {
+
+					var str = file.Body.reduce(function(a,b){
+						return a+String.fromCharCode(b);
+					},'');
+
+					deferred.resolve('data:image/jpeg;base64,' + btoa(str).replace(/.{76}(?=.)/g,'$&\n'));
+				}
+			});
+
+			return deferred.promise;
 
 		}
 	}

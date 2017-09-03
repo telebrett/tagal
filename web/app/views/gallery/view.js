@@ -39,6 +39,21 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 		window.location = $scope.mainImage.fullsrc;
 	}
 
+	$scope.loadThumb = function($event,localIndex) {
+		if ($event.currentTarget.src.match(/spacer\.png$/)) {
+			var elem = $event.currentTarget;
+			tagalImages.s3SRC($scope.currentImages[localIndex].s3src)
+			.then(
+				function(data) {
+					elem.src = data;
+				},
+				function(err) {
+					//console.log('loadthumb err');
+				}
+			);
+		}
+	}
+
 	$scope.viewImage = function(currentImages_index) {
 
 		if (currentImages_index == 'prev') {
@@ -108,4 +123,16 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
         }
     };
 })
+.directive('onLoad', ['$parse', function($parse) {
+	return {
+		link: function(scope,elem,attrs) {
+			var fn = $parse(attrs.onLoad);
+			elem.on('load',function(event) {
+				scope.$apply(function() {
+					fn(scope, {$event: event});
+				});
+			});
+		}
+	};
+}])
 ;
