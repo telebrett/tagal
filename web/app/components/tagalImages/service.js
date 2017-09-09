@@ -49,9 +49,8 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 	var _thumbnailAvgWidth;
 
-	//todo - set this to the S3.Bucket.
 	var _s3 = null;
-	var _s3_bucket = null;
+	var _s3bucket = null;
 
 	var monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
@@ -153,6 +152,8 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			addTag(i,res.data.tags[i],res.data.tagmetadata[i],true);
 			delete res.data.tags[i];
 		}
+
+
 
 	}
 
@@ -316,21 +317,64 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 		var end_index   = Math.min(_currentImages.length,start_index + count);
 
+		var promises = [];
+
 		for (var i = start_index; i < end_index; i++) {
 			var image = _images[_currentImages[i]];
-			win.push({
-				//src      : _rootImageDir + '/' + image.p + '/.thumb/' + image.f,
-				src      : 'spacer.png',
-				s3src    : _rootImageDir + '/autocopy' + image.p + '/.thumb/' + image.f,
+			var thumb = {
 				width    : image.tw,
 				height   : image.th,
 				index    : _currentImages[i],
 				left     : image.tl,
 				selected : _selected[_currentImages[i]]
-			});
-		}
+			};
 
+			if (_s3) {
+				//var p = _s3SRC(_rootImageDir + '/autocopy' + image.p + '/.thumb/' + image.f);
+				//promises.push(p);
+				thumb.src   =  'spacer.png';
+				thumb.s3src =  _rootImageDir + '/autocopy' + image.p + '/.thumb/' + image.f;
+			} else {
+				thumb.src = _rootImageDir + '/' + image.p + '/.thumb/' + image.f;
+			}
+
+			win.push(thumb);
+		}
+		
+		//TODO - check this when in not s3 mode
 		return win;
+		//return Promise.all(promises).then(
+		//	function() {
+		//		return win;
+		//	}
+		//);
+	}
+
+	function _s3SRC(s3path) {
+
+		var deferred = $q.defer();
+
+		//The responsecachecontrol means the file is cached for a very long time
+
+		_s3.getObject({
+			Bucket:_s3bucket,
+			Key:s3path,
+			ResponseCacheControl:'max-age=10368000, private'
+		},function(err,file){
+			if (err) {
+				console.log(err);
+				deferred.reject(err);
+			} else {
+
+				var str = file.Body.reduce(function(a,b){
+					return a+String.fromCharCode(b);
+				},'');
+
+				deferred.resolve('data:image/jpeg;base64,' + btoa(str).replace(/.{76}(?=.)/g,'$&\n'));
+			}
+		});
+
+		return deferred.promise;
 
 	}
 
@@ -390,36 +434,10 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		 * string dbfile Path to the JSON database
 		 * bool mergeLocalStorage wether to load uncommitted changes from local storage or not
 		 */
-		init: function(dbfile,useLocalStorage) {
+		init: function(dbfile,useLocalStorage, s3, s3bucket) {
 
-			console.log('testing s3');
-
-			//TODO - ask for these credentials
-			var creds = new AWS.Credentials({
-				'accessKeyId':'REDACTED',
-				'secretAccessKey':'REDACTED'
-			});
-
-			_s3 = new AWS.S3({
-				'credentials':creds,
-				'region':'ap-southeast-2'
-			});
-
-			//var s3obj = _s3.getObject({
-			//	Bucket:'bgmc-htpcbackup-syd',
-			//	Key:'pictures/autocopy/2017/04/16/.thumb/2017-04-16-09:18:10.JPG'
-			//},function(err,data){
-			//	if (err) {
-			//		console.log(err,err.stack);
-			//	} else {
-			//		console.log('retrieved');
-			//		console.log(data);
-			//	}
-			//});
-
-			//end s3 test
-			
-			//todo - autodetect if hosted by s3, possibly in the app
+			_s3 = s3;
+			_s3bucket = s3bucket;
 
 			if (useLocalStorage) {
 				if (typeof(localStorage) !== undefined) {
@@ -881,32 +899,9 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 			return fullImage;
 
-		}
-		,s3SRC(s3path) {
-
-			var deferred = $q.defer();
-
-			//The responsecachecontrol means the file is cached for a very long time
-
-			_s3.getObject({
-				Bucket:'bgmc-htpcbackup-syd',
-				Key:s3path,
-				ResponseCacheControl:'max-age=10368000, private'
-			},function(err,file){
-				if (err) {
-					deferred.reject(err);
-				} else {
-
-					var str = file.Body.reduce(function(a,b){
-						return a+String.fromCharCode(b);
-					},'');
-
-					deferred.resolve('data:image/jpeg;base64,' + btoa(str).replace(/.{76}(?=.)/g,'$&\n'));
-				}
-			});
-
-			return deferred.promise;
-
+		},
+		s3SRC(s3path) {
+			return _s3SRC(s3path);
 		}
 	}
 })

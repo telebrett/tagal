@@ -25,6 +25,12 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	$scope.numToShow = 50;
 
 	$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
+	//tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow).then(
+	//	function(win) {
+	//		console.log('all resolved');
+	//		$scope.currentImages = win;
+	//	}
+	//);
 
 	$scope.scroll = function() {
 		var left = Math.floor($scope.currentLeft);
@@ -40,6 +46,7 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	}
 
 	$scope.loadThumb = function($event,localIndex) {
+		//TODO - this causes "flashing" when scrolling 
 		if ($event.currentTarget.src.match(/spacer\.png$/)) {
 			var elem = $event.currentTarget;
 			tagalImages.s3SRC($scope.currentImages[localIndex].s3src)
@@ -111,6 +118,8 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 				timeout = $timeout(function() {
 					timeout = null;
 					scope.$parent.currentLeft = element[0].scrollLeft; //seems horrible but I can't see how to pass it back up any other way
+					//TODO - when loading from s3, this causes flashing, might be best
+					//       to be smarter about which images get added / dropped
 					scope.onScroll();
 				},scrollDelay);
 			};
