@@ -333,8 +333,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 			if (_s3) {
 
-				//TODO - autocopy might not actually be in the s3 path
-				var s3path = _rootImageDir + '/autocopy' + image.p + '/.thumb/' + image.f;
+				var s3path = _rootImageDir + image.p + '/.thumb/' + image.f;
 
 				if (_s3fails[s3path]) {
 					//TODO - package a "failed.png" image
@@ -925,7 +924,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 			if (_s3) {
 				fullImage.src = 'spacer.png';
-				fullImage.s3src = _rootImageDir + '/autocopy' + image.p + '/' + image.f;
+				fullImage.s3src = _rootImageDir + image.p + '/' + image.f;
 			} else {
 				fullImage.previewSrc = '/tagalapi/preview/' + index + '/' + fullImage.width + '/' + fullImage.height; 
 			}

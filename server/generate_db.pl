@@ -23,6 +23,8 @@ my $RESTRICTED = 0;
 my $OUTPUT = undef;
 my $IMAGEDIR = 'pictures';
 
+#TODO - For s3, the root dir is different
+
 Getopt::Long::GetOptions('public'=>\$PUBLIC,'restricted'=>\$RESTRICTED,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR);
 
 if ($PUBLIC && $RESTRICTED) {

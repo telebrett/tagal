@@ -15,7 +15,10 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 
   $routeProvider.otherwise({redirectTo: '/welcome'});
 }])
-.controller('tagalCtrl',function($scope,$route,$location,tagalImages){
+.controller('tagalCtrl',function($scope,$route,$location,$http,tagalImages){
+
+	$scope.S3 = false;
+	$scope.S3Creds = null;
 
 	//     - optionally also write to local storage so that page reloads do not clear the state
 
@@ -26,25 +29,30 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		$scope.S3 = true;
 	}
 
-	console.log('forcing s3 mode for testing purposes');
-	$scope.S3 = true;
+	if ($location.url().match('_s3_')) {
+		console.log('testing s3');
+		$scope.S3 = true;
+	}
 
 	$scope.otherMode = 'Admin';
 	$scope.currentMode = 'gallery';
 
-	//TODO - If in S3, load from a small username db which looks like the following
-	$scope.s3db = {
-		'users': {
-			'mpt': {
-				'accesskey':'AKIAIPWWX52EWEJJRTXQ',
-				'db'       : 'database.json'
+	if ($scope.S3) {
+		$http.get('s3db.json').then(
+			function(res) {
+				$scope.s3db = res.data;
+			},
+			function() {
 			}
-		},
-		'region':'ap-southeast-2',
-		'bucket':'bgmc-htpcbackup-syd'
-	};
+		);
+	}
 
-	if (! $scope.S3) {
+	if ($scope.S3) {
+		//Check we are not in the gallery
+		if (! $scope.S3Creds && $location.path() == '/gallery') {
+			$location.path('/welcome');
+		}
+	} else {
 		tagalImages.init('database.json', $scope.APIAvailable)
 		.then(
 			function(){
@@ -71,6 +79,8 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			'credentials':creds,
 			'region':$scope.s3db.region
 		});
+
+		$scope.S3Creds = true;
 
 		tagalImages.init($scope.s3db.users[username].db, $scope.APIAvailable, s3, $scope.s3db.bucket)
 		.then(
