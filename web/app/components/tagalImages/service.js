@@ -51,6 +51,8 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 	var _s3 = null;
 	var _s3bucket = null;
+	var _s3lru = null;
+	var _s3fails = {};
 
 	var monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
@@ -330,10 +332,25 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			};
 
 			if (_s3) {
-				//var p = _s3SRC(_rootImageDir + '/autocopy' + image.p + '/.thumb/' + image.f);
-				//promises.push(p);
-				thumb.src   =  'spacer.png';
-				thumb.s3src =  _rootImageDir + '/autocopy' + image.p + '/.thumb/' + image.f;
+
+				//TODO - autocopy might not actually be in the s3 path
+				var s3path = _rootImageDir + '/autocopy' + image.p + '/.thumb/' + image.f;
+
+				if (_s3fails[s3path]) {
+					//TODO - package a "failed.png" image
+					thumb.src = 'failed.png';
+					continue;
+				}
+
+				var s3cached = _s3lru.get(s3path);
+
+				//Still flickers, but only the thumbnails that were not already on the screen
+				if (s3cached) {
+					thumb.src = s3cached;
+				} else {
+					thumb.src   =  'spacer.png';
+					thumb.s3src = s3path;
+				}
 			} else {
 				thumb.src = _rootImageDir + '/' + image.p + '/.thumb/' + image.f;
 			}
@@ -343,11 +360,6 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		
 		//TODO - check this when in not s3 mode
 		return win;
-		//return Promise.all(promises).then(
-		//	function() {
-		//		return win;
-		//	}
-		//);
 	}
 
 	function _s3SRC(s3path) {
@@ -364,13 +376,21 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			if (err) {
 				console.log(err);
 				deferred.reject(err);
+				_s3fails[s3path] = true;
 			} else {
 
 				var str = file.Body.reduce(function(a,b){
 					return a+String.fromCharCode(b);
 				},'');
 
-				deferred.resolve('data:image/jpeg;base64,' + btoa(str).replace(/.{76}(?=.)/g,'$&\n'));
+				//TODO - change to js-cache-lru (bower package)
+				//     - although this works, a better way would be to improve the onscroll, but I think
+				//       this might actually be quite hard for angular, as it probably invokes the view 
+				//       controller again and does a full redraw
+				str = 'data:image/jpeg;base64,' + btoa(str).replace(/.{76}(?=.)/g,'$&\n');
+				_s3lru.set(s3path, str);
+
+				deferred.resolve(str);
 			}
 		});
 
@@ -438,6 +458,10 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 			_s3 = s3;
 			_s3bucket = s3bucket;
+
+			if (_s3) {
+				_s3lru = new LRU(100);
+			}
 
 			if (useLocalStorage) {
 				if (typeof(localStorage) !== undefined) {
