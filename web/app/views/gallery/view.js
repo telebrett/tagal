@@ -25,12 +25,6 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	$scope.numToShow = 50;
 
 	$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
-	//tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow).then(
-	//	function(win) {
-	//		console.log('all resolved');
-	//		$scope.currentImages = win;
-	//	}
-	//);
 
 	$scope.scroll = function() {
 		var left = Math.floor($scope.currentLeft);
@@ -41,12 +35,53 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	}
 
 	$scope.download = function() {
-		//TODO - change to open in a new window
-		window.location = $scope.mainImage.fullsrc;
+
+		if ($scope.mainImage.s3src) {
+			//TODO - show a "loading" window
+
+			var mainImage = this.mainImage;
+
+			tagalImages.s3SRC(this.mainImage.s3src, true).then(
+				function(data) {
+					var a = document.createElement('a');
+					a.href = window.URL.createObjectURL(data);
+					a.download = mainImage.name;
+					a.click();
+				},
+				function (err) {
+					alert('Could not download image');
+				}
+			);
+
+		} else {
+			var a = document.createElement('a');
+			a.href = $scope.mainImage.fullsrc;
+			a.download = $scope.mainImage.name;
+			a.click();
+		}
+
+		
+	}
+
+	$scope.loadMain = function($event, s3path) {
+
+		var $scoped_scope = $scope;
+		
+		if (s3path && $event.currentTarget.src.match(/spacer\.png$/)) {
+			var elem = $event.currentTarget;
+			tagalImages.s3SRC(s3path).then(
+				function(data) {
+					$scope.mainImage.src = data;
+				},
+				function(err) {
+					//TODO - package error.png
+					$scope.mainImage.src = 'error.png';
+				}
+			);
+		}
 	}
 
 	$scope.loadThumb = function($event,localIndex) {
-		//TODO - this causes "flashing" when scrolling 
 		if ($event.currentTarget.src.match(/spacer\.png$/)) {
 			var elem = $event.currentTarget;
 			tagalImages.s3SRC($scope.currentImages[localIndex].s3src)
@@ -75,9 +110,10 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 
 		$scope.mainImage.fullsrc = $scope.mainImage.src;
 
-		if ($scope.APIAvailable) {
+		if ($scope.APIAvailable && $scope.mainImage.previewSrc) {
 			$scope.mainImage.src = $scope.mainImage.previewSrc;
 		}
+
 	}
 
 }])

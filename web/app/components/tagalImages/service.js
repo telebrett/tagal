@@ -362,7 +362,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		return win;
 	}
 
-	function _s3SRC(s3path) {
+	function _s3SRC(s3path, raw) {
 
 		var deferred = $q.defer();
 
@@ -374,23 +374,26 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			ResponseCacheControl:'max-age=10368000, private'
 		},function(err,file){
 			if (err) {
-				console.log(err);
 				deferred.reject(err);
 				_s3fails[s3path] = true;
 			} else {
 
-				var str = file.Body.reduce(function(a,b){
-					return a+String.fromCharCode(b);
-				},'');
+				if (raw) {
+					deferred.resolve(new Blob([file.Body]));
+				} else {
 
-				//TODO - change to js-cache-lru (bower package)
-				//     - although this works, a better way would be to improve the onscroll, but I think
-				//       this might actually be quite hard for angular, as it probably invokes the view 
-				//       controller again and does a full redraw
-				str = 'data:image/jpeg;base64,' + btoa(str).replace(/.{76}(?=.)/g,'$&\n');
-				_s3lru.set(s3path, str);
+					var str = window.URL.createObjectURL(new Blob([file.Body], {type: file.ContentType}));
+					_s3lru.set(s3path, str);
+					deferred.resolve(str);
 
-				deferred.resolve(str);
+					//var str = file.Body.reduce(function(a,b){
+					//	return a+String.fromCharCode(b);
+					//},'');
+
+					//str = 'data:image/jpeg;base64,' + btoa(str).replace(/.{76}(?=.)/g,'$&\n');
+					//_s3lru.set(s3path, str);
+					//deferred.resolve(str);
+				}
 			}
 		});
 
@@ -904,7 +907,8 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			var image = _images[index];
 
 			var fullImage = {
-				src : _rootImageDir + '/' + image.p + '/' + image.f
+				src : _rootImageDir + '/' + image.p + '/' + image.f,
+				name : image.f
 			};
 
 			var height_from_maxwidth = Math.round((1/image.r) * maxWidth);
@@ -919,13 +923,18 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 				fullImage.height = height_from_maxwidth;
 			}
 
-			fullImage.previewSrc = '/tagalapi/preview/' + index + '/' + fullImage.width + '/' + fullImage.height; 
+			if (_s3) {
+				fullImage.src = 'spacer.png';
+				fullImage.s3src = _rootImageDir + '/autocopy' + image.p + '/' + image.f;
+			} else {
+				fullImage.previewSrc = '/tagalapi/preview/' + index + '/' + fullImage.width + '/' + fullImage.height; 
+			}
 
 			return fullImage;
 
 		},
-		s3SRC(s3path) {
-			return _s3SRC(s3path);
+		s3SRC(s3path, raw) {
+			return _s3SRC(s3path, raw);
 		}
 	}
 })

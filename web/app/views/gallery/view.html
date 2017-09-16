@@ -9,7 +9,7 @@
        <span aria-hidden="true" class="glyphicon glyphicon-chevron-right" ng-click="viewImage('next')" ng-show="mainImageIndex != (currentImages.length-1)"></span>
        <span aria-hidden="true" class="glyphicon glyphicon-download" ng-click="download()"></span>
 	  </div>
-      <img ng-src="{{mainImage.src}}" height="{{mainImage.height}}" width="{{mainImage.width}}" tagal-metadata>
+      <img ng-src="{{mainImage.src}}" height="{{mainImage.height}}" width="{{mainImage.width}}" tagal-metadata on-load="loadMain($event, mainImage.s3src)">
 	 </div>
 	</div>
    </div>
