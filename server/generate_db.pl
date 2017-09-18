@@ -1,6 +1,20 @@
 #!/usr/bin/perl -w
 use strict;
 
+
+# SELECT t.Tag, it.ImageID
+# FROM image i
+#  JOIN s3user s3 ON s3.Username = 'mpt'
+#  JOIN s3user_tag s3t ON s3t.S3UserID = s3.id
+#  JOIN image_tag s3it ON s3it.ImageID = i.id AND s3it.TagID = s3t.TagID
+# 
+#  JOIN image_tag it ON it.ImageID = i.id
+#  JOIN tag t ON t.id = it.TagID
+# 
+# 
+# ORDER BY i.DateTaken, i.id
+# ;
+
 use DBI;
 use Data::Dumper;
 use DateTime;
@@ -19,16 +33,26 @@ my $dbh;
 tie my %config, 'Config::IniFiles',(-file=>abs_path(dirname(abs_path($0)) . '/../config.ini'));
 
 my $PUBLIC = 0;
-my $RESTRICTED = 0;
 my $OUTPUT = undef;
 my $IMAGEDIR = 'pictures';
+my $S3USER = undef;
+my $HELP = undef;
 
 #TODO - For s3, the root dir is different
 
-Getopt::Long::GetOptions('public'=>\$PUBLIC,'restricted'=>\$RESTRICTED,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR);
+Getopt::Long::GetOptions('public'=>\$PUBLIC,'s3user=s'=>\$S3USER,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR,'help'=>\$HELP);
 
-if ($PUBLIC && $RESTRICTED) {
+if ($HELP) {
+	pod2usage(0);
+}
+
+if ($PUBLIC && $S3USER) {
 	warn "Cannot specify public and restricted\n";
+	pod2usage(1);
+}
+
+if ($S3USER && ! $OUTPUT) {
+	warn "S3user must specify a custom database\n";
 	pod2usage(1);
 }
 
@@ -55,30 +79,45 @@ build_db();
 sub build_db {
 	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{}};
 
-	my $where = '';
-	my $join = '';
-	if ($PUBLIC || $RESTRICTED) {
+	my @SQL_TAGS_BIND;
+	my @SQL_IMAGES_BIND;
 
-		#todo, ugly, change to SQLFactory
+	my $SQL_TAGS = "SELECT t.Tag, it.ImageID\n"
+	             . "FROM image i\n"
+	             . " JOIN image_tag it ON it.ImageID = i.id\n"
+	             . " JOIN tag t ON t.id = it.TagID\n";
 
-		$join = ' JOIN image_tag it ON it.ImageID = i.id JOIN tag t ON t.id = it.TagID';
+	my $SQL_IMAGES = "SELECT i.*,YEAR(i.DateTaken) AS YearTaken,MONTH(i.DateTaken) AS MonthTaken,DAYOFMONTH(i.DateTaken) AS DayOfMonthTaken,UNIX_TIMESTAMP(i.DateTaken) AS SortOrder\n"
+	               . "FROM image i\n";
 
-		if ($PUBLIC) {
-			$where = 't.IsPublic = 1';
-		} elsif ($RESTRICTED) {
-			$where = 't.IsRestricted = 1';
-		}
+	if ($PUBLIC) {
+		$SQL_TAGS .= ' WHERE i.IsPublic = 1';
+		$SQL_IMAGES .= ' WHERE i.IsPublic = 1';
 
-		$join .= ' AND ' . $where;
-		$where = 'WHERE ' . $where;
+	} elsif ($S3USER) {
+
+		push @SQL_TAGS_BIND, $S3USER;
+		push @SQL_IMAGES_BIND, $S3USER;
+
+		$SQL_TAGS .= " JOIN s3user s ON s.Username = ?\n"
+		           . " JOIN s3user_tag s3tag ON s3tag.S3UserID = s.id AND s3tag.TagID = it.TagID\n";
+
+		$SQL_IMAGES .= " JOIN s3user s ON s.Username = ?\n"
+		             . " JOIN s3user_tag s3tag ON s3tag.S3UserID = s.id\n"
+		             . " JOIN image_tag it ON it.TagID = s3tag.TagID AND it.ImageID = i.id\n";
+
 	}
 
 	#Note, these two statements MUST be ordered the same
-	my $sth_tags = $dbh->prepare("SELECT t.Tag,it.ImageID,t.IsPublic FROM tag t JOIN image_tag it ON it.TagID = t.id JOIN image i ON i.id = it.ImageID $where ORDER BY i.DateTaken,i.id");
-	$sth_tags->execute();
+	$SQL_TAGS .= "ORDER BY i.DateTaken, i.id";
+	$SQL_IMAGES .= "ORDER BY i.DateTaken, i.id";
 
-	my $sth_image = $dbh->prepare("SELECT i.*,YEAR(i.DateTaken) AS YearTaken,MONTH(i.DateTaken) AS MonthTaken,DAYOFMONTH(i.DateTaken) AS DayOfMonthTaken,UNIX_TIMESTAMP(i.DateTaken) AS SortOrder FROM image i $join GROUP BY i.id ORDER BY i.DateTaken,i.id");
-	$sth_image->execute();
+	#Note, these two statements MUST be ordered the same
+	my $sth_tags = $dbh->prepare($SQL_TAGS);
+	$sth_tags->execute(@SQL_TAGS_BIND);
+
+	my $sth_image = $dbh->prepare($SQL_IMAGES);
+	$sth_image->execute(@SQL_IMAGES_BIND);
 
 	my $cur_tag = $sth_tags->fetchrow_hashref;
 
@@ -127,11 +166,6 @@ sub build_db {
 
 			push @{$data->{tags}->{$cur_tag->{TAG}}},$image->{ID};
 
-			#TODO - this should be outside of the image/tag loop
-			if ($cur_tag->{ISPUBLIC}) {
-				$data->{tagmetadata}->{$cur_tag->{TAG}} = {public=>1};
-			}
-
 			$cur_tag = $sth_tags->fetchrow_hashref;
 		}
 
@@ -161,12 +195,12 @@ generate_db.pl
 
 =head1 SYNOPSIS
 
-./generate_db.pl [-public|-restricted] [--output /path/to/output]
+./generate_db.pl [-public] [--s3user name] [--output /path/to/output]
 
  Options
 
  -p[ublic] build public db
- -r[estricted] build restricted db
+ -s[3user] The s3user to write out a restricted user for
  -o[output] The path to to write out to
  -i[magedir] The path that the images are in. Defaults to 'pictures'
 

@@ -324,8 +324,8 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		for (var i = start_index; i < end_index; i++) {
 			var image = _images[_currentImages[i]];
 			var thumb = {
-				width    : image.tw,
-				height   : image.th,
+				width    : Math.round(image.tw),
+				height   : Math.round(image.th),
 				index    : _currentImages[i],
 				left     : image.tl,
 				selected : _selected[_currentImages[i]]

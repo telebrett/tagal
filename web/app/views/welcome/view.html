@@ -3,7 +3,7 @@
  <label for="key">Username</label>
  <input type="text" class="form-control" ng-model="S3Login.Username" />
  <label for="key">Secret</label>
- <input type="text" class="form-control" ng-model="S3Login.Secret" />
+ <input type="password" class="form-control" ng-model="S3Login.Secret" />
  <button class="btn btn-primary" type="button" ng-click="login()">Set credentials</button>
 </div>
 <div ng-if="! (S3 && ! S3Creds)">

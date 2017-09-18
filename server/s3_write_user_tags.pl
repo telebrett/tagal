@@ -41,8 +41,7 @@ write_s3user_tag();
 #note, these are AWS S3 tags, not EXIF tags in the files themselves
 sub write_s3user_tag {
 
-	#TODO - this count is incorrect
-	my $SQL = "SELECT COUNT(*) AS Count\n"
+	my $SQL = "SELECT COUNT(DISTINCT i.id) AS Count\n"
 	        . "FROM image i\n"
 			. " JOIN image_tag trestrict ON trestrict.ImageID = i.id\n"
 	        . " JOIN s3user_tag s3trestrict ON s3trestrict.TagID = trestrict.TagID\n"
@@ -93,6 +92,7 @@ sub write_s3user_tag {
 
 	if (@{$cur_user_tags}) {
 		push_tags($cur_image_location, $cur_user_tags);
+		print "\rProcessed " . ++$processed . " out of $count";
 	}
 
 	print " Finished\n";

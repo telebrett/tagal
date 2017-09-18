@@ -8,8 +8,6 @@ CREATE TABLE setting (
 CREATE TABLE tag (
  id int(10) unsigned auto_increment
 ,Tag VARCHAR(250)
-,IsPublic tinyint(0) NOT NULL DEFAULT '0'
-,IsRestricted tinyint(0) NOT NULL DEFAULT '0'
 ,IsPerson tinyint(0) NOT NULL DEFAULT '0'
 ,PRIMARY KEY(id)
 ,INDEX(Tag)
@@ -33,4 +31,21 @@ CREATE TABLE image_tag (
  ImageID int(10) unsigned NOT NULL
 ,TagID int(10) unsigned NOT NULL
 ,PRIMARY KEY(ImageID,TagID)
+,FOREIGN KEY(ImageID) REFERENCES image(id)
+,FOREIGN KEY(TagID) REFERENCES tag(id)
+) ENGINE=InnoDB CHARSET=UTF8;
+
+CREATE TABLE s3user (
+ id int(10) unsigned NOT NULL AUTO_INCREMENT
+ ,Username varchar(100) NOT NULL
+ ,AccessKey varchar(250) NOT NULL
+ ,PRIMARY KEY(id)
+) ENGINE=InnoDB CHARSET=UTF8;
+
+CREATE TABLE s3user_tag (
+ S3UserID int(10) unsigned NOT NULL
+,TagID int(10) unsigned NOT NULL
+,PRIMARY KEY(S3UserID,TagID)
+,FOREIGN KEY(S3UserID) REFERENCES s3user(id)
+,FOREIGN KEY(TagID) REFERENCES tag(id)
 ) ENGINE=InnoDB CHARSET=UTF8;
