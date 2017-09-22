@@ -25,14 +25,17 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 	//TODO - build hostname from server side config, eg database.json
 	if ($location.host() == 'htpc') {
 		$scope.APIAvailable = true;
-	} else if ($location.host.endsWith('amazonaws.com')) {
+	} else if ($location.host().endsWith('amazonaws.com')) {
 		$scope.S3 = true;
 	}
 
 	if ($location.url().match('_s3_')) {
 		console.log('testing s3');
 		$scope.S3 = true;
-	}
+	} 
+
+	//TODO - add ability to "test" an s3db locally
+	
 
 	$scope.otherMode = 'Admin';
 	$scope.currentMode = 'gallery';
