@@ -279,7 +279,9 @@ the name of the image did not fit a known auto name pattern eg "IMG1234"
 
 Tag based on sub directory names
 
-=item handle collisions for filenames
+=item cancelling
+
+At the moment the script does not respond to CTRL+c
 
 =back
 

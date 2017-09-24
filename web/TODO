@@ -14,7 +14,6 @@ FEATURES
 	   image for thumbnail
 * Special dates, birthdays, christmas,/var/data/pictures/autocopy/2014/01/01/2014-01-01-06:48:54-.JPG NYE. Birthdays could be tied to people as well
 * UI - Add tag as a negative, eg I want to see everything in August 2016 that is NOT tagged with 'Bogong'. Probably achieve this with an X mark in the top corner
-* UI - Full screen view of an image
 * UI - Download images as zip, not sure if achievable in JS, can we generate a TAR file in JS?
 * UI - Admin mode, prior to commit, show pages of images with changes
 * UI - Tag categories "people", "activities", "Year" etc

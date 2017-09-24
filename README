@@ -27,12 +27,20 @@ Getting started
    will have to setup a minimal web server to access these files. Below is my very simple Apache
    configuration
 
-	Alias "/tagal" "/var/data/tagal/web"
+	Alias "/tagal" "/var/data/tagal/web/app"
 	<Location "/tagal">
 	 Order Allow,Deny
 	 Allow from all
 	 Require all granted
 	</Location>
+
+6. Bower install
+
+   install bower then 
+
+   cd /path/to/tagal/web
+   bower install
+
 
 
 --------------------------------------------------------------------------------
@@ -70,9 +78,11 @@ File::Path
 File::Basename
 Image::ExifTool
 Image::Magick
+Digest::MD5::File
 Getopt::Long
 Pod::Usage
 Config::IniFiles
+JSON::XS
 
 --------------------------------------------------------------------------------
 REST API
@@ -84,8 +94,9 @@ Requires the following PECL modules
 imagick
 --------------------------------------------------------------------------------
 
-
-As well as the "aws" cli tools and the 'exiftran' CLI tool
+Binaries
+aws - the AWS CLI tools
+exiftran
 
 It will look for config.ini in the directly below the server, see config.ini.skel
 
