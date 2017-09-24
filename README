@@ -65,10 +65,10 @@ Requires the following perl modules
 DBI
 DateTime
 DateTime::Format::MySQL
-File::Stat
+File::stat
 File::Path
 File::Basename
-ImageExifTool
+Image::ExifTool
 Image::Magick
 Getopt::Long
 Pod::Usage

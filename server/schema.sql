@@ -11,8 +11,6 @@ CREATE TABLE tag (
 ,IsPerson tinyint(0) NOT NULL DEFAULT '0'
 ,PRIMARY KEY(id)
 ,INDEX(Tag)
-,INDEX(IsPublic)
-,INDEX(IsRestricted)
 ) ENGINE=InnoDB CHARSET=UTF8;
 
 CREATE TABLE image (
