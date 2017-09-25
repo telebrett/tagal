@@ -8,13 +8,20 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	controller: 'galleryCtrl'
   });
 }])
-.controller('galleryCtrl',['$scope','tagalImages',function($scope,tagalImages){
+.controller('galleryCtrl',['$scope','$window','tagalImages',function($scope,$window,tagalImages){
 
 	//Note, the thumbnail height calcs / set to show are in the tagalImages service
 	//this is to minimise copying large arrays
+	
+	//TODO - mobile mode, padding-left of carousel is incorrect
+	
+	//Small screen and in landscape mode
+	if ($window.innerHeight < 500 && $window.innerHeight < $window.innerWidth) {
+		$scope.carouselHeight = 75;
+	} else {
+		$scope.carouselHeight = 150;
+	}
 
-
-	$scope.carouselHeight = 150;
 	$scope.currentImages = [];
 	$scope.currentLeft = 0;
 	$scope.leftPos = 0;
