@@ -32,7 +32,12 @@
 /** Layout **/
 body {
 	/** fixed header navbar and border **/
-	padding-top:51px;
+	padding-top:31px;
+}
+
+/** override bootstrap **/
+.navbar {
+	min-height:30px;
 }
 
 /** full height **/

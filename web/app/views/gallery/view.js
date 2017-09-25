@@ -14,7 +14,99 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	//this is to minimise copying large arrays
 	
 	//TODO - mobile mode, padding-left of carousel is incorrect
-	
+	//       The problem here is that bootstrap allocates no margin to the left
+	//       as it thinks that the left hand navbar should be hidden.
+	//
+	//       Maybe when on a mobile in vertical mode, change to a layout that is
+	//       like the following with the ability to collapse the tag bar
+	//
+	//       Note sure about where the selected tags go, could be like the following
+	//       or see the next
+	//
+	//       -----------------------------------
+	//       | sel tag a | ------------------- |
+	//       | sel tag b | |                 | |
+	//       |-----------| |                 | |
+	//       | tag a     | |   thumbnail     | |
+	//       | tag b     | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | ------------------- |
+	//       | tag ...   | ------------------- |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |   thumbnail     | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | ------------------- |
+	//       |           | ------------------- |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |   thumbnail     | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | ------------------- |
+	//       |           | ------------------- |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |   thumbnail     | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | ------------------- |
+	//       |           | ...                 |
+	//       -----------------------------------
+	//
+	//       or 
+	//
+	//       -----------------------------------
+	//       | sel tag a, sel tag b, sel tag c |
+	//       | sel tag d
+	//       -----------------------------------
+	//       | tag a     | ------------------- |
+	//       | tag b     | |                 | |
+	//       | tag c     | |                 | |
+	//       | tag ...   | |   thumbnail     | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | ------------------- |
+	//       | tag ...   | ------------------- |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |   thumbnail     | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | |                 | |
+	//       | tag ...   | ------------------- |
+	//       |           | ------------------- |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |   thumbnail     | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | ------------------- |
+	//       |           | ------------------- |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |   thumbnail     | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | |                 | |
+	//       |           | ------------------- |
+	//       |           | ...                 |
+	//       -----------------------------------
+	//
+	//
 	//Small screen and in landscape mode
 	if ($window.innerHeight < 500 && $window.innerHeight < $window.innerWidth) {
 		$scope.carouselHeight = 75;
