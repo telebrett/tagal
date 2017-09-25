@@ -13,12 +13,14 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	//Note, the thumbnail height calcs / set to show are in the tagalImages service
 	//this is to minimise copying large arrays
 
-	//This is the total thumbnail width
-	$scope.thumbWidth = tagalImages.setThumbnailHeights(150);
 
+	$scope.carouselHeight = 150;
 	$scope.currentImages = [];
 	$scope.currentLeft = 0;
 	$scope.leftPos = 0;
+
+	//This is the total thumbnail width
+	$scope.thumbWidth = tagalImages.setThumbnailHeights($scope.carouselHeight);
 
 	//TODO - Make this configurable, smaller number means faster initial page load
 	//       but fast scrolling means thumbnails may not be preloaded
@@ -123,7 +125,7 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 		link:function($scope,elem,attrs) {
 
 			//TODO - it is not picking up the height of the scrollbar
-			$scope.mainImageHeight = elem[0].clientHeight - 150;
+			$scope.mainImageHeight = elem[0].clientHeight - $scope.carouselHeight;
 			$scope.mainImageWidth  = elem[0].clientWidth;
 
 			if ($scope.currentImages.length > 0) {

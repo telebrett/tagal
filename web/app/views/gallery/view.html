@@ -1,5 +1,5 @@
 <div id="gallery">
- <div id="mainimage" image-ready="setHeight()">
+	<div id="mainimage" image-ready="setHeight()" style="padding-bottom: {{carouselHeight}}px">
   <div class="ng-isolate-scope carousel" ng-show="mainImage">
    <div class="carousel-inner">
     <div class="ng-scope ng-isolate-scope item active">
@@ -25,7 +25,7 @@
    -->
   </div>
  </div>
- <div id="carousel" on-scroll="scroll()">
+ <div id="carousel" on-scroll="scroll()" style="height: {{carouselHeight}}px">
   <div class="block" style="width: {{thumbWidth}}px">
    <div class="current" style="left: {{leftPos}}px">
     <img ng-repeat="i in currentImages" ng-src="{{i.src}}" height="{{i.height}}" width="{{i.width}}" ng-click="viewImage($index)" on-load="loadThumb($event,$index)">

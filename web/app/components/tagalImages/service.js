@@ -866,10 +866,11 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 				var image = _images[_currentImages[i]];
 
 				image.th = height;
-				image.tw = image.r * height;
+				image.tw = Math.ceil(image.r * height);
 				image.tl = totalWidth;
 
-				totalWidth += image.tw;
+				//The 1px is for the right border
+				totalWidth += image.tw + 1;
 			}
 
 			return totalWidth;
@@ -910,13 +911,13 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 				name : image.f
 			};
 
-			var height_from_maxwidth = Math.round((1/image.r) * maxWidth);
-			var width_from_maxheight = Math.round((image.r * maxHeight));
+			var height_from_maxwidth = Math.ceil((1/image.r) * maxWidth);
+			var width_from_maxheight = Math.ceil((image.r * maxHeight));
 
 			if (width_from_maxheight <= maxWidth) {
 				//max will be the height
 				fullImage.height = maxHeight;
-				fullImage.width  = Math.round(image.r * maxHeight);
+				fullImage.width  = Math.ceil(image.r * maxHeight);
 			}else{
 				fullImage.width  = maxWidth;
 				fullImage.height = height_from_maxwidth;
