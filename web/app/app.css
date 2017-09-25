@@ -92,6 +92,7 @@ html,body {
 	position:absolute;
 	overflow:hidden;
 	overflow-x:scroll;
+	border-top-width:1px;
 }
 
 #carousel .block {
@@ -105,8 +106,8 @@ html,body {
 }
 
 #carousel img {
-	border-width:1px;
-	border-left-width:0px;
+	border-width:0px;
+	border-right-width:1px;
 }
 
 /* Colours */
@@ -176,6 +177,12 @@ span.delete:hover {
 #mainimage div.nav {
 	color:black;
 	font-size:2em;
+}
+
+#carousel {
+	border-top-color:#000000;
+	border-top-style:solid;
+	background-color:#eeeeee;
 }
 
 #carousel img {
