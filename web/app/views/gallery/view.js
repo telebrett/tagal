@@ -107,25 +107,31 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	//       -----------------------------------
 	//
 	//
-	//Small screen and in landscape mode
-	if ($window.innerHeight < 500 && $window.innerHeight < $window.innerWidth) {
-		$scope.carouselHeight = 75;
-	} else {
-		$scope.carouselHeight = 150;
-	}
 
 	$scope.currentImages = [];
 	$scope.currentLeft = 0;
 	$scope.leftPos = 0;
 
-	//This is the total thumbnail width
-	$scope.thumbWidth = tagalImages.setThumbnailHeights($scope.carouselHeight);
+	$scope.setGallerySize = function() {
+		//Small screen and in landscape mode
+		if ($window.innerHeight < 500 && $window.innerHeight < $window.innerWidth) {
+			$scope.carouselHeight = 75;
+		} else {
+			$scope.carouselHeight = 150;
+		}
+
+		//This is the total thumbnail width
+		$scope.thumbWidth = tagalImages.setThumbnailHeights($scope.carouselHeight);
+
+		$scope.numToShow = 50;
+
+		$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
+	}
+
+	$scope.setGallerySize();
 
 	//TODO - Make this configurable, smaller number means faster initial page load
 	//       but fast scrolling means thumbnails may not be preloaded
-	$scope.numToShow = 50;
-
-	$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
 
 	$scope.scroll = function() {
 		var left = Math.floor($scope.currentLeft);
@@ -255,8 +261,6 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 				timeout = $timeout(function() {
 					timeout = null;
 					scope.$parent.currentLeft = element[0].scrollLeft; //seems horrible but I can't see how to pass it back up any other way
-					//TODO - when loading from s3, this causes flashing, might be best
-					//       to be smarter about which images get added / dropped
 					scope.onScroll();
 				},scrollDelay);
 			};
@@ -277,6 +281,28 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 				scope.$apply(function() {
 					fn(scope, {$event: event});
 				});
+			});
+		}
+	};
+}])
+.directive('onWindowResize', ['$parse', function($parse) {
+	return {
+		link: function(scope,elem,attrs) {
+
+			var w = angular.element(window);
+
+			var fn = $parse(attrs.onWindowResize);
+
+			var handler = function(event) {
+				scope.$apply(function() {
+					fn(scope);
+				});
+			};
+
+			w.on('resize',handler);
+
+			scope.$on('$destroy', function() {
+				w.off('resize', handler);
 			});
 		}
 	};
