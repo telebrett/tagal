@@ -38,7 +38,13 @@ body {
 /** override bootstrap **/
 .navbar {
 	min-height:30px;
+	margin-bottom:0px;
 }
+
+.container-fluid {
+	padding:0px;
+}
+
 
 /** full height **/
 html,body {
@@ -75,7 +81,7 @@ html,body {
 /** sidebar **/
 #sidebar {
   position: fixed;
-  top: 50px;
+  top: 30px;
   bottom: 0;
   left: 0;
   z-index: 1000;
@@ -184,14 +190,19 @@ span.delete:hover {
 	font-size:2em;
 }
 
+#mainimage img {
+	border-left:1px solid #999999;
+	border-right:1px solid #999999;
+}
+
 #carousel {
-	border-top-color:#000000;
+	border-top-color:#999999;
 	border-top-style:solid;
 	background-color:#eeeeee;
 }
 
 #carousel img {
-	border-color:#000000;
+	border-color:#999999;
 	border-style:solid;
 }
 
