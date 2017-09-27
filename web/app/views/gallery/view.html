@@ -1,5 +1,5 @@
 <div id="gallery" on-window-resize="setGallerySize()">
-	<div id="mainimage" image-ready="setHeight()" style="padding-bottom: {{carouselHeight}}px">
+	<div id="mainimage" image-ready="setHeight()" on-window-resize="resizeMainImage($height,$width)" style="padding-bottom: {{carouselHeight}}px">
   <div class="ng-isolate-scope carousel" ng-show="mainImage">
    <div class="carousel-inner">
     <div class="ng-scope ng-isolate-scope item active">

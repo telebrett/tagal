@@ -112,6 +112,20 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	$scope.currentLeft = 0;
 	$scope.leftPos = 0;
 
+	$scope.resizeMainImage = function(height, width) {
+
+		$scope.mainImageHeight = height - $scope.carouselWidth;
+		$scope.mainImageWidth = width;
+
+		//TODO - Not working, invoking the function, but then when viewing the next image
+		//       everything is all out, the images are too large. Seen when going from a portrait
+		//       to another potrait
+		//       Also need to investigate when in S3 mode
+		if ($scope.mainImageIndex !== undefined) {
+			$scope.viewImage($scope.mainImageIndex);
+		}
+	}
+
 	$scope.setGallerySize = function() {
 		//Small screen and in landscape mode
 		if ($window.innerHeight < 500 && $window.innerHeight < $window.innerWidth) {
@@ -294,8 +308,12 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 			var fn = $parse(attrs.onWindowResize);
 
 			var handler = function(event) {
+
+				var h = elem[0].clientHeight;
+				var w = elem[0].clientWidth;
+
 				scope.$apply(function() {
-					fn(scope);
+					fn(scope, {$height: h, $width: w});
 				});
 			};
 
