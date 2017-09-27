@@ -13,11 +13,8 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	//Note, the thumbnail height calcs / set to show are in the tagalImages service
 	//this is to minimise copying large arrays
 	
-	//TODO - mobile mode, padding-left of carousel is incorrect
-	//       The problem here is that bootstrap allocates no margin to the left
-	//       as it thinks that the left hand navbar should be hidden.
-	//
-	//       Maybe when on a mobile in vertical mode, change to a layout that is
+	//TODO - When in mobile mode, maybe both, view main image ability to view fullscreen
+	//     - Maybe when on a mobile in vertical mode, change to a layout that is
 	//       like the following with the ability to collapse the tag bar
 	//
 	//       Note sure about where the selected tags go, could be like the following
@@ -112,26 +109,33 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 	$scope.currentLeft = 0;
 	$scope.leftPos = 0;
 
+	$scope.getCarouselHeight = function() {
+		//Small screen and in landscape mode
+		if ($window.innerHeight < 500 && $window.innerHeight < $window.innerWidth) {
+			return 75;
+		} else {
+			return 150;
+		}
+	}
+
 	$scope.resizeMainImage = function(height, width) {
 
-		$scope.mainImageHeight = height - $scope.carouselWidth;
+		$scope.mainImageHeight = height - $scope.getCarouselHeight();
 		$scope.mainImageWidth = width;
 
-		//TODO - Not working, invoking the function, but then when viewing the next image
-		//       everything is all out, the images are too large. Seen when going from a portrait
-		//       to another potrait
-		//       Also need to investigate when in S3 mode
 		if ($scope.mainImageIndex !== undefined) {
 			$scope.viewImage($scope.mainImageIndex);
 		}
 	}
 
 	$scope.setGallerySize = function() {
-		//Small screen and in landscape mode
-		if ($window.innerHeight < 500 && $window.innerHeight < $window.innerWidth) {
-			$scope.carouselHeight = 75;
-		} else {
-			$scope.carouselHeight = 150;
+
+		var prev_height = $scope.carouselHeight;
+
+		$scope.carouselHeight = $scope.getCarouselHeight();
+
+		if (prev_height == $scope.carouselHeight) {
+			return;
 		}
 
 		//This is the total thumbnail width
@@ -227,6 +231,7 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 			$scope.mainImageIndex = currentImages_index;
 		}
 
+		//TODO - bug here, resize loads a different image, but for the same index, seen in desktop
 		$scope.mainImage = tagalImages.getImage($scope.currentImages[$scope.mainImageIndex].index,this.mainImageWidth,this.mainImageHeight);
 
 		$scope.mainImage.fullsrc = $scope.mainImage.src;

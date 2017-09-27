@@ -34,9 +34,6 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 		$scope.S3 = true;
 	} 
 
-	//TODO - add ability to "test" an s3db locally
-	
-
 	$scope.otherMode = 'Admin';
 	$scope.currentMode = 'gallery';
 
