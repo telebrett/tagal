@@ -132,8 +132,15 @@ sub import_directory {
 					}
 
 					if ($is_dupe) {
-							print "File {$new_file_name} already exists - skipping\n";
-							next;
+
+						print "File {$new_file_name} already exists - skipping\n";
+
+						if ($OPT_REMOVEIMAGE) {
+							unlink($fullpath);
+							print "Deleted $fullpath\n";
+						}
+
+						next;
 					}
 
 					$new_file_name = $new_file_name_part . '-' . ++$max_dupe_name . '.JPG';
