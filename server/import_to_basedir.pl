@@ -1,6 +1,8 @@
 #!/usr/bin/perl -w
 use strict;
 
+#TODO for movie files, need to also change the import_images.pl script to handle movie files 
+
 use DateTime;
 use File::stat qw(stat);
 use File::Path qw(make_path);
@@ -9,10 +11,12 @@ use File::Compare qw(compare);
 use Image::ExifTool qw(:Public);
 use Image::Magick;
 use Digest::MD5::File qw(file_md5);
+use Data::Dumper;
+use String::ShellQuote qw(shell_quote);
 
 use Getopt::Long;
 use Pod::Usage;
-use Cwd qw(abs_path);
+use Cwd qw(abs_path getcwd);
 
 use Config::IniFiles;
 tie my %config, 'Config::IniFiles',(-file=>abs_path(dirname(abs_path($0)) . '/../config.ini'));
@@ -29,10 +33,12 @@ if ( ! -d $destdir) {
 my $OPT_MAN = 0;
 my $OPT_USAGE = 0;
 my $OPT_REMOVEIMAGE = 0;
+my $OPT_ACCEPTNODATE = 0;
+my $OPT_VIDEOONLY = 0;
 my $OPT_SOURCEDIR = undef;
 my @OPT_TAGS;
 
-Getopt::Long::GetOptions('remove'=>\$OPT_REMOVEIMAGE,'man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'d=s' => \$OPT_SOURCEDIR,'t=s@'=>\@OPT_TAGS);
+Getopt::Long::GetOptions('remove'=>\$OPT_REMOVEIMAGE,'man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'d=s' => \$OPT_SOURCEDIR,'t=s@'=>\@OPT_TAGS, 'acceptnodate'=>\$OPT_ACCEPTNODATE, 'videoonly'=>\$OPT_VIDEOONLY);
 
 pod2usage(-exitval=>0,-verbose=>2) if ($OPT_MAN);
 pod2usage(1) if $OPT_USAGE;
@@ -55,8 +61,15 @@ if (! -d $OPT_SOURCEDIR) {
 }
 
 my $count;
+my $had_errors = 0;
 
 import_directory();
+
+if ($had_errors) {
+	print "\n\n\n";
+	print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+	print "Warning - some files could not be copied / converted\n";
+}
 
 sub import_directory {
 	my $dir = shift;
@@ -95,39 +108,115 @@ sub import_directory {
 			import_directory($dirpath);
 		}else{
 
-			if ($file =~ m/\.jpe?g$/i){
+			if ($file =~ m/\.jpe?g$/i || $file =~ m/\.(mp4|avi|mov|m4v)$/i){
+
+				my $extension;
+
+				if ($file =~ m/\.jpe?g$/i) {
+					$extension = 'JPG';
+					if ($OPT_VIDEOONLY) {
+						next;
+					}
+				} else {
+					$extension = uc $1;
+				}
+
+				my $converted_file = undef;
+				my $original_file  = $fullpath;
+
+				if ($extension eq 'AVI') {
+					#Image::ExifTool can't write to AVI's, convert to mkv
+					
+					$converted_file = '/tmp/importbasedir-tmp.m4v';
+					$extension = 'M4V';
+					
+					#TODO - check /tmp for available space
+					if (-f $converted_file) {
+						print "Could not convert $fullpath to $converted_file as this target file already exists\n";
+						exit(1);
+					}
+
+					#TODO - Silence this output
+					system('ffmpeg -i ' . shell_quote($fullpath) . ' ' . $converted_file);
+					system('exiftool -tagsFromFile ' . shell_quote($fullpath) . ' ' . $converted_file);
+
+					$fullpath = $converted_file;
+				}
 
 				my $options;
 
 				$tool->ExtractInfo($fullpath);
 
-				my $dt_string = $tool->GetValue('DateTimeOriginal');
+				my $dt_string = undef;
+				my @date_tags = qw/DateTimeOriginal TrackCreateDate CreateDate/;
 
-				if (not $dt_string =~ m/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/) {
-					print "Invalid date time {$dt_string}\n";
+				foreach my $attempt_tag (@date_tags) {
+					my $attempt_tag = shift @date_tags;
+					$dt_string = $tool->GetValue($attempt_tag);
+
+					if (defined $dt_string) {
+						last;
+					}
+				}
+
+				if ((not defined $dt_string) && $OPT_ACCEPTNODATE) {
+					$dt_string = "1970:10:01 01:00:00";
+				}
+
+				if ((not defined $dt_string)|| not $dt_string =~ m/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/) {
+					if (defined $dt_string) {
+						print "Invalid date time {$dt_string}\n";
+					} else {
+						print "No datetime tag found for $original_file\n";
+					}
+
+					if ($converted_file) {
+						unlink($converted_file);
+					}
+
 					next;
 				}
 
 				my $new_file_name_part = "$destdir/$1/$2/$3/$1-$2-$3-$4:$5:$6";
 
-				my $new_file_name = "$new_file_name_part.JPG";
+				my $new_file_name = "$new_file_name_part.$extension";
 
 				if (-f $new_file_name) {
 
 					my $max_dupe_name = 0;
 
-					my @possible_dupes = glob "$new_file_name_part*.JPG";
+					my @possible_dupes = glob "$new_file_name_part*.$extension";
 
 					my $is_dupe = 0;
 
 					foreach my $possible_dupe (@possible_dupes) {
-						if ($possible_dupe =~ m/-(\d+).JPG$/) {
+						#the glob above has already checked the extensions
+						if ($possible_dupe =~ m/-(\d+).\w+$/) {
 							$max_dupe_name = $1;
 						}
 
-						if (is_dupe($possible_dupe,$fullpath)) {
-							$is_dupe = 1;
-							last;
+						if ($extension eq 'JPG') {
+							if (is_dupe_image($possible_dupe,$fullpath)) {
+								$is_dupe = 1;
+								last;
+							}
+						} else {
+
+							#do an exact file match for the moment
+							#once the video has user entered tags though, the files will differ
+							#ideally, build an extractor that just compares the video part of the file,
+							#ie ignores the EXIF data
+							if (compare($possible_dupe, $fullpath) == 0) {
+								$is_dupe = 1;
+							} else {
+								print "$original_file is a possible duplicate of $possible_dupe - not importing, this requires a manual intervention\n";
+
+								if ($converted_file) {
+									unlink($converted_file);
+								}
+
+								next;
+							}
 						}
 					}
 
@@ -136,14 +225,17 @@ sub import_directory {
 						print "File {$new_file_name} already exists - skipping\n";
 
 						if ($OPT_REMOVEIMAGE) {
-							unlink($fullpath);
-							print "Deleted $fullpath\n";
+							unlink($original_file);
+							print "Deleted $original_file\n";
 						}
 
+						if ($converted_file) {
+							unlink($converted_file);
+						}
 						next;
 					}
 
-					$new_file_name = $new_file_name_part . '-' . ++$max_dupe_name . '.JPG';
+					$new_file_name = $new_file_name_part . '-' . ++$max_dupe_name . ".$extension";
 
 					print "Rewriting as $new_file_name\n";
 
@@ -161,18 +253,28 @@ sub import_directory {
 
 				my $success = $tool->WriteInfo($fullpath,$new_file_name);
 
-				#TODO - find a native perl lossless rotation, ensure it rewrites the EXIF orientation tag but leaves all others alone
-				system('exiftran','-ai',$new_file_name);
+				if ($extension eq 'JPG') {
+					#TODO - find a native perl lossless rotation, ensure it rewrites the EXIF orientation tag but leaves all others alone
+					system('exiftran','-ai',$new_file_name);
+				}
 
 				if ($success) {
 					if ($OPT_REMOVEIMAGE) {
-						unlink($fullpath);
-						print "Deleted $fullpath\n";
+						unlink($original_file);
+						print "Deleted $original_file\n";
 					}
 					print "Created $new_file_name\n";
 				} else {
 					print "Failed writing tags for $new_file_name\n";
-					exit(1);
+					print "Source file $fullpath\n";
+					print Dumper($tool->GetInfo('Error', 'Warning'));
+
+					$had_errors = 1;
+
+				}
+
+				if ($converted_file) {
+					unlink($converted_file);
 				}
 
 			}
@@ -185,7 +287,7 @@ sub import_directory {
 
 }
 
-sub is_dupe {
+sub is_dupe_image {
 	my $image_a = shift;
 	my $image_b = shift;
 
@@ -231,6 +333,9 @@ sub is_dupe {
 
 }
 
+sub is_dupe_movie {
+}
+
 sub usage {
 
 	my $program = shift;
@@ -261,11 +366,13 @@ import_to_basedir.pl
 ./import_to_basedir.pl -d "sourcedir" [-t tag1 -t tag2 ... -t tagN]
 
  Options
-  -h[elp]   brief help message
-  -m[an]    full help
-  -d[ir]    source directory, relative or absolute path
-  -r[emove] if specified it will delete the image from the source directory
-  -t[ag]    tag name to tag the image in the EXIF data with, can be a quoted value eg "Lunar eclipse". This can be specified multiple times
+  -h[elp]         brief help message
+  -m[an]          full help
+  -d[ir]          source directory, relative or absolute path
+  -r[emove]       if specified it will delete the image from the source directory
+  -t[ag]          tag name to tag the image in the EXIF data with, can be a quoted value eg "Lunar eclipse". This can be specified multiple times
+  -a[cceptnodate] Import photos / images with no dates as the 10th Jan, 1970
+  -v[ideoonly]    Only import video files
 
 =head1 DESCRIPTION
 
