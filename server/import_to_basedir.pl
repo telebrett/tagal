@@ -14,6 +14,9 @@ use Digest::MD5::File qw(file_md5);
 use Data::Dumper;
 use String::ShellQuote qw(shell_quote);
 
+use IPC::Open3;
+use POSIX ":sys_wait_h";
+
 use Getopt::Long;
 use Pod::Usage;
 use Cwd qw(abs_path getcwd);
@@ -136,8 +139,9 @@ sub import_directory {
 						exit(1);
 					}
 
-					#TODO - Silence this output
-					system('ffmpeg -i ' . shell_quote($fullpath) . ' ' . $converted_file);
+					if (! call_system('Converting video ', 'ffmpeg -i ' . shell_quote($fullpath) . ' ' . $converted_file)) {
+						print "Could not convert $fullpath to $converted_file as ffmpeg failed\n";
+					}
 					system('exiftool -tagsFromFile ' . shell_quote($fullpath) . ' ' . $converted_file);
 
 					$fullpath = $converted_file;
@@ -330,6 +334,28 @@ sub is_dupe_image {
 	}
 
 	return 0;
+
+}
+
+sub call_system {
+
+	my $comment = shift;
+
+	my $pid = open3(\*CHLD_OUT, \*CHLD_IN, \*CHLD_ERR, @_);
+
+	#turn on flushing
+	$| = 1;
+
+	print $comment;
+
+	while (! waitpid($pid, WNOHANG)) {
+		sleep(1);
+		print ".";
+	}
+
+	my $child_exit_status = $? >> 8;
+
+	return $child_exit_status == 0;
 
 }
 

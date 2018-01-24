@@ -336,7 +336,6 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 				var s3path = _rootImageDir + image.p + '/.thumb/' + image.f;
 
 				if (_s3fails[s3path]) {
-					//TODO - package a "failed.png" image
 					thumb.src = 'failed.png';
 					continue;
 				}
@@ -357,7 +356,6 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			win.push(thumb);
 		}
 		
-		//TODO - check this when in not s3 mode
 		return win;
 	}
 
@@ -425,11 +423,10 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 
 		//TODO - appears to be a bug where _month_ appears as a tag
 		//       nope, thats a bug where NaN is lost in the JSON
+		return;
 
 		try {
 			//TODO - reenable
-			console.log('skipping local storage - remove this line');
-			return;
 			if (localStorage.key('dirty') !== undefined) {
 
 				_dirty    = JSON.parse(localStorage.getItem('dirty'));
@@ -907,6 +904,7 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 			var image = _images[index];
 
 			var fullImage = {
+				index : index,
 				src : _rootImageDir + '/' + image.p + '/' + image.f,
 				name : image.f
 			};

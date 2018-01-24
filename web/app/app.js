@@ -53,6 +53,7 @@ config(['$locationProvider', '$routeProvider', function($locationProvider, $rout
 			$location.path('/welcome');
 		}
 	} else {
+		//TODO - need ability to clear localstorage
 		tagalImages.init('database.json', $scope.APIAvailable)
 		.then(
 			function(){

@@ -1,10 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
 
-#todo - need to be able to revoke
-#aws s3api put-object-acl --bucket MyBucket --key file.txt --grant-full-control emailaddress=user1@example.com,emailaddress=user2@example.com --grant-read uri=http://acs.amazonaws.com/groups/global/AllUsers
-#     - Look at using "tags". see https://docs.aws.amazon.com/AmazonS3/latest/dev/object-tagging.html
-
 use DBI;
 use Carp;
 use Data::Dumper;
@@ -105,8 +101,15 @@ sub push_tags {
 
 	my @s3_path = (
 		$config{s3}{basedir} . $image_location,
-		$config{s3}{basedir} . dirname($image_location) . '/.thumb/' . basename($image_location),
 	);
+
+	my $dirname = dirname($image_location);
+
+	if ($dirname && $dirname ne '/') {
+		$dirname .= '/';
+	}
+
+	push @s3_path,$config{s3}{basedir} . $dirname . '.thumb/' . basename($image_location);
 
 	#TODO - warn / error if more than 10 tags (AWS limit)
 
@@ -143,6 +146,8 @@ sub get_db {
 	$dbh->{FetchHashKeyName} = 'NAME_uc';
 }
 
+
+#TODO - Update documentation
 
 1;
 

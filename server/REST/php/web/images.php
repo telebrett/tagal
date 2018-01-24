@@ -234,7 +234,6 @@ class REST_Images extends REST {
 		}
 
 		$sql = new DELETE_SQL($this->db,'image_tag');
-		$sql->col($sql->getAlias() . '.*');
 		$sql->where(array($sql::IN,$sql->getAlias() . '.ImageID'),$image_ids);
 
 		return $sql->exec() !== FALSE;

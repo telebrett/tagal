@@ -2,6 +2,11 @@
 
 angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 
+//TODO - add cachebuster somehow to templateUrl, maybe $scope can be added to the function below
+//       and a scope variable eg
+//
+//       $scope.githash
+
 .config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/gallery', {
     templateUrl: 'views/gallery/view.html',
@@ -144,6 +149,11 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 		$scope.numToShow = 50;
 
 		$scope.currentImages = tagalImages.getThumbnailsByLeft($scope.currentLeft,$scope.numToShow);
+
+		//TODO - stop $scope.mainImage from being changed, if the user has scrolled
+		//       so that it's thumbnail is not in the list of $scope.currentImages
+		//       then no way to reload it
+
 	}
 
 	$scope.setGallerySize();
@@ -232,6 +242,8 @@ angular.module('tagal.gallery', ['ngRoute','tagal.metadata'])
 		}
 
 		//TODO - bug here, resize loads a different image, but for the same index, seen in desktop
+		//       This is because the currentImages list changes and $scope.mainImageIndex is NOT
+		//       the image index, but the index of the currentImages hash itself
 		$scope.mainImage = tagalImages.getImage($scope.currentImages[$scope.mainImageIndex].index,this.mainImageWidth,this.mainImageHeight);
 
 		$scope.mainImage.fullsrc = $scope.mainImage.src;
