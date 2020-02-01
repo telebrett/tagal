@@ -1,0 +1,21 @@
+#header {
+	height:60px;
+	position:absolute;
+	width:100%;
+	top:0px;
+	left:0px;
+}
+
+#contentwrapper {
+	height:100vh;
+	box-sizing:border-box;
+	padding-top:60px;
+	overflow:hidden;
+}
+
+#content {
+	height:100%;
+	box-sizing:content-box;
+	padding:0px;
+	position:relative;
+}

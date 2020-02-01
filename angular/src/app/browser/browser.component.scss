@@ -1,0 +1,36 @@
+@import '../../variables';
+@import '../../../node_modules/bootstrap/scss/bootstrap';
+
+$tags-width: 200px;
+$thumbnail-height: 100px;
+
+#tags {
+	overflow-y:auto;
+	height:100%;
+	width:$tags-width;
+	position:absolute;
+	left:0px;
+	top:0px;
+	background-color:$primary;
+}
+
+#main {
+	height:100%;
+	margin-left:$tags-width;
+	position:relative;
+}
+
+#thumbnails {
+	position:absolute;
+	bottom:0px;
+	width:100%;
+	overflow-x:scroll;
+}
+
+#thumbnails div.width {
+	width:10000px;
+}
+
+#thumbnails div.block {
+	margin-left:100px;
+}
