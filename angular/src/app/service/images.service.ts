@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import {Observable} from "rxjs";
+import { map } from 'rxjs/operators';
 
 import {HttpClient, HttpHeaders} from '@angular/common/http';
+
 
 @Injectable({
   providedIn: 'root'
@@ -43,12 +45,16 @@ export class ImagesService {
 	private monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
 	private dirty;
+	private currentTags = [];
+	private remainingTags = [];
+
+	private currentImages = [];
 
   	constructor(private http: HttpClient) { 
   	}
 
-	public loadImages() {
-		return this.http.get('/assets/database.json').subscribe((data:any) => {
+	public loadImages() : Observable<boolean> {
+		return this.http.get('/assets/database.json').pipe(map((data:any) => {
 
 			for (var i in data.images) {
 
@@ -62,7 +68,161 @@ export class ImagesService {
 			for (var i in data.tags) {
 				this.addTag(i, data.tags[i], data.tagmetadata[i], true);
 			}
-		});
+
+			this.setRemainingTags();
+
+			return true;
+		}));
+	}
+
+	public getRemainingTags() {
+
+		let showMonth = false;
+		let showDay   = false;
+        
+		for (let i = 0; i < this.currentTags.length; i++) {
+			let tag = this.tags[this.currentTags[i]];
+        
+			if (tag.m && tag.m.datetype) {
+				switch (tag.m.datetype) {
+					case 'year':
+						showMonth = true;
+						break;
+					case 'month':
+						showDay = true;
+						break;
+				}
+			}
+		}
+        
+		let unsorted = [];
+        
+		for (let i = 0; i < this.remainingTags.length; i++) {
+			let tag = this.tags[this.remainingTags[i]];
+        
+			if (tag.m && tag.m.datetype) {
+				//if (realTagsOnly) {
+				//	continue;
+				//}
+				switch (tag.m.datetype) {
+					case 'month':
+						if (! showMonth) {
+							continue;
+						}
+						break;
+					case 'day':
+						if (! showDay) {
+							continue;
+						}
+						break;
+				}
+			}
+        
+			unsorted.push(tag);
+		}
+        
+		let sorted = unsorted.sort(this.sortTags);
+        
+		let o = [];
+        
+		for (let i = 0; i < sorted.length; i++) {
+			o.push(this.niceTag(sorted[i]));
+		}
+		return o;
+		
+	}
+
+	private niceTag(tag) {
+
+		var o = {
+			index:this.tagIndex[tag.t],
+			label:tag.l === undefined ? tag.t : tag.l,
+		};
+
+		if (tag.m && tag.m.datetype) {
+			switch (tag.m.datetype) {
+				case 'year':
+					o['type'] = 'y';
+					break;
+				case 'month':
+					o['type'] = 'm';
+					break;
+				case 'day':
+					o['type'] = 'd';
+					break;
+			}
+		}
+
+		return o;
+	}
+
+	//Sets the remainingTags from the tags from the _currentImages
+	//but not already selected
+	private setRemainingTags() {
+
+		this.remainingTags = new Array();
+
+		if (this.currentTags.length == 0) {
+			this.remainingTags = Object.keys(this.tags);
+		} else {
+
+			let image_tags = {};
+
+			for (let i = 0; i < this.currentImages.length; i++) {
+				for (let tag_index in this.images[this.currentImages[i]].t) {
+					image_tags[tag_index] = true;
+				}
+			}
+
+
+			for (let tag_index in image_tags) {
+				if (this.currentTags.indexOf(parseInt(tag_index,10)) == -1) {
+					this.remainingTags.push(tag_index);
+				}
+			}
+		}
+	}
+
+	/**
+	 * object a See tag definition above
+	 * object b see tag definition above
+	 */
+	private sortTags(a,b) {
+		if (a.m && a.m.datetype && (! b.m || ! b.m.datetype)) {
+			//a is a "year", "month" or "day" marker
+			return -1;
+		} else if (b.m && b.m.datetype && (! a.m || ! a.m.datetype)) {
+			//b is a "year", "month" or "day" marker
+			return 1;
+		} else if (a.m && a.m.datetype && b.m && b.m.datetype) {
+			if (a.m.datetype != b.m.datetype) {
+				//Years before months before days
+
+				if (a.m.datetype == 'year' || b.m.datetype == 'year') {
+					return a.m.datetype == 'year' ? -1 : 1;
+				}
+
+				if (a.m.datetype == 'month' || b.m.datetype == 'month') {
+					return a.m.datetype == 'month' ? -1 : 1;
+				}
+			}
+
+			var as = parseInt(a.m.dateval, 10);
+			var bs = parseInt(b.m.dateval, 10);
+			
+			if (a.m.datetype == 'year') {
+				//year descending
+				return as > bs ? -1 : 1;
+			} else {
+				//both is a "month" or "day" marker
+				return as < bs ? -1 : 1;
+			}
+		}
+
+		var al = a.l !== undefined ? a.l : a.t
+		var bl = b.l !== undefined ? b.l : b.t
+
+		return al.toLowerCase() < bl.toLowerCase() ? -1 : 1;
 	}
 
 	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
