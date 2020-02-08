@@ -44,3 +44,7 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+#Database and pictures
+/src/app/database.json
+/srv/app/pictures
