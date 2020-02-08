@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
+import { ImagesService } from '../service/images.service';
+
 @Component({
   selector: 'app-browser',
   templateUrl: './browser.component.html',
@@ -7,9 +9,10 @@ import { Component, OnInit } from '@angular/core';
 })
 export class BrowserComponent implements OnInit {
 
-  constructor() { }
+  constructor(private images: ImagesService) { }
 
   ngOnInit() {
+	  console.dir(this.images.loadImages());
   }
 
 }

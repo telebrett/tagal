@@ -7,6 +7,8 @@ import { AppComponent } from './app.component';
 import { BrowserComponent } from './browser/browser.component';
 import { HeaderComponent } from './header/header.component';
 
+import {HttpClientModule} from '@angular/common/http';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -16,6 +18,7 @@ import { HeaderComponent } from './header/header.component';
   imports: [
     BrowserModule,
     AppRoutingModule,
+	HttpClientModule,
 	NgbModule
   ],
   providers: [],
