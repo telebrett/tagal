@@ -46,5 +46,5 @@ testem.log
 Thumbs.db
 
 #Database and pictures
-/src/app/database.json
-/srv/app/pictures
+/src/assets/database.json
+/srv/assets/pictures
