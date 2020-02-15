@@ -1,14 +1,21 @@
-<div id="tags">
-	<button *ngFor="let tag of menuTags" type="button" class="btn btn-sm btn-{{tag.type ? 'primary' : 'secondary'}} mt-1">{{tag.label}}</button>
+<div id="header">
+	<button *ngFor="let tag of currentTags" type="button" class="btn btn-primary" (click)="deselectTag(tag)">{{tag.label}}</button>
 </div>
-<div id="main">
-	<div id="image">
-		<p>Image</p>
-	</div>
-	<div id="thumbnails">
-		<div class="width">
-			<div class="block">
-				<p>Thumb</p>
+<div id="contentwrapper">
+	<div id="content">
+		<div id="tags">
+			<button *ngFor="let tag of menuTags" type="button" class="btn btn-sm btn-{{tag.type ? 'primary' : 'secondary'}} mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
+		</div>
+		<div id="main">
+			<div id="image" #mainimage>
+				<img class="rounded" *ngIf="mainImage" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" />
+			</div>
+			<div id="thumbnails" (scroll)="scrollThumbnails($event)">
+				<div #thumbwidth class="width" [style.width]="thumbnailWidth">
+					<div #thumbnails class="block" [style.marginLeft]="thumbnailLeft">
+						<img *ngFor="let thumb of windowThumbs" src="{{thumb.src}}" width="{{thumb.width}}" height="{{thumb.height}}" (click)="viewImage(thumb)" />
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

@@ -2,9 +2,33 @@
 @import '../../../node_modules/bootstrap/scss/bootstrap';
 
 $tags-width: 200px;
-$thumbnail-height: 100px;
+$thumbnail-height: 150px;
+
+#header {
+	height:60px;
+	position:absolute;
+	width:100%;
+	top:0px;
+	left:0px;
+}
+
+#contentwrapper {
+	height:100vh;
+	box-sizing:border-box;
+	padding-top:60px;
+	overflow:hidden;
+}
+
+#content {
+	height:100%;
+	box-sizing:content-box;
+	padding:0px;
+	position:relative;
+}
 
 #tags {
+	@extend .bg-light;
+
 	overflow-y:auto;
 	height:100%;
 	width:$tags-width;
@@ -22,19 +46,23 @@ $thumbnail-height: 100px;
 	height:100%;
 	margin-left:$tags-width;
 	position:relative;
+	padding-bottom:$thumbnail-height;
 }
 
 #thumbnails {
+	@extend .bg-light;
 	position:absolute;
 	bottom:0px;
 	width:100%;
-	overflow-x:scroll;
+	overflow-x:auto;
+	height:$thumbnail-height;
+	border-top:1px solid black;
 }
 
-#thumbnails div.width {
-	width:10000px;
+#thumbnails img {
+	border-right:1px solid black;
 }
 
-#thumbnails div.block {
-	margin-left:100px;
+#image {
+	height:100%;
 }

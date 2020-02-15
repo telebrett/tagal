@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import {Observable} from "rxjs";
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 
@@ -49,6 +50,7 @@ export class ImagesService {
 	private remainingTags = [];
 
 	private currentImages = [];
+	private thumbnailAvgWidth;
 
   	constructor(private http: HttpClient) { 
   	}
@@ -80,6 +82,7 @@ export class ImagesService {
 		let showMonth = false;
 		let showDay   = false;
         
+		//Only show the month tags if a year has been selected, only show the day tag if a year and month has been selected
 		for (let i = 0; i < this.currentTags.length; i++) {
 			let tag = this.tags[this.currentTags[i]];
         
@@ -130,6 +133,275 @@ export class ImagesService {
 		}
 		return o;
 		
+	}
+
+	public getCurrentTags() {
+
+		let tags = [];
+
+		for (let i = 0; i < this.currentTags.length; i++) {
+			tags.push(this.niceTag(this.tags[this.currentTags[i]]));
+		}
+
+		return tags;
+
+	}
+
+	public getThumbnailWindowByLeft(left: number, count: number) {
+
+		let start_index = this.calcStartIndex(left);
+
+		return this.getThumbnailWindow(start_index, count);
+
+	}
+
+	public getThumbnailsByPage(pageOffset: number,count: number) {
+
+		let start_index = count * pageOffset;
+
+		return this.getThumbnailWindow(start_index, count);
+
+	}
+
+	private getThumbnailWindow(start_index,count) {
+
+		let win = [];
+
+		let end_index   = Math.min(this.currentImages.length,start_index + count);
+
+		var promises = [];
+
+		for (let i = start_index; i < end_index; i++) {
+			var image = this.images[this.currentImages[i]];
+			var thumb = {
+				width    : Math.round(image.tw),
+				height   : Math.round(image.th),
+				index    : this.currentImages[i],
+				left     : image.tl,
+				src      : null
+				//TODO - This is for admin mode - not ported yet
+				//selected : this.selected[this.currentImages[i]]
+			};
+
+			//if (this.s3) {
+
+			//	var s3path = this.rootImageDir + image.p + '/.thumb/' + image.f;
+
+			//	if (this.s3fails[s3path]) {
+			//		thumb.src = 'failed.png';
+			//		continue;
+			//	}
+
+			//	var s3cached = this.s3lru.get(s3path);
+
+			//	//Still flickers, but only the thumbnails that were not already on the screen
+			//	if (s3cached) {
+			//		thumb.src = s3cached;
+			//	} else {
+			//		thumb.src   =  'spacer.png';
+			//		thumb.s3src = s3path;
+			//	}
+			//} else {
+				thumb.src = environment.imageSource + image.p + '/.thumb/' + image.f;
+			//}
+
+			win.push(thumb);
+		}
+		
+		return win;
+	}
+
+	private calcStartIndex(left: number) {
+		let startindex = 0;
+			
+		if (left > 0) {
+
+			let search = Math.floor(left / this.thumbnailAvgWidth);
+
+			if (search > 0 ){
+				if (search >= this.currentImages.length) {
+					//Way too far to the right
+					search = this.currentImages.length;
+					while (--search > 0) {
+						let possible = this.images[this.currentImages[search]];
+						let possible_right = possible.tl + possible.tw;
+
+						if (possible.tl <= left && possible_right > left) {
+							startindex = search;
+							break;
+						}
+					}
+				} else {
+					let possible = this.images[this.currentImages[search]];
+
+					let possible_right = possible.tl + possible.tw;
+
+					if (possible.tl <= left && possible_right > left) {
+						startindex = search;
+					} else {
+
+						if (possible_right > left) {
+							//we are to the right of where we want to be, go backwards
+							while (--search > 0) {
+								possible = this.images[this.currentImages[search]];
+								possible_right = possible.tl + possible.tw;
+
+								if (possible.tl <= left && possible_right > left) {
+									startindex = search;
+									break;
+								}
+							}
+							
+						} else {
+							while (++search <= this.currentImages.length) {
+								possible = this.images[this.currentImages[search]];
+								possible_right = possible.tl + possible.tw;
+
+								if (possible.tl <= left && possible_right > left) {
+									startindex = search;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return startindex;
+
+	}
+
+	public selectTag(index: number) {
+
+		if (this.currentTags.indexOf(index) !== -1) {
+			return;
+		}
+
+		this.currentTags.push(index);
+
+		if (this.currentTags.length == 1) {
+			this.currentImages = Object.keys(this.tags[index].i);
+		} else {
+			let ts = this.tags[index].i;
+			this.currentImages = this.currentImages.filter(function(v){return ts[v] !== undefined});
+		}
+
+		this.currentImages.sort((a_index, b_index) => {
+			let a_o = this.images[a_index].o;
+			let b_o = this.images[b_index].o;
+
+			if (a_o == b_o) {
+				return 0;
+			} else if(a_o < b_o) {
+				return -1;
+			} else {
+				return 1;
+			}
+
+		});
+
+		this.setRemainingTags();
+	}
+
+	public deselectTag(index: number) {
+
+		let ct_index = this.currentTags.indexOf(index);
+
+		if (ct_index != -1) {
+			this.currentTags.splice(ct_index,1);
+		}
+
+		this.currentImages = [];
+
+		if (this.currentTags.length == 0) {
+			this.remainingTags = [];
+			//values need to be ints so can't use Object.keys
+			for (let i = 0; i < this.tags.length; i++) {
+				this.remainingTags.push(i);
+			}
+			return;
+		}
+
+		let images;
+
+		for (let i = 0; i < this.currentTags.length; i++) {
+			var newimages = {};
+			for (let x in this.tags[this.currentTags[i]].i) {
+				if (i > 0 && ! images[x]) {
+					continue;
+				}
+				newimages[x] = true;
+			}
+
+			images = newimages;
+		}
+
+		for (let i in images) {
+			this.currentImages.push(parseInt(i));
+		}
+
+		this.setRemainingTags();
+	}
+
+	public setThumbnailHeights(height: number) {
+
+		let totalWidth = 0;
+
+		this.thumbnailAvgWidth = height * 1.25;
+
+		//TODO - could possible do some performance improvements here, cache the height
+		//       and if the same as the last time, just reset the tl property
+
+		for (var i = 0; i < this.currentImages.length; i++) {
+			var image = this.images[this.currentImages[i]];
+
+			image.th = height;
+			image.tw = Math.ceil(image.r * height);
+			image.tl = totalWidth;
+
+			//The 1px is for the right border
+			totalWidth += image.tw + 1;
+		}
+
+		return totalWidth;
+	}
+
+	public getImage(index: number,maxWidth: number,maxHeight: number) {
+
+		let image = this.images[index];
+
+		let fullImage = {
+			index : index,
+			src : environment.imageSource + image.p + '/' + image.f,
+			name : image.f,
+			height: null,
+			width: null,
+			previewSrc: null
+		};
+
+		let height_from_maxwidth = Math.ceil((1/image.r) * maxWidth);
+		let width_from_maxheight = Math.ceil((image.r * maxHeight));
+
+		if (width_from_maxheight <= maxWidth) {
+			//max will be the height
+			fullImage.height = maxHeight;
+			fullImage.width  = Math.ceil(image.r * maxHeight);
+		}else{
+			fullImage.width  = maxWidth;
+			fullImage.height = height_from_maxwidth;
+		}
+
+		//if (this.s3) {
+		//	fullImage.src = 'spacer.png';
+		//	fullImage.s3src = this.rootImageDir + image.p + '/' + image.f;
+		//} else {
+		if (environment.api) {
+			fullImage.previewSrc = environment.api + 'preview/' + index + '/' + fullImage.width + '/' + fullImage.height; 
+		}
+
+		return fullImage;
+
 	}
 
 	private niceTag(tag) {
