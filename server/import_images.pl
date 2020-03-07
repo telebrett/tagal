@@ -21,6 +21,7 @@ if (! $config{db}) {
 }
 
 my $dbh;
+my $database_type;
 my $sth_find;
 
 my $basedir = $config{images}{basedir};
@@ -101,11 +102,13 @@ sub set_setting {
 
 sub get_db {
 
-	my $type = $config{db}{type} || 'mysql';
+	$database_type = $config{db}{type} || 'mysql';
 
-	$dbh = DBI->connect('DBI:' . $type . ':' . $config{db}{name},,$config{db}{user},$config{db}{pass},{RaiseError=>1}) || die("Could not connect to imagegallery database $!");
+	$dbh = DBI->connect('DBI:' . $database_type . ':' . $config{db}{name},,$config{db}{user},$config{db}{pass},{RaiseError=>1}) || die("Could not connect to imagegallery database $!");
 
 	$dbh->{FetchHashKeyName} = 'NAME_uc';
+
+	$database_type = lc $database_type;
 }
 
 sub get_sth {
@@ -114,7 +117,8 @@ sub get_sth {
 		return $sth_find;
 	}
 
-	$sth_find = $dbh->prepare('SELECT i.*,IF(it.ImageID IS NULL,0,1) AS HasTags FROM image i LEFT JOIN image_tag it ON i.id = it.ImageID WHERE i.Location = ? GROUP BY i.id');
+	#$sth_find = $dbh->prepare('SELECT i.*,IF(it.ImageID IS NULL,0,1) AS HasTags FROM image i LEFT JOIN image_tag it ON i.id = it.ImageID WHERE i.Location = ? GROUP BY i.id');
+	$sth_find = $dbh->prepare('SELECT i.*,CASE WHEN it.ImageID IS NULL THEN 0 ELSE 1 END AS HasTags FROM image i LEFT JOIN image_tag it ON i.id = it.ImageID WHERE i.Location = ? GROUP BY i.id');
 	return $sth_find;
 	
 }
@@ -237,7 +241,19 @@ sub import_directory {
 					my $sth_upd = $dbh->prepare('UPDATE image SET Width=?,Height=? WHERE id = ?');
 					$sth_upd->execute($width,$height,$image_id);
 				}else{
-					my $sth_ins = $dbh->prepare('INSERT INTO image (Location,DateTaken,Width,Height) VALUES (?,?,?,?)');
+
+					my $date_insert;
+					if ($database_type eq 'mysql') {
+						$date_insert = '?';
+					} elsif($database_type eq 'sqlite') {
+						$date_insert = "strftime('%s', ?)";
+						$info->{DateTimeOriginal} =~ s/^(\d{4}):(\d{2}):(\d{2})/$1-$2-$3/;
+					} else {
+						die("Database type $database_type not handled");
+					}
+
+					my $sth_ins = $dbh->prepare("INSERT INTO image (Location,DateTaken,Width,Height) VALUES (?,$date_insert,?,?)");
+
 					$sth_ins->execute($dirpath,$info->{DateTimeOriginal},$width,$height);
 					$image_id = $dbh->last_insert_id(undef,undef,'image',undef);
 				}

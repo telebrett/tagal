@@ -1,0 +1,44 @@
+CREATE TABLE setting (
+ id INTEGER PRIMARY KEY AUTOINCREMENT
+,Name varchar(250)
+,Value varchar(250)
+);
+
+CREATE TABLE tag (
+ id INTEGER PRIMARY KEY AUTOINCREMENT
+,Tag VARCHAR(250)
+,IsPerson tinyint(0) NOT NULL DEFAULT '0'
+);
+
+CREATE TABLE image (
+ id INTEGER PRIMARY KEY AUTOINCREMENT
+,Location varchar(500) NOT NULL
+,DateTaken INTEGER 
+,Width int unsigned
+,Height int unsigned
+-- If already public on S3
+,IsPublic INTEGER
+,IsDirty INTEGER
+);
+
+CREATE TABLE image_tag (
+ ImageID INTEGER NOT NULL
+,TagID INTEGER NOT NULL
+,PRIMARY KEY(ImageID,TagID)
+,FOREIGN KEY(ImageID) REFERENCES image(id)
+,FOREIGN KEY(TagID) REFERENCES tag(id)
+);
+
+CREATE TABLE s3user (
+ id INTEGER PRIMARY KEY AUTOINCREMENT
+ ,Username varchar(100) NOT NULL
+ ,AccessKey varchar(250) NOT NULL
+);
+
+CREATE TABLE s3user_tag (
+ S3UserID INTEGER NOT NULL
+,TagID INTEGER NOT NULL
+,PRIMARY KEY(S3UserID,TagID)
+,FOREIGN KEY(S3UserID) REFERENCES s3user(id)
+,FOREIGN KEY(TagID) REFERENCES tag(id)
+);

@@ -38,6 +38,8 @@ my $IMAGEDIR = 'pictures';
 my $S3USER = undef;
 my $HELP = undef;
 
+my $database_type;
+
 #TODO - For s3, the root dir is different
 
 Getopt::Long::GetOptions('public'=>\$PUBLIC,'s3user=s'=>\$S3USER,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR,'help'=>\$HELP);
@@ -70,11 +72,38 @@ if ($OUTPUT) {
 		}
 	}
 } else {
-	$OUTPUT = realpath(dirname(File::Spec->rel2abs(__FILE__)) . '/../web/app/database.json');
+	$OUTPUT = $config{app}{jsondatabase};
+   	if (! $OUTPUT) {
+		warn "Output file not specified as argument or in config (app.jsondatabase)\n";
+		pod2usage(1);
+	}
+
 }
 
 get_db();
 build_db();
+
+sub get_date_functions {
+
+	my $column = shift;
+	my %funcs;
+
+	if ($database_type eq 'mysql') {
+		$funcs{year} = 'YEAR(' . $column . ')';
+		$funcs{month} = 'MONTH(' . $column . ')';
+		$funcs{day} = 'DAYOFOFMONTH(' . $column . ')';
+		$funcs{epoch} = 'UNIX_TIMESTAMP(' . $column . ')';
+	} elsif ($database_type eq 'sqlite') {
+		$funcs{epoch} = $column;
+
+		$column = "datetime($column, 'unixepoch')";
+		$funcs{year} = "strftime('%Y', $column)";
+		$funcs{month} = "strftime('%m', $column)";
+		$funcs{day} = "strftime('%d', $column)";
+	}
+
+	return %funcs;
+}
 
 sub build_db {
 	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{}};
@@ -87,7 +116,9 @@ sub build_db {
 	             . " JOIN image_tag it ON it.ImageID = i.id\n"
 	             . " JOIN tag t ON t.id = it.TagID\n";
 
-	my $SQL_IMAGES = "SELECT i.*,YEAR(i.DateTaken) AS YearTaken,MONTH(i.DateTaken) AS MonthTaken,DAYOFMONTH(i.DateTaken) AS DayOfMonthTaken,UNIX_TIMESTAMP(i.DateTaken) AS SortOrder\n"
+	my %date_functions = get_date_functions('i.DateTaken');
+
+	my $SQL_IMAGES = "SELECT i.*,$date_functions{year} AS YearTaken,$date_functions{month} AS MonthTaken,$date_functions{day} AS DayOfMonthTaken,$date_functions{epoch} AS SortOrder\n"
 	               . "FROM image i\n";
 
 	if ($PUBLIC) {
@@ -179,11 +210,13 @@ sub build_db {
 
 sub get_db {
 
-	my $type = $config{db}{type} || 'mysql';
+	$database_type = $config{db}{type} || 'mysql';
 
-	$dbh = DBI->connect('DBI:' . $type . ':' . $config{db}{name},,$config{db}{user},$config{db}{pass},{RaiseError=>1}) || die("Could not connect to imagegallery database $!");
+	$dbh = DBI->connect('DBI:' . $database_type . ':' . $config{db}{name},,$config{db}{user},$config{db}{pass},{RaiseError=>1}) || die("Could not connect to imagegallery database $!");
 
 	$dbh->{FetchHashKeyName} = 'NAME_uc';
+
+	$database_type = lc $database_type;
 }
 
 
