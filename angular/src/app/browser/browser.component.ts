@@ -32,6 +32,8 @@ export class BrowserComponent implements OnInit {
 		
 	}
 
+	//TODO - When showing thumbnails for videos, overlay the 'play' icon
+
 	public viewImage(thumb) {
 
 		let ref = this.domMainImage.nativeElement;

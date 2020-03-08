@@ -111,7 +111,7 @@ sub import_directory {
 			import_directory($dirpath);
 		}else{
 
-			if ($file =~ m/\.jpe?g$/i || $file =~ m/\.(mp4|avi|mov|m4v)$/i){
+			if ($file =~ m/\.jpe?g$/i || $file =~ m/\.(mp4|avi|mov|m4v|mkv)$/i){
 
 				my $extension;
 
