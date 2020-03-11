@@ -67,7 +67,7 @@ get_db();
 
 my $last_run = get_setting('LastRun');
 if ($last_run){
-	$last_run = DateTime::Format::MySQL->parse_datetime($last_run);
+	$last_run = DateTime::Format::MySQL->parse_datetime($last_run)->epoch;
 }
 
 if ($OPT_IGNORELASTMOD) {
@@ -180,9 +180,7 @@ sub import_directory {
 
 				my $file_stat = stat($fullpath);
 
-				my $file_dt = DateTime->from_epoch(epoch=>$file_stat->[9]);
-
-				if (defined $last_run && DateTime->compare($file_dt,$last_run) == -1){
+				if (defined $last_run && $file_stat->[9] > $last_run){
 					#nothing changed since last run
 					next;
 				}
@@ -192,6 +190,10 @@ sub import_directory {
 
 				if ($is_movie) {
 					$preview = $fulldir . '/.preview/' . $file;
+
+					#See create_video_preview
+					$thumbnail .= '.png';
+					$preview .= '.png';
 				}
 
 				#remove this entire ifblock - just a shortcut when building thumbs
@@ -229,8 +231,7 @@ sub import_directory {
 				if (! $force_thumb && -e $thumbnail) {
 					my $thumb_stat = stat($thumbnail);
 
-					my $thumb_dt = DateTime->from_epoch(epoch=>$thumb_stat->[9]);
-					if (DateTime->compare($thumb_dt,$file_dt) == -1) {
+					if ($thumb_stat->[9] < $file_stat->[9]) {
 						#thumbnail lastmoddate is earlier than the file last mod date, most likely due to tags, but regenerate the thumbnail anyway
 						$force_thumb = 1;
 					}
@@ -239,8 +240,7 @@ sub import_directory {
 				if ($is_movie && ! $force_preview && -e $preview) {
 					my $preview_stat = stat($preview);
 
-					my $preview_dt = DateTime->from_epoch(epoch=>$preview_stat->[9]);
-					if (DateTime->compare($preview_dt,$file_dt) == -1) {
+					if ($preview_stat->[9] < $file_stat->[9]) {
 						#preview lastmoddate is earlier than the file last mod date, most likely due to tags, but regenerate the preview anyway
 						$force_preview = 1;
 					}
@@ -256,9 +256,10 @@ sub import_directory {
 							unlink($preview);
 						}
 
-						my $conv_height = $height / ($width / 320);
-
-						create_video_preview($info, $thumbnail, $preview, $conv_height, 320);
+						#The anmiated png's can get quite large,
+						#400k for 5 frames at 320 width goes to 180k at 200 width instead
+						my $conv_height = $height / ($width / 200);
+						create_video_preview($info, $thumbnail, $preview, $conv_height, 200);
 
 					}
 				} else {
@@ -373,8 +374,8 @@ sub create_video_preview {
 	my $preview = shift;
 
 	#There could be a JPG file with the same name except or the suffix
-	$thumbnail =~ s/\.\w+$/-movie\.png/;
-	$preview =~ s/\.\w+$/-movie\.png/;
+	#$thumbnail =~ s/\.\w+$/-movie\.png/;
+	#$preview =~ s/\.\w+$/-movie\.png/;
 
 	my $height = shift;
 	my $width = shift;
@@ -429,7 +430,7 @@ sub create_video_preview {
 	}
 
 	if ($frames == 1) {
-		rename $frame_dir . '/frame0.png', $preview;
+		copy($thumbnail, $preview);
 	} else {
 		#Force overwrite
 		push @join_cmd, '-F';
