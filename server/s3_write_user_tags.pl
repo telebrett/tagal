@@ -153,11 +153,11 @@ sub get_db {
 
 =head1 NAME
 
-s3_write_acls.pl
+s3_write_user_tags.pl
 
 =head1 SYNOPSIS
 
-./s3_write_acls.pl [--sync]
+./s3_write_user_tags.pl [--sync]
 
  Options
 
