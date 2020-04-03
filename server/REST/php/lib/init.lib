@@ -91,7 +91,6 @@ class REST {
 			self::send_error_message('Missing required arguments ' . implode(', ',$required_args_error_message));
 		}
 
-
 		call_user_func_array(array($handler,$method),$arguments);
 
 	}

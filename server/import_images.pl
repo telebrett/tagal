@@ -259,7 +259,8 @@ sub import_directory {
 						#The anmiated png's can get quite large,
 						#400k for 5 frames at 320 width goes to 180k at 200 width instead
 						my $conv_height = $height / ($width / 200);
-						create_video_preview($info, $thumbnail, $preview, $conv_height, 200);
+						print "Skipping video preview\n";
+						#create_video_preview($info, $thumbnail, $preview, $conv_height, 200);
 
 					}
 				} else {
@@ -419,7 +420,7 @@ sub create_video_preview {
 		);
 
 		if (! call_system("Generating frame $i for video preview ", @cmd)) {
-			die "Failed to generate image from movie\n";
+			die "Failed to generate image from movie for $fullpath\n";
 		}
 
 		push @join_cmd, $frame_path;
@@ -439,7 +440,7 @@ sub create_video_preview {
 		push @join_cmd, '-d', 1000;
 
 		if (! call_system("Generating animated png ", @join_cmd)) {
-			die "Failed to generate animated png\n";
+			die "Failed to generate animated png for $fullpath\n";
 		}
 	}
 
