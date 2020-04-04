@@ -52,11 +52,17 @@ export class ImagesService {
 	private currentImages = [];
 	private thumbnailAvgWidth;
 
-  	constructor(private http: HttpClient) { 
-  	}
+	constructor(private http: HttpClient) { 
+	}
 
 	public loadImages() : Observable<boolean> {
-		return this.http.get('/assets/database.json').pipe(map((data:any) => {
+
+		let database_source = '/assets/database.json';
+		if (environment.databaseSource) {
+			database_source = environment.databaseSource;
+		}
+
+		return this.http.get(database_source).pipe(map((data:any) => {
 
 			for (var i in data.images) {
 
@@ -344,20 +350,44 @@ export class ImagesService {
 		this.setRemainingTags();
 	}
 
-	public setThumbnailHeights(height: number) {
+	public allThumbs(thumbnailHeight: number) {
+
+		let thumbs = [];
+		
+		for (let i = 0; i < this.currentImages.length; i++) {
+			let image = this.images[this.currentImages[i]];
+
+			image.th = thumbnailHeight;
+			image.tw = Math.ceil(image.r * thumbnailHeight);
+
+			thumbs.push({
+				width    : Math.round(image.tw),
+				height   : Math.round(image.th),
+				index    : this.currentImages[i],
+				left     : image.tl,
+				src      : environment.imageSource + image.p + '/.thumb/' + image.f
+				//TODO - This is for admin mode - not ported yet
+				//selected : this.selected[this.currentImages[i]]
+			});
+		}
+
+		return thumbs;
+	}
+
+	public setThumbnailHeights(thumbnailHeight: number) {
 
 		let totalWidth = 0;
 
-		this.thumbnailAvgWidth = height * 1.25;
+		this.thumbnailAvgWidth = thumbnailHeight * 1.25;
 
-		//TODO - could possible do some performance improvements here, cache the height
+		//TODO - could possible do some performance improvements here, cache the thumbnailHeight
 		//       and if the same as the last time, just reset the tl property
 
 		for (var i = 0; i < this.currentImages.length; i++) {
 			var image = this.images[this.currentImages[i]];
 
-			image.th = height;
-			image.tw = Math.ceil(image.r * height);
+			image.th = thumbnailHeight;
+			image.tw = Math.ceil(image.r * thumbnailHeight);
 			image.tl = totalWidth;
 
 			//The 1px is for the right border
