@@ -52,6 +52,8 @@ export class ImagesService {
 	private currentImages = [];
 	private thumbnailAvgWidth;
 
+	private vblocks = [];
+
 	constructor(private http: HttpClient) { 
 	}
 
@@ -288,6 +290,12 @@ export class ImagesService {
 
 		if (this.currentTags.length == 1) {
 			this.currentImages = Object.keys(this.tags[index].i);
+
+			//Object.keys converts the int's to strings
+			for (let i = 0; i < this.currentImages.length; i++) {
+				this.currentImages[i] = parseInt(this.currentImages[i], 10);
+			}
+
 		} else {
 			let ts = this.tags[index].i;
 			this.currentImages = this.currentImages.filter(function(v){return ts[v] !== undefined});
@@ -350,28 +358,98 @@ export class ImagesService {
 		this.setRemainingTags();
 	}
 
-	public allThumbs(thumbnailHeight: number) {
+	public setvblocks(headingHeight: number, thumbnailHeight: number, maxWidth: number) : number {
 
-		let thumbs = [];
-		
+		//Note this function relies upon currentImages being sorted already
+
+		// What this function does is set the 'tl' (top left), 'th' (thumbnail height) and 'tw' (thumbnail width) to each image in this.currentImages
+		// This is calculated based on the asked for thumbnail height for the maximim width
+		// 
+		// The vblocks contain the image index for which they appear directly before
+
+		this.vblocks = [];
+
+		let current_block;
+		let top_left = 0;
+		let left: 0 ;
+		let row_max_height = 0;
+
+		let borderandpadding = 12;
+
+		//Note, we could make this smarter, group by Year until the number of images exceeds X, then group by month, until it also exceeds X and THEN group
+		//by day, but for now, just group by day
 		for (let i = 0; i < this.currentImages.length; i++) {
+
 			let image = this.images[this.currentImages[i]];
+			let image_key = [];
+
+			for (let tagIndex in image.t) {
+				let tag = this.tags[tagIndex];
+
+				if (! tag.m || ! tag.m.datetype) {
+					continue;
+				}
+
+				switch (tag.m.datetype) {
+					case 'year' : image_key[0] = tag.m.dateval; break;
+					case 'month': image_key[1] = tag.m.dateval; break;
+					case 'day'  : image_key[2] = tag.m.dateval; break;
+				}
+			}
+
+			let image_rawkey = image_key.join('-');
+
+			if (! current_block || current_block.k != image_rawkey) {
+
+				current_block = {
+					ii: i,            //image index
+					k: image_rawkey, 
+					tl: top_left, 
+					heading: image_key[2] + ' ' + image_key[1] + ' ' + image_key[0] //TODO - do a nicer format, probably using moment
+				};
+
+				//This initial height is the height of the heading, yes it sucks for the service to be tied to the UI in this way, but this needs to know the heights for performance
+				top_left += headingHeight;
+				left = 0;
+
+				this.vblocks.push(current_block);
+
+			}
 
 			image.th = thumbnailHeight;
 			image.tw = Math.ceil(image.r * thumbnailHeight);
 
-			thumbs.push({
-				width    : Math.round(image.tw),
-				height   : Math.round(image.th),
-				index    : this.currentImages[i],
-				left     : image.tl,
-				src      : environment.imageSource + image.p + '/.thumb/' + image.f
-				//TODO - This is for admin mode - not ported yet
-				//selected : this.selected[this.currentImages[i]]
-			});
+			//Damn you panorama images
+			if (image.tw > maxWidth) {
+				//the 10 is the margin and border
+				image.tw = maxWidth - borderandpadding;
+				
+				//TODO - this needs checking
+				image.th = Math.ceil(image.r / thumbnailHeight);
+			}
+
+			if (image.tw + borderandpadding + left > maxWidth) {
+				//New row
+
+				left = 0;
+
+				top_left += row_max_height + borderandpadding;
+
+				row_max_height = image.th;
+
+			} else {
+				left += image.th + borderandpadding;
+				if (image.th > row_max_height) {
+					row_max_height = image.th;
+				}
+			}
+
+			image.tl = top_left;
+
 		}
 
-		return thumbs;
+		return top_left + row_max_height + borderandpadding;
+
 	}
 
 	public setThumbnailHeights(thumbnailHeight: number) {

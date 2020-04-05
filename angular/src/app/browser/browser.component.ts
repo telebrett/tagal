@@ -13,8 +13,17 @@ export class BrowserComponent implements OnInit {
 	@ViewChild('thumbnails') domThumbnails: ElementRef;
 	@ViewChild('mainimage') domMainImage: ElementRef;
 
+	@ViewChild('main') domMain: ElementRef;
+	@ViewChild('verticalthumbs') domVerticalThumbs: ElementRef;
+
 	public thumbnailWidth = '0px';
 	public thumbnailLeft = '0px';
+
+	public thumbnailHeight = 0;
+	public thumbnailTop = 0;
+
+	//TODO - this should be initialised to zero
+	public thumbnailWindowHeight = 400;
 
 	public menuTags = [];
 	public currentTags = [];
@@ -22,6 +31,8 @@ export class BrowserComponent implements OnInit {
 	public windowThumbs = [];
 
 	public mainImage;
+
+	public isVerticalView = true;
 
 	constructor(private images: ImagesService) { }
 
@@ -46,12 +57,19 @@ export class BrowserComponent implements OnInit {
 		this.menuTags = this.images.getRemainingTags();
 		this.currentTags = this.images.getCurrentTags();
 
-		let width = this.images.setThumbnailHeights(this.domThumbWidth.nativeElement.parentElement.clientHeight);
-		this.thumbnailWidth = width + 'px';
-		this.thumbnailLeft = '0px';
-		this.domThumbWidth.nativeElement.parentElement.scrollLeft = 0;
+		if (this.isVerticalView) {
 
-		this.getWindowThumbs();
+			this.thumbnailHeight = this.images.setvblocks(25, 200, this.domMain.nativeElement.clientWidth - 30);
+
+		} else {
+			let width = this.images.setThumbnailHeights(this.domThumbWidth.nativeElement.parentElement.clientHeight);
+			this.thumbnailWidth = width + 'px';
+			this.thumbnailLeft = '0px';
+			this.domThumbWidth.nativeElement.parentElement.scrollLeft = 0;
+
+			this.getWindowThumbs();
+		}
+
 
 	}
 

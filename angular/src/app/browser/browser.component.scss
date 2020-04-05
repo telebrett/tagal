@@ -46,7 +46,24 @@ $thumbnail-height: 150px;
 	height:100%;
 	margin-left:$tags-width;
 	position:relative;
+}
+
+#main.horizontal {
 	padding-bottom:$thumbnail-height;
+}
+
+#main.vertical {
+	overflow-y:auto;
+}
+
+.divthumb {
+	border:1px solid black;
+	margin:5px;
+	float:left;
+}
+
+#verticalWindow {
+	background-color:red;
 }
 
 #thumbnails {

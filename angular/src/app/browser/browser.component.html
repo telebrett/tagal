@@ -1,4 +1,5 @@
 <div id="header">
+	<!-- TODO - Show the number of images currently showing -->
 	<button *ngFor="let tag of currentTags" type="button" class="btn btn-primary" (click)="deselectTag(tag)">{{tag.label}}</button>
 </div>
 <div id="contentwrapper">
@@ -6,17 +7,31 @@
 		<div id="tags">
 			<button *ngFor="let tag of menuTags" type="button" class="btn btn-sm btn-{{tag.type ? 'primary' : 'secondary'}} mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
 		</div>
-		<div id="main">
-			<div id="image" #mainimage>
-				<img class="rounded" *ngIf="mainImage" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" />
-			</div>
-			<div id="thumbnails" (scroll)="scrollThumbnails($event)">
-				<div #thumbwidth class="width" [style.width]="thumbnailWidth">
-					<div #thumbnails class="block" [style.marginLeft]="thumbnailLeft">
-						<img *ngFor="let thumb of windowThumbs" src="{{thumb.src}}" width="{{thumb.width}}" height="{{thumb.height}}" (click)="viewImage(thumb)" />
+		<div id="main" [ngClass]="isVerticalView ? 'vertical' : 'horizontal'" #main>
+			<ng-container *ngIf="isVerticalView; then verticalView; else horizontalView"></ng-container>
+			<ng-template #verticalView>
+				<div id="verticalthumbs" #verticalthumbs [ngStyle]="{'height.px':thumbnailHeight}">
+					<div id="verticalWindow" #verticalwindow [ngStyle]="{'marginTop.px':thumbnailTop, 'height.px':thumbnailWindowHeight}">
+						 <!--
+						<div *ngFor="let thumb of windowThumbs" class="divthumb" [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}">
+							<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" />
+						</div>
+						-->
 					</div>
 				</div>
-			</div>
+			</ng-template>
+			<ng-template #horizontalView>
+				<div id="image" #mainimage>
+					<img class="rounded" *ngIf="mainImage" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" />
+				</div>
+				<div id="thumbnails" (scroll)="scrollThumbnails($event)">
+					<div #thumbwidth class="width" [style.width]="thumbnailWidth">
+						<div #thumbnails class="block" [style.marginLeft]="thumbnailLeft">
+							<img *ngFor="let thumb of windowThumbs" src="{{thumb.src}}" width="{{thumb.width}}" height="{{thumb.height}}" (click)="viewImage(thumb)" />
+						</div>
+					</div>
+				</div>
+			</ng-template>
 		</div>
 	</div>
 </div>
