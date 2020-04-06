@@ -22,8 +22,8 @@ export class BrowserComponent implements OnInit {
 	public thumbnailHeight = 0;
 	public thumbnailTop = 0;
 
-	//TODO - this should be initialised to zero
-	public thumbnailWindowHeight = 400;
+	public thumbnailWindowHeight = 0;
+	public thumbnailWindowWidth  = 0;
 
 	public menuTags = [];
 	public currentTags = [];
@@ -33,6 +33,8 @@ export class BrowserComponent implements OnInit {
 	public mainImage;
 
 	public isVerticalView = true;
+
+	private scrollTimeout;
 
 	constructor(private images: ImagesService) { }
 
@@ -59,7 +61,14 @@ export class BrowserComponent implements OnInit {
 
 		if (this.isVerticalView) {
 
-			this.thumbnailHeight = this.images.setvblocks(25, 200, this.domMain.nativeElement.clientWidth - 30);
+			let maxWidth = this.domMain.nativeElement.clientWidth - 30;
+
+			this.thumbnailHeight = this.images.setvblocks(25, 200, maxWidth);
+
+			this.thumbnailWindowWidth = maxWidth; 
+
+			this.domMain.nativeElement.scrollTop = 0;
+			this.getWindowThumbs();
 
 		} else {
 			let width = this.images.setThumbnailHeights(this.domThumbWidth.nativeElement.parentElement.clientHeight);
@@ -82,9 +91,41 @@ export class BrowserComponent implements OnInit {
 	}
 
 	public getWindowThumbs() {
-		let left = Math.floor(this.domThumbWidth.nativeElement.parentElement.scrollLeft);
-		this.windowThumbs = this.images.getThumbnailWindowByLeft(left, 50);
-		this.thumbnailLeft = Math.round(this.windowThumbs[0].left) + 'px';
+		if (this.isVerticalView) {
+
+			if (this.scrollTimeout) {
+				clearTimeout(this.scrollTimeout);
+			}
+
+			this.scrollTimeout = setTimeout(() => {
+
+				let top = Math.floor(this.domMain.nativeElement.scrollTop);
+
+				this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight);
+
+				//var l = 'HEADING';
+				//if (this.windowThumbs[0].src) {
+				//	l = 'IMAGE';
+				//}
+				//console.log(top + ':' + this.windowThumbs[0].tl + ' -> ' + (top - this.windowThumbs[0].tl) + ' : ' + l);
+
+				this.thumbnailTop = Math.round(this.windowThumbs[0].tl);
+				//this.thumbnailWindowHeight = 400;
+
+				let last = this.windowThumbs[this.windowThumbs.length-1];
+
+				//console.log('Top to ' + this.windowThumbs[0].tl);
+				//console.log('Height to ' + (last.tl + last.height - this.windowThumbs[0].tl));
+
+				this.thumbnailWindowHeight = (Math.ceil(last.tl + last.height - this.thumbnailTop));
+			}, 300);
+
+
+		} else {
+			let left = Math.floor(this.domThumbWidth.nativeElement.parentElement.scrollLeft);
+			this.windowThumbs = this.images.getThumbnailWindowByLeft(left, 50);
+			this.thumbnailLeft = Math.round(this.windowThumbs[0].left) + 'px';
+		}
 	}
 
 	public selectTag(tag: any) {

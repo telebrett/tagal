@@ -57,13 +57,33 @@ $thumbnail-height: 150px;
 }
 
 .divthumb {
-	border:1px solid black;
+	//margin:0px;
 	margin:5px;
 	float:left;
 }
 
 #verticalWindow {
-	background-color:red;
+	position:absolute;
+	top:0px;
+	width:100%;
+	overflow-y:hidden;
+	overflow-x:hidden;
+}
+
+#verticalWindow h5 {
+	border-bottom:1px solid black;
+	font-size:1em;
+	height:25px;
+	margin:0px;
+	padding:0px;
+}
+
+#verticalWindow img {
+	border:1px solid black;
+}
+
+#verticalWindow div.reportblock {
+	border:1px solid black;
 }
 
 #thumbnails {

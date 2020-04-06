@@ -219,6 +219,165 @@ export class ImagesService {
 		return win;
 	}
 
+	public getThumbnailWindowByTop(top: number, maxHeight: number) {
+
+		let start_index = this.calcTopIndex(top);
+
+		let stop = top + maxHeight;
+		let last = this.currentImages.length-1;
+
+		let thumbs = [];
+
+		//Find the first vblock
+		let vblock_index = 0;
+		while (true) {
+
+			if ((vblock_index + 1) >= this.vblocks.length) {
+				break;
+			}
+
+			if (this.vblocks[vblock_index + 1].ii > start_index) {
+				break;
+			}
+
+			vblock_index++;
+		}
+
+		if (start_index == 0) {
+			thumbs.push(this.vblocks[vblock_index++]);
+		} else {
+			if (this.images[this.currentImages[start_index -1]].tl < this.vblocks[vblock_index].tl) {
+				thumbs.push(this.vblocks[vblock_index++]);
+			} else {
+				//The heading for the starting index is too far up to show
+				vblock_index++;
+			}
+
+		}
+
+		let max_run = 0;
+		while(true) {
+
+			let image = this.images[this.currentImages[start_index]];
+
+			if (image.tl > stop || start_index >= last) {
+				break;
+			}
+
+			let thumb = {
+				width    : Math.round(image.tw),
+				height   : Math.round(image.th),
+				index    : this.currentImages[start_index],
+				tl       : image.tl,
+				src      : environment.imageSource + image.p + '/.thumb/' + image.f
+
+
+				,ciindex: start_index
+			}
+
+			if (
+				vblock_index < this.vblocks.length
+				&& this.vblocks[vblock_index].tl < image.tl
+			) {
+				thumbs.push(this.vblocks[vblock_index++]);
+			}
+
+			thumbs.push(thumb);
+
+			start_index++;
+
+		}
+
+		//TODO - need to return the headings
+
+		return thumbs;
+
+	}
+
+	private calcTopIndex(top: number) {
+
+		//TODO - This is when I click on 2019 only
+		//     - The borderandpadding means it breaks
+		//top = 253705;
+
+		if (top == 0) {
+			return 0;
+		}
+
+		//Just do a binary search
+		let start_index = 0;
+		let end_index = this.currentImages.length-1;
+		let result = 0;
+
+		let attempts = 0;
+		let diff = 0;
+
+
+		while (true) {
+
+			if (attempts++ > 1000) {
+				console.log('could not find start point for window : ' + top);
+				break;
+			}
+
+			result = start_index + Math.floor((end_index - start_index) / 2);
+
+			let p_start_index = start_index;
+			let p_end_index = end_index;
+
+			let image = this.images[this.currentImages[result]];
+
+			if (image.tl <= top && (image.tl + image.th) >= top) {
+				//The image spans the 'top' line
+				break;
+			} else {
+
+				//If the tl is within 30 
+				if ( (image.tl - 30) < top && (image.tl) > top) {
+					//Check for a heading
+					while (result > 0 && this.images[this.currentImages[result]].tl == this.images[this.currentImages[result-1]].tl) {
+						result--;
+					}
+
+					if (result == 0) {
+						return 0;
+					}
+
+					let prev_row_image = this.images[this.currentImages[result]];
+					if ( (prev_row_image.tl + prev_row_image.th) < top) {
+						return result;
+					}
+				}
+
+				diff = image.tl - top;
+
+				if (diff > 0) {
+					//We are down from where we want to be
+					end_index = result;
+				} else {
+					//We are above from where we want to be
+					start_index = result;
+				}
+			}
+
+			if (p_start_index == start_index && p_end_index == end_index) {
+				result = start_index;
+				break;
+			}
+
+		}
+
+		//Although we got the correct top left, there might be images to the left with the same top left
+		while (result > 0 && this.images[this.currentImages[result]].tl == this.images[this.currentImages[result-1]].tl) {
+			result--;
+		}
+		//console.log('First in row ' + this.images[this.currentImages[result]].tl);
+
+		return result;
+
+
+	}
+
 	private calcStartIndex(left: number) {
 		let startindex = 0;
 			
@@ -374,7 +533,9 @@ export class ImagesService {
 		let left: 0 ;
 		let row_max_height = 0;
 
-		let borderandpadding = 12;
+		let borderandpadding = 10;
+
+		let multi_image = false;
 
 		//Note, we could make this smarter, group by Year until the number of images exceeds X, then group by month, until it also exceeds X and THEN group
 		//by day, but for now, just group by day
@@ -401,16 +562,24 @@ export class ImagesService {
 
 			if (! current_block || current_block.k != image_rawkey) {
 
+				top_left += row_max_height;
+
+				top_left += borderandpadding;
+
 				current_block = {
 					ii: i,            //image index
 					k: image_rawkey, 
 					tl: top_left, 
+					height: headingHeight,
+					width: maxWidth,
 					heading: image_key[2] + ' ' + image_key[1] + ' ' + image_key[0] //TODO - do a nicer format, probably using moment
 				};
 
 				//This initial height is the height of the heading, yes it sucks for the service to be tied to the UI in this way, but this needs to know the heights for performance
 				top_left += headingHeight;
 				left = 0;
+				row_max_height = 0;
+				multi_image = false;
 
 				this.vblocks.push(current_block);
 
@@ -423,22 +592,21 @@ export class ImagesService {
 			if (image.tw > maxWidth) {
 				//the 10 is the margin and border
 				image.tw = maxWidth - borderandpadding;
-				
-				//TODO - this needs checking
-				image.th = Math.ceil(image.r / thumbnailHeight);
+
+				image.th = Math.ceil((1/image.r) * image.th);
 			}
 
 			if (image.tw + borderandpadding + left > maxWidth) {
 				//New row
 
-				left = 0;
-
 				top_left += row_max_height + borderandpadding;
 
 				row_max_height = image.th;
+				left = image.tw + borderandpadding;
+				multi_image = true;
 
 			} else {
-				left += image.th + borderandpadding;
+				left += image.tw + borderandpadding;
 				if (image.th > row_max_height) {
 					row_max_height = image.th;
 				}
