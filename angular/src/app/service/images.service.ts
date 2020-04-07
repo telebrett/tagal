@@ -564,7 +564,9 @@ export class ImagesService {
 
 				top_left += row_max_height;
 
-				top_left += borderandpadding;
+				if (current_block) {
+					top_left += borderandpadding;
+				}
 
 				current_block = {
 					ii: i,            //image index

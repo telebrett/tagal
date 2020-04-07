@@ -97,27 +97,22 @@ export class BrowserComponent implements OnInit {
 				clearTimeout(this.scrollTimeout);
 			}
 
+			//TODO - It works ..., but there appears to be a lag with the bottom gap, scrolling smoothly ends up 'jumping' every like 2-3 scrolls
+
 			this.scrollTimeout = setTimeout(() => {
 
-				let top = Math.floor(this.domMain.nativeElement.scrollTop);
-
-				this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight);
-
-				//var l = 'HEADING';
-				//if (this.windowThumbs[0].src) {
-				//	l = 'IMAGE';
-				//}
-				//console.log(top + ':' + this.windowThumbs[0].tl + ' -> ' + (top - this.windowThumbs[0].tl) + ' : ' + l);
+				let top = Math.max(0, Math.floor(this.domMain.nativeElement.scrollTop) - 500);
+				this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight + 500);
+				//let top = Math.floor(this.domMain.nativeElement.scrollTop);
+				//this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight);
 
 				this.thumbnailTop = Math.round(this.windowThumbs[0].tl);
-				//this.thumbnailWindowHeight = 400;
 
 				let last = this.windowThumbs[this.windowThumbs.length-1];
+				this.thumbnailWindowHeight = Math.ceil(last.tl + last.height - this.thumbnailTop);
 
-				//console.log('Top to ' + this.windowThumbs[0].tl);
-				//console.log('Height to ' + (last.tl + last.height - this.windowThumbs[0].tl));
+				console.log('Num ' + this.windowThumbs.length + ', top ' + this.thumbnailTop + ', height ' + this.thumbnailWindowHeight + ', for ' + this.domMain.nativeElement.clientHeight);
 
-				this.thumbnailWindowHeight = (Math.ceil(last.tl + last.height - this.thumbnailTop));
 			}, 300);
 
 
