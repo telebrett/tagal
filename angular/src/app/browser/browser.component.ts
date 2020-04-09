@@ -82,6 +82,10 @@ export class BrowserComponent implements OnInit {
 
 	}
 
+	public thumbReport(event) {
+		console.log('Block Top : ' + (event.srcElement.offsetTop + event.srcElement.offsetParent.offsetTop - 5) + ', left' + event.srcElement.offsetLeft);
+	}
+
 	public scrollThumbnails(event) {
 		//TODO - This could do a performance improvement and ONLY redo the thumbs
 		//       if we are close to the edge
@@ -109,7 +113,7 @@ export class BrowserComponent implements OnInit {
 				this.thumbnailTop = Math.round(this.windowThumbs[0].tl);
 
 				let last = this.windowThumbs[this.windowThumbs.length-1];
-				this.thumbnailWindowHeight = Math.ceil(last.tl + last.height - this.thumbnailTop);
+				this.thumbnailWindowHeight = Math.ceil(last.tl + last.height - this.thumbnailTop + 5);
 
 				console.log('Num ' + this.windowThumbs.length + ', top ' + this.thumbnailTop + ', height ' + this.thumbnailWindowHeight + ', for ' + this.domMain.nativeElement.clientHeight);
 

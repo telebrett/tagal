@@ -15,11 +15,11 @@
 						<div *ngFor="let thumb of windowThumbs" class="divthumb" [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}">
 							<ng-container *ngIf="thumb.heading; then vheading; else vthumb"></ng-container>
 							<ng-template #vheading>
-								<h5>N/A - {{thumb.tl}} : {{thumb.heading}}</h5>
+  							<h5 (click)="thumbReport($event)">N/A - {{thumb.tl}} : {{thumb.heading}}</h5>
 							</ng-template>
 							<ng-template #vthumb>
 								<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" />
-							 <!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
+								<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
 							</ng-template>
 						</div>
 					</div>

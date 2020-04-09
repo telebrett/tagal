@@ -224,7 +224,6 @@ export class ImagesService {
 		let start_index = this.calcTopIndex(top);
 
 		let stop = top + maxHeight;
-		let last = this.currentImages.length-1;
 
 		let thumbs = [];
 
@@ -255,12 +254,14 @@ export class ImagesService {
 
 		}
 
+		console.log('Number of images ' + this.currentImages.length);
+
 		let max_run = 0;
 		while(true) {
 
 			let image = this.images[this.currentImages[start_index]];
 
-			if (image.tl > stop || start_index >= last) {
+			if (start_index >= this.currentImages.length || image.tl > stop ) {
 				break;
 			}
 
@@ -528,12 +529,12 @@ export class ImagesService {
 
 		this.vblocks = [];
 
+		let borderandpadding = 10;
+
 		let current_block;
-		let top_left = 0;
+		let top_left = borderandpadding / 2;
 		let left: 0 ;
 		let row_max_height = 0;
-
-		let borderandpadding = 10;
 
 		let multi_image = false;
 
@@ -578,7 +579,7 @@ export class ImagesService {
 				};
 
 				//This initial height is the height of the heading, yes it sucks for the service to be tied to the UI in this way, but this needs to know the heights for performance
-				top_left += headingHeight;
+				top_left += headingHeight + borderandpadding;
 				left = 0;
 				row_max_height = 0;
 				multi_image = false;
