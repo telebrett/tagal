@@ -22,6 +22,7 @@ CREATE TABLE image (
 -- If already public on S3
 ,IsPublic tinyint(1) UNSIGNED NOT NULL DEFAULT '0'
 ,IsDirty tinyint(1) UNSIGNED NOT NULL DEFAULT '0'
+,IsVideo tinyint(1) UNSIGNED NOT NULL DEFAULT '0'
 ,PRIMARY KEY(id)
 ) ENGINE=InnoDB CHARSET=UTF8;
 

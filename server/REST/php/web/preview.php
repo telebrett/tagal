@@ -31,6 +31,14 @@ class REST_Preview extends REST {
 			self::send_error_message(FALSE,404);
 		}
 
+		if ($this->image->IsVideo) {
+			//ImageMagick tries valiantly, and takes ... forever
+			http_response_code(405);
+			print "Cannot preview videos\n";
+			exit(0);
+		}
+
+
 		$this->buildPreview();
 		$this->sendPreview();
 

@@ -37,12 +37,15 @@ my $OUTPUT = undef;
 my $IMAGEDIR = 'pictures';
 my $S3USER = undef;
 my $HELP = undef;
+my $FORCE = 0;
+
+my $RESTRICTPATH = undef;
 
 my $database_type;
 
 #TODO - For s3, the root dir is different
 
-Getopt::Long::GetOptions('public'=>\$PUBLIC,'s3user=s'=>\$S3USER,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR,'help'=>\$HELP);
+Getopt::Long::GetOptions('public'=>\$PUBLIC,'s3user=s'=>\$S3USER,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR,'help'=>\$HELP, 'restrict=s' => \$RESTRICTPATH, 'force' => \$FORCE);
 
 if ($HELP) {
 	pod2usage(0);
@@ -59,7 +62,7 @@ if ($S3USER && ! $OUTPUT) {
 }
 
 if ($OUTPUT) {
-	if (-e $OUTPUT) {
+	if (-e $OUTPUT && ! $FORCE) {
 		print "File $OUTPUT exists. Do you want to overwrite? ";
 		while (<STDIN>) {
 			if (/^yes$/i) {
@@ -89,17 +92,17 @@ sub get_date_functions {
 	my %funcs;
 
 	if ($database_type eq 'mysql') {
-		$funcs{year} = 'YEAR(' . $column . ')';
+		$funcs{year}  = 'YEAR(' . $column . ')';
 		$funcs{month} = 'MONTH(' . $column . ')';
-		$funcs{day} = 'DAYOFOFMONTH(' . $column . ')';
+		$funcs{day}   = 'DAYOFMONTH(' . $column . ')';
 		$funcs{epoch} = 'UNIX_TIMESTAMP(' . $column . ')';
 	} elsif ($database_type eq 'sqlite') {
 		$funcs{epoch} = $column;
 
-		$column = "datetime($column, 'unixepoch')";
-		$funcs{year} = "strftime('%Y', $column)";
+		$column       = "datetime($column, 'unixepoch')";
+		$funcs{year}  = "strftime('%Y', $column)";
 		$funcs{month} = "strftime('%m', $column)";
-		$funcs{day} = "strftime('%d', $column)";
+		$funcs{day}   = "strftime('%d', $column)";
 	}
 
 	return %funcs;
@@ -121,9 +124,24 @@ sub build_db {
 	my $SQL_IMAGES = "SELECT i.*,$date_functions{year} AS YearTaken,$date_functions{month} AS MonthTaken,$date_functions{day} AS DayOfMonthTaken,$date_functions{epoch} AS SortOrder\n"
 	               . "FROM image i\n";
 
+
+	my @WHERE;;
+
+	if ($RESTRICTPATH) {
+
+		if ($RESTRICTPATH !~ m/^\//) {
+			$RESTRICTPATH = '/' . $RESTRICTPATH;
+		}
+
+		$RESTRICTPATH = $RESTRICTPATH . '%';
+
+		push @WHERE, 'i.Location LIKE ?';
+		push @SQL_TAGS_BIND, $RESTRICTPATH;
+		push @SQL_IMAGES_BIND, $RESTRICTPATH;
+	}
+
 	if ($PUBLIC) {
-		$SQL_TAGS .= ' WHERE i.IsPublic = 1';
-		$SQL_IMAGES .= ' WHERE i.IsPublic = 1';
+		push @WHERE, 'i.IsPublic = 1';
 
 	} elsif ($S3USER) {
 
@@ -137,6 +155,11 @@ sub build_db {
 		             . " JOIN s3user_tag s3tag ON s3tag.S3UserID = s.id\n"
 		             . " JOIN image_tag it ON it.TagID = s3tag.TagID AND it.ImageID = i.id\n";
 
+	}
+
+	if (@WHERE) {
+		$SQL_TAGS   .= 'WHERE ' . join(' AND ', @WHERE) . "\n";
+		$SQL_IMAGES .= 'WHERE ' . join(' AND ', @WHERE) . "\n";
 	}
 
 	#Note, these two statements MUST be ordered the same
@@ -163,7 +186,13 @@ sub build_db {
 		#       same second, eg high speed continous mode, could possible sort by camera as well as it is possible for two images from
 		#       different cameras
 
-		$data->{images}->{$image->{ID}} = [$image->{LOCATION},$size_ratio,$image->{SORTORDER}];
+		my $output_image = [$image->{LOCATION},$size_ratio,$image->{SORTORDER}];
+
+		if ($image->{ISVIDEO}) {
+			push @$output_image, 1;
+		}
+
+		$data->{images}->{$image->{ID}} = $output_image;
 
 		#TODO - Check for valid date
 
@@ -236,6 +265,8 @@ generate_db.pl
  -s[3user] The s3user to write out a restricted user for
  -o[output] The path to to write out to
  -i[magedir] The path that the images are in. Defaults to 'pictures'
+ -r[estrict] The location of images to restrict to eg "2019/10/02" - mainly for development of the frontend purposes
+ -f[orce] If set then it will overwrite the existinf file without asking
 
  Note that public / restricted are exclusive options
 

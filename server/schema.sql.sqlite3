@@ -19,6 +19,7 @@ CREATE TABLE image (
 -- If already public on S3
 ,IsPublic INTEGER
 ,IsDirty INTEGER
+,IsVideo INTEGER
 );
 
 CREATE TABLE image_tag (

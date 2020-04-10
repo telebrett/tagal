@@ -39,12 +39,13 @@ my $OPT_USAGE = 0;
 my $OPT_STARTDIR = undef;
 my $OPT_IGNORELASTMOD = 0;
 my $OPT_REGENERATETHUMB = 0;
+my $OPT_VIDEOSONLY = 0;
 
 #TODO - DEBUG option, print out the raw values being executed in call_system, call_system should also output the STDERR
 #     - The thumbnail and animated PNG conversion use temporary files that get automatically cleaned up, add an option to leave these files alone (possibly
 #       smarter than that, manually clean them up if the code that was using that specific set of files worked)
 
-Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB);
+Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB, 'videosonly'=>\$OPT_VIDEOSONLY);
 
 pod2usage(1) if $OPT_USAGE;
 pod2usage(-exitval=>0,-verbose=>2) if ($OPT_MAN);
@@ -176,6 +177,7 @@ sub import_directory {
 
 				if ($file =~ m/\.jpe?g$/i) {
 					$is_movie = 0;
+					next if $OPT_VIDEOSONLY;
 				}
 
 				my $file_stat = stat($fullpath);
@@ -258,9 +260,11 @@ sub import_directory {
 
 						#The anmiated png's can get quite large,
 						#400k for 5 frames at 320 width goes to 180k at 200 width instead
-						my $conv_height = $height / ($width / 200);
-						print "Skipping video preview\n";
+						#my $conv_height = $height / ($width / 200);
 						#create_video_preview($info, $thumbnail, $preview, $conv_height, 200);
+
+						my $conv_width = $width / ($height / 200);
+						create_video_preview($info, $thumbnail, $preview, 200, $conv_width);
 
 					}
 				} else {
@@ -289,25 +293,34 @@ sub import_directory {
 
 				my $image_id;
 
+				my $datetime;
+
+				if (exists $info->{DateTimeOriginal}) {
+					$datetime = $info->{DateTimeOriginal};
+				} elsif(exists $info->{TrackCreateDate}) {
+					$datetime = $info->{TrackCreateDate};
+				} else {
+					warn "Could not retrieve date from exif data for $file\n";
+				}
+
+				my $date_insert;
+				if ($database_type eq 'mysql') {
+					$date_insert = '?';
+				} elsif($database_type eq 'sqlite') {
+					$date_insert = "strftime('%s', ?)";
+					$datetime =~ s/^(\d{4}):(\d{2}):(\d{2})/$1-$2-$3/;
+				} else {
+					die("Database type $database_type not handled");
+				}
+
+				#note that $date_insert still uses a placeholder
 				if ($row){
 					$image_id = $row->{ID};
-					my $sth_upd = $dbh->prepare('UPDATE image SET Width=?,Height=? WHERE id = ?');
-					$sth_upd->execute($width,$height,$image_id);
+					my $sth_upd = $dbh->prepare("UPDATE image SET Width=?,Height=?,DateTaken=$date_insert,IsVideo=? WHERE id = ?");
+					$sth_upd->execute($width,$height,$datetime,$is_movie,$image_id);
 				}else{
-
-					my $date_insert;
-					if ($database_type eq 'mysql') {
-						$date_insert = '?';
-					} elsif($database_type eq 'sqlite') {
-						$date_insert = "strftime('%s', ?)";
-						$info->{DateTimeOriginal} =~ s/^(\d{4}):(\d{2}):(\d{2})/$1-$2-$3/;
-					} else {
-						die("Database type $database_type not handled");
-					}
-
-					my $sth_ins = $dbh->prepare("INSERT INTO image (Location,DateTaken,Width,Height) VALUES (?,$date_insert,?,?)");
-
-					$sth_ins->execute($dirpath,$info->{DateTimeOriginal},$width,$height);
+					my $sth_ins = $dbh->prepare("INSERT INTO image (Location,DateTaken,Width,Height,IsVideo) VALUES (?,$date_insert,?,?,?)");
+					$sth_ins->execute($dirpath,$datetime,$width,$height,$is_movie);
 					$image_id = $dbh->last_insert_id(undef,undef,'image',undef);
 				}
 
@@ -416,11 +429,12 @@ sub create_video_preview {
 			'-vf', "scale=${width}:${height}",
 			'-vframes', 1,
 			'-q:v', 2,
+			'-tune', 'stillimage',
 			shell_quote($frame_path)
 		);
 
 		if (! call_system("Generating frame $i for video preview ", @cmd)) {
-			die "Failed to generate image from movie for $fullpath\n";
+			warn "Failed to generate image from movie for $fullpath\n";
 		}
 
 		push @join_cmd, $frame_path;
@@ -440,7 +454,7 @@ sub create_video_preview {
 		push @join_cmd, '-d', 1000;
 
 		if (! call_system("Generating animated png ", @join_cmd)) {
-			die "Failed to generate animated png for $fullpath\n";
+			warn "Failed to generate animated png for $fullpath\n";
 		}
 	}
 
@@ -450,7 +464,8 @@ sub call_system {
 
 	my $comment = shift;
 
-	my $pid = open3(\*CHLD_OUT, \*CHLD_IN, \*CHLD_ERR, @_);
+	#my $pid = open3(\*CHLD_OUT, \*CHLD_IN, \*CHLD_ERR, @_);
+	my $pid = open3(undef, undef, undef, @_);
 
 	#turn on flushing
 	$| = 1;
@@ -492,6 +507,7 @@ import_images.pl
   -t[humbnails]        Rebuild the thumbnails
   -i[gnorelastmod]     Ignore the last mod date of the files and re import.
   -d[ir] [dir]         eg "-d 2016/01" would only scan that directory in the base directory
+  -v[ideosonly]        Only scan for videos
 
 =head1 DESCRIPTION
 
