@@ -45,7 +45,7 @@ my $database_type;
 
 #TODO - For s3, the root dir is different
 
-Getopt::Long::GetOptions('public'=>\$PUBLIC,'s3user=s'=>\$S3USER,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR,'help'=>\$HELP, 'restrict=s' => \$RESTRICTPATH, 'force' => \$FORCE);
+Getopt::Long::GetOptions('public'=>\$PUBLIC,'s3user=s'=>\$S3USER,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR,'help'=>\$HELP, 'dir=s' => \$RESTRICTPATH, 'force' => \$FORCE);
 
 if ($HELP) {
 	pod2usage(0);
@@ -261,12 +261,12 @@ generate_db.pl
 
  Options
 
- -p[ublic] build public db
- -s[3user] The s3user to write out a restricted user for
- -o[output] The path to to write out to
- -i[magedir] The path that the images are in. Defaults to 'pictures'
- -r[estrict] The location of images to restrict to eg "2019/10/02" - mainly for development of the frontend purposes
- -f[orce] If set then it will overwrite the existinf file without asking
+ -p[ublic]    Build public db
+ -s[3user]    The s3user to write out a restricted user for
+ -o[output]   The path to to write out to
+ -i[magedir]  The path that the images are in. Defaults to 'pictures'
+ -d[ir] [dir] eg "-d 2016/01" would generate a database for files starting with that path
+ -f[orce]     If set then it will overwrite the existinf file without asking
 
  Note that public / restricted are exclusive options
 
