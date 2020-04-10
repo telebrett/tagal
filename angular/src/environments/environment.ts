@@ -4,9 +4,9 @@
 
 export const environment = {
   production: false,
-  imageSource: 'http://htpc/tagalimages',
-  api: 'http://htpc/tagalapi/',
-	databaseSource: 'http://htpc/tagalimages/data-base.json'
+	databaseSource: '/assets/database.json',
+	imageSource: '/assets/images',
+	api: ''
 };
 
 /*

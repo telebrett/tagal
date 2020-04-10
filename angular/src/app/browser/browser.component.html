@@ -7,6 +7,13 @@
 		<div id="tags">
 			<button *ngFor="let tag of menuTags" type="button" class="btn btn-sm btn-{{tag.type ? 'primary' : 'secondary'}} mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
 		</div>
+		<!-- Cannot use ngIf on the main verticalmainimage block as it needs to exist to check the available width and height -->
+		<div id="verticalimage" #verticalmainimage [ngClass]="mainImageLoading ? 'loading' : ''" [ngStyle]="{'display': mainImage ? '' : 'none'}">
+  		<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" (click)="hideMainImage()" (load)="mainImageLoaded()" />
+			<video *ngIf="mainImage && mainImage.v" controls="controls" autoplay="autoplay" name="media" [height]="mainImage.height" [width]="mainImage.width">
+				<source src="{{mainImage.src}}" />
+			</video>
+		</div>
 		<div id="main" [ngClass]="isVerticalView ? 'vertical' : 'horizontal'" #main (scroll)="scrollThumbnails($event)">
 			<ng-container *ngIf="isVerticalView; then verticalView; else horizontalView"></ng-container>
 			<ng-template #verticalView>
@@ -18,7 +25,7 @@
   							<h5 (click)="thumbReport($event)">N/A - {{thumb.tl}} : {{thumb.heading}}</h5>
 							</ng-template>
 							<ng-template #vthumb>
-								<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" />
+								<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="viewImage(thumb)" />
 								<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
 							</ng-template>
 						</div>

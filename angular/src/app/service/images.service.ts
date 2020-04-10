@@ -20,6 +20,7 @@ export class ImagesService {
 	 * object  t  hash of tag indexes - the tags that have possibly been added / removed
 	 * object  ot hash of tag indexes - this is the list of tags that the image has on disk
 	 * bool    s  True if the image is currently marked as selected
+	 * bool    v  True if the image is actually a video.
 	 *
 	 * The following keys are set by setThumbnails and will change - eg tl
 	 * int tw Thumbnail width
@@ -59,10 +60,7 @@ export class ImagesService {
 
 	public loadImages() : Observable<boolean> {
 
-		let database_source = '/assets/database.json';
-		if (environment.databaseSource) {
-			database_source = environment.databaseSource;
-		}
+		let database_source = environment.databaseSource;
 
 		return this.http.get(database_source).pipe(map((data:any) => {
 
@@ -72,7 +70,9 @@ export class ImagesService {
 
 				let path = image[0].match(/^(.*)\/(.*)$/);
 
-				this.images[i] = {p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2]};
+				let imagehash = {p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2],v:image.length>3};
+
+				this.images[i] = imagehash;
 			}
 
 			for (var i in data.tags) {
@@ -191,6 +191,15 @@ export class ImagesService {
 				//selected : this.selected[this.currentImages[i]]
 			};
 
+			let src = image.p;
+			if (image.v) {
+				src += '/.preview/' + image.f + '.png';
+			} else {
+				src += '/.thumb/' + image.f;
+			}
+
+			src = environment.imageSource + src;
+
 			//if (this.s3) {
 
 			//	var s3path = this.rootImageDir + image.p + '/.thumb/' + image.f;
@@ -210,7 +219,7 @@ export class ImagesService {
 			//		thumb.s3src = s3path;
 			//	}
 			//} else {
-				thumb.src = environment.imageSource + image.p + '/.thumb/' + image.f;
+				thumb.src = src;
 			//}
 
 			win.push(thumb);
@@ -265,13 +274,23 @@ export class ImagesService {
 				break;
 			}
 
+			let src = image.p;
+			if (image.v) {
+				src += '/.preview/' + image.f + '.png';
+				//src += '/.thumb/' + image.f + '.png';
+			} else {
+				src += '/.thumb/' + image.f;
+			}
+
+			src = environment.imageSource + src;
+
 			let thumb = {
 				width    : Math.round(image.tw),
 				height   : Math.round(image.th),
 				index    : this.currentImages[start_index],
 				tl       : image.tl,
-				src      : environment.imageSource + image.p + '/.thumb/' + image.f
-
+				src      : src,
+				v        : image.v
 
 				,ciindex: start_index
 			}
@@ -656,7 +675,8 @@ export class ImagesService {
 			name : image.f,
 			height: null,
 			width: null,
-			previewSrc: null
+			previewSrc: null,
+			v: image.v
 		};
 
 		let height_from_maxwidth = Math.ceil((1/image.r) * maxWidth);
@@ -675,7 +695,9 @@ export class ImagesService {
 		//	fullImage.src = 'spacer.png';
 		//	fullImage.s3src = this.rootImageDir + image.p + '/' + image.f;
 		//} else {
-		if (environment.api) {
+
+		//Don't have previews of images
+		if (! image.v && environment.api) {
 			fullImage.previewSrc = environment.api + 'preview/' + index + '/' + fullImage.width + '/' + fullImage.height; 
 		}
 

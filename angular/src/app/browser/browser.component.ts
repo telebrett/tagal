@@ -12,6 +12,7 @@ export class BrowserComponent implements OnInit {
 	@ViewChild('thumbwidth') domThumbWidth: ElementRef;
 	@ViewChild('thumbnails') domThumbnails: ElementRef;
 	@ViewChild('mainimage') domMainImage: ElementRef;
+	@ViewChild('verticalmainimage') domVerticalMainImage: ElementRef;
 
 	@ViewChild('main') domMain: ElementRef;
 	@ViewChild('verticalthumbs') domVerticalThumbs: ElementRef;
@@ -34,6 +35,8 @@ export class BrowserComponent implements OnInit {
 
 	public isVerticalView = true;
 
+	public mainImageLoading = false;
+
 	private scrollTimeout;
 
 	constructor(private images: ImagesService) { }
@@ -45,13 +48,36 @@ export class BrowserComponent implements OnInit {
 		
 	}
 
+	public mainImageLoaded() {
+		this.mainImageLoading = false;
+		return false;
+	}
+
+	public hideMainImage() {
+		this.mainImage = null;
+	}
+
 	//TODO - When showing thumbnails for videos, overlay the 'play' icon
 
 	public viewImage(thumb) {
+	
+		let ref;	
+		let height;
+		let width;
 
-		let ref = this.domMainImage.nativeElement;
+		this.mainImageLoading = true;
 
-		this.mainImage = this.images.getImage(thumb.index, ref.clientWidth, ref.clientHeight);
+		if (this.isVerticalView) {
+			ref = this.domVerticalMainImage.nativeElement;
+			height = ref.parentNode.clientHeight
+			width = ref.parentNode.clientWidth;
+		} else {
+			ref = this.domMainImage.nativeElement;
+			height = ref.clientHeight;
+			width = ref.clientWidth;
+		}
+
+		this.mainImage = this.images.getImage(thumb.index, width, height);
 	}
 
 	private reset() {
@@ -101,14 +127,12 @@ export class BrowserComponent implements OnInit {
 				clearTimeout(this.scrollTimeout);
 			}
 
-			//TODO - It works ..., but there appears to be a lag with the bottom gap, scrolling smoothly ends up 'jumping' every like 2-3 scrolls
-
 			this.scrollTimeout = setTimeout(() => {
 
-				let top = Math.max(0, Math.floor(this.domMain.nativeElement.scrollTop) - 500);
-				this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight + 500);
-				//let top = Math.floor(this.domMain.nativeElement.scrollTop);
-				//this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight);
+				let buffer = 3000;
+
+				let top = Math.max(0, Math.floor(this.domMain.nativeElement.scrollTop) - buffer);
+				this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight + buffer*2);
 
 				this.thumbnailTop = Math.round(this.windowThumbs[0].tl);
 

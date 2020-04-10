@@ -103,3 +103,16 @@ $thumbnail-height: 150px;
 #image {
 	height:100%;
 }
+
+#verticalimage {
+	background-color:white;
+	height:100%;
+	margin-left:$tags-width;
+	padding-left:50px;
+	box-sizing:border-box;
+}
+#verticalimage.loading {
+		background-image:url('/assets/Spinner-1s-200px.png');
+		background-position:center;
+		background-repeat:no-repeat;
+	}
