@@ -56,6 +56,10 @@ $thumbnail-height: 150px;
 	overflow-y:auto;
 }
 
+#main.vertical.hideThumbs {
+	overflow-y:hidden;
+}
+
 .divthumb {
 	//margin:0px;
 	margin:5px;
@@ -82,8 +86,13 @@ $thumbnail-height: 150px;
 	border:1px solid black;
 }
 
-#verticalWindow div.reportblock {
+.hideThumbs #verticalWindow {
+	visibility:hidden;
+}
+
+div.reportblock {
 	border:1px solid black;
+	background-color:green;
 }
 
 #thumbnails {
@@ -107,8 +116,6 @@ $thumbnail-height: 150px;
 #verticalimage {
 	background-color:white;
 	height:100%;
-	margin-left:$tags-width;
-	padding-left:50px;
 	box-sizing:border-box;
 }
 #verticalimage.loading {

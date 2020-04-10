@@ -65,12 +65,14 @@ export class BrowserComponent implements OnInit {
 		let height;
 		let width;
 
-		this.mainImageLoading = true;
+		//videos don't trigger a 'load' event
+		this.mainImageLoading = ! thumb.v;
 
 		if (this.isVerticalView) {
 			ref = this.domVerticalMainImage.nativeElement;
 			height = ref.parentNode.clientHeight
 			width = ref.parentNode.clientWidth;
+			ref.style.marginTop = this.domMain.nativeElement.scrollTop + 'px';
 		} else {
 			ref = this.domMainImage.nativeElement;
 			height = ref.clientHeight;
@@ -152,11 +154,13 @@ export class BrowserComponent implements OnInit {
 	}
 
 	public selectTag(tag: any) {
+		this.mainImage = null;
 		this.images.selectTag(tag.index);
 		this.reset();
 	}
 
 	public deselectTag(tag: any) {
+		this.mainImage = null;
 		this.images.deselectTag(tag.index);
 		this.reset();
 	}
