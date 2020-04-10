@@ -81,6 +81,8 @@ if ($OUTPUT) {
 		pod2usage(1);
 	}
 
+	print "Writing to $OUTPUT\n";
+
 }
 
 get_db();

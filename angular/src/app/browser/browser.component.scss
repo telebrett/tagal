@@ -46,7 +46,44 @@ $thumbnail-height: 150px;
 	height:100%;
 	margin-left:$tags-width;
 	position:relative;
+}
+
+#main.horizontal {
 	padding-bottom:$thumbnail-height;
+}
+
+#main.vertical {
+	overflow-y:auto;
+}
+
+.divthumb {
+	//margin:0px;
+	margin:5px;
+	float:left;
+}
+
+#verticalWindow {
+	position:absolute;
+	top:0px;
+	width:100%;
+	overflow-y:hidden;
+	overflow-x:hidden;
+}
+
+#verticalWindow h5 {
+	border-bottom:1px solid black;
+	font-size:1em;
+	height:25px;
+	margin:0px;
+	padding:0px;
+}
+
+#verticalWindow img {
+	border:1px solid black;
+}
+
+#verticalWindow div.reportblock {
+	border:1px solid black;
 }
 
 #thumbnails {
@@ -66,3 +103,16 @@ $thumbnail-height: 150px;
 #image {
 	height:100%;
 }
+
+#verticalimage {
+	background-color:white;
+	height:100%;
+	margin-left:$tags-width;
+	padding-left:50px;
+	box-sizing:border-box;
+}
+#verticalimage.loading {
+		background-image:url('/assets/Spinner-1s-200px.png');
+		background-position:center;
+		background-repeat:no-repeat;
+	}
