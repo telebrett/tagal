@@ -40,13 +40,13 @@ my $OPT_STARTDIR = undef;
 my $OPT_IGNORELASTMOD = 0;
 my $OPT_REGENERATETHUMB = 0;
 my $OPT_VIDEOSONLY = 0;
+my $OPT_MAXPROCESSES = 1;
 
 #TODO - DEBUG option, print out the raw values being executed in call_system, call_system should also output the STDERR
 #     - The thumbnail and animated PNG conversion use temporary files that get automatically cleaned up, add an option to leave these files alone (possibly
 #       smarter than that, manually clean them up if the code that was using that specific set of files worked)
-#     - Forking up to N processes (specify as an argument) to speed up throughput
 
-Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB, 'videosonly'=>\$OPT_VIDEOSONLY);
+Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB, 'videosonly'=>\$OPT_VIDEOSONLY, 'maxprocesses=i'=>\$OPT_MAXPROCESSES);
 
 pod2usage(1) if $OPT_USAGE;
 pod2usage(-exitval=>0,-verbose=>2) if ($OPT_MAN);
@@ -85,7 +85,18 @@ my $tags = get_tags();
 
 my $count = 0;
 
+my $num_forks = 0;
+
 import_directory($OPT_STARTDIR);
+
+if ($OPT_MAXPROCESSES > 1) {
+	print "Waiting for final children\n";
+	while ($num_forks > 0) {
+		my $child = wait();
+		$num_forks--;
+	}
+	print "All done\n";
+}
 
 set_setting('LastRun',DateTime::Format::MySQL->format_datetime($now));
 
@@ -117,6 +128,9 @@ sub get_db {
 	$database_type = $config{db}{type} || 'mysql';
 
 	$dbh = DBI->connect('DBI:' . $database_type . ':' . $config{db}{name},,$config{db}{user},$config{db}{pass},{RaiseError=>1}) || die("Could not connect to imagegallery database $!");
+
+	#This is so the handle doesn't get closed by the forked child processes
+	$dbh->{AutoInactiveDestroy} = 1;
 
 	$dbh->{FetchHashKeyName} = 'NAME_uc';
 
@@ -199,8 +213,7 @@ sub import_directory {
 					$preview .= '.png';
 				}
 
-				#remove this entire ifblock - just a shortcut when building thumbs
-				if (not $build_tags and -e $thumbnail){
+				if (not $build_tags and -e $thumbnail && (! $is_movie || -e $preview)){
 					next;
 				}
 
@@ -210,6 +223,28 @@ sub import_directory {
 
 				if ($is_movie && ! -d $fulldir . '/.preview'){
 					mkdir $fulldir . '/.preview';
+				}
+
+				if ($OPT_MAXPROCESSES > 1) {
+
+					if ($num_forks >= $OPT_MAXPROCESSES) {
+						my $childpid = wait();
+						$num_forks--;
+					}
+
+					#Fork!
+					$num_forks++;
+
+					my $child = fork();
+
+					if (not defined $child) {
+						die "Could not fork child process $@";
+					}
+
+					if ($child != 0) {
+						next;
+					}
+
 				}
 
 				my $info = ImageInfo($fullpath);
@@ -380,9 +415,14 @@ sub import_directory {
 
 				}
 
+				if ($OPT_MAXPROCESSES > 1) {
+					#to be here, we are in a forked child process
+					exit(0);
+				}
 			}
 		}
 	}
+
 
 	closedir($dh);
 
@@ -515,11 +555,12 @@ import_images.pl
 
  Options
   -h[elp]              brief help message
-  -m[an]               Full help
+  -man                 Full help
   -t[humbnails]        Rebuild the thumbnails
   -i[gnorelastmod]     Ignore the last mod date of the files and re import.
   -d[ir] [dir]         eg "-d 2016/01" would only scan that directory in the base directory
   -v[ideosonly]        Only scan for videos
+  -max[processes]      If this is set to > 1, then it will process this many images simultaneously (I suggest keeping this < than the number of vcpus)
 
 =head1 DESCRIPTION
 
