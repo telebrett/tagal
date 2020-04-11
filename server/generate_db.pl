@@ -177,6 +177,8 @@ sub build_db {
 
 	my $cur_tag = $sth_tags->fetchrow_hashref;
 
+	my $vids_tag = '';
+
 	while (my $image = $sth_image->fetchrow_hashref){
 
 		my $size_ratio = 0;
@@ -213,6 +215,18 @@ sub build_db {
 		if (! defined $data->{tags}->{$dtag}){
 			$data->{tags}->{$dtag} = [];
 			$data->{tagmetadata}->{$dtag} = {datetype=>'day','dateval'=>$image->{DAYOFMONTHTAKEN}};
+		}
+
+		#TODO - This could probably send the length of the video instead of just a bool, it could be useful in the UI
+		if ($image->{ISVIDEO}) {
+
+			if ($vids_tag eq '') {
+				$vids_tag = '__videos__';
+				$data->{tags}->{$vids_tag} = [];
+				$data->{tagmetadata}->{$vids_tag} = {label=>'Videos'};
+			}
+
+			push @{$data->{tags}->{$vids_tag}}, $image->{ID};
 		}
 
 		#write out the psuedo tag for the date the image was taken

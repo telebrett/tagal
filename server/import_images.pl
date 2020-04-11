@@ -44,6 +44,7 @@ my $OPT_VIDEOSONLY = 0;
 #TODO - DEBUG option, print out the raw values being executed in call_system, call_system should also output the STDERR
 #     - The thumbnail and animated PNG conversion use temporary files that get automatically cleaned up, add an option to leave these files alone (possibly
 #       smarter than that, manually clean them up if the code that was using that specific set of files worked)
+#     - Forking up to N processes (specify as an argument) to speed up throughput
 
 Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB, 'videosonly'=>\$OPT_VIDEOSONLY);
 
@@ -225,6 +226,13 @@ sub import_directory {
 					$height = $info->{ImageHeight};
 				}elsif (defined $info->{ExitImageHeight}){
 					$height = $info->{ExifImageHeight};
+				}
+
+				if ($is_movie && $info->{Rotation} && ( $info->{Rotation} eq '90' || $info->{Rotation} eq '270')) {
+					#videos are weird. When they are played, they are the right way, but this means the reported width's and height's are swapped
+					my $tmp_dim = $height;
+					$height = $width;
+					$width = $tmp_dim;
 				}
 
 				my $force_thumb = $OPT_REGENERATETHUMB;
@@ -437,7 +445,10 @@ sub create_video_preview {
 			warn "Failed to generate image from movie for $fullpath\n";
 		}
 
-		push @join_cmd, $frame_path;
+		#TODO BUG whereby ffmpeg fails to encode as we have gone past the end of the video, but still exits with 0 (WTF!!), so check that the file, you know, actually exists
+		if ( -e $frame_path) {
+			push @join_cmd, $frame_path;
+		}
 
 		if ($i == 0) {
 			copy($frame_path, $thumbnail);
@@ -455,6 +466,7 @@ sub create_video_preview {
 
 		if (! call_system("Generating animated png ", @join_cmd)) {
 			warn "Failed to generate animated png for $fullpath\n";
+			warn join(' ', @join_cmd) . "\n";
 		}
 	}
 
