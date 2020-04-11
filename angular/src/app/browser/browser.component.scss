@@ -60,6 +60,13 @@ $thumbnail-height: 150px;
 	overflow-y:hidden;
 }
 
+#main.vertical .controls {
+	position:absolute;
+	right:0px;
+	top:0px;
+	z-index:2;
+}
+
 .divthumb {
 	//margin:0px;
 	margin:5px;

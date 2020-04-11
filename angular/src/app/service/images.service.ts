@@ -85,6 +85,10 @@ export class ImagesService {
 		}));
 	}
 
+	public download(src: string) : Observable<any> {
+		return this.http.get(src);
+	}
+
 	public getRemainingTags() {
 
 		let showMonth = false;
@@ -228,6 +232,16 @@ export class ImagesService {
 		return win;
 	}
 
+	public getImageIndex(ciindex: number) {
+
+		if (ciindex < 0 || ciindex >= this.currentImages.length) {
+			return false;
+		}
+
+		return this.currentImages[ciindex];
+
+	}
+
 	public getThumbnailWindowByTop(top: number, maxHeight: number) {
 
 		let start_index = this.calcTopIndex(top);
@@ -263,8 +277,6 @@ export class ImagesService {
 
 		}
 
-		console.log('Number of images ' + this.currentImages.length);
-
 		let max_run = 0;
 		while(true) {
 
@@ -290,9 +302,8 @@ export class ImagesService {
 				index    : this.currentImages[start_index],
 				tl       : image.tl,
 				src      : src,
-				v        : image.v
-
-				,ciindex: start_index
+				v        : image.v,
+				ciindex  : start_index
 			}
 
 			if (
@@ -308,17 +319,11 @@ export class ImagesService {
 
 		}
 
-		//TODO - need to return the headings
-
 		return thumbs;
 
 	}
 
 	private calcTopIndex(top: number) {
-
-		//TODO - This is when I click on 2019 only
-		//     - The borderandpadding means it breaks
-		//top = 253705;
 
 		if (top == 0) {
 			return 0;
@@ -391,7 +396,6 @@ export class ImagesService {
 		while (result > 0 && this.images[this.currentImages[result]].tl == this.images[this.currentImages[result-1]].tl) {
 			result--;
 		}
-		//console.log('First in row ' + this.images[this.currentImages[result]].tl);
 
 		return result;
 

@@ -2,6 +2,11 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 import { ImagesService } from '../service/images.service';
 
+/*
+ * TODO - Move the position of the previous, next buttons - they jump around
+ *      - Don't change the width of the current main image until after it loads
+ */
+
 @Component({
 	selector: 'app-browser',
 	templateUrl: './browser.component.html',
@@ -32,6 +37,7 @@ export class BrowserComponent implements OnInit {
 	public windowThumbs = [];
 
 	public mainImage;
+	private mainciindex;
 
 	public isVerticalView = true;
 
@@ -57,16 +63,28 @@ export class BrowserComponent implements OnInit {
 		this.mainImage = null;
 	}
 
-	//TODO - When showing thumbnails for videos, overlay the 'play' icon
-
-	public viewImage(thumb) {
+	public viewImageFromThumb(thumb) {
 	
+		//videos don't trigger a 'load' event
+		this.mainImageLoading = ! thumb.v;
+
+		this.viewImageFromIndex(thumb.ciindex);
+	}
+	
+	public viewImageFromIndex(ciindex: number) {
+
+		let index = this.images.getImageIndex(ciindex);
+
+		if (index == false) {
+			return false;
+		}
+
+		//The browsers list of thumbnails is incomplete, the ciindex is the index of the thumb from the images service
+		this.mainciindex = ciindex;
+
 		let ref;	
 		let height;
 		let width;
-
-		//videos don't trigger a 'load' event
-		this.mainImageLoading = ! thumb.v;
 
 		if (this.isVerticalView) {
 			ref = this.domVerticalMainImage.nativeElement;
@@ -79,8 +97,23 @@ export class BrowserComponent implements OnInit {
 			width = ref.clientWidth;
 		}
 
-		this.mainImage = this.images.getImage(thumb.index, width, height);
+		this.mainImage = this.images.getImage(index, width, height);
 	}
+
+	public prevMain() {
+		this.viewImageFromIndex(this.mainciindex - 1);
+	}
+
+	public nextMain() {
+		this.viewImageFromIndex(this.mainciindex + 1);
+	}
+
+	public download() {
+	}
+
+	//public download() : Observable<any> {
+	//	return this.images.download(this.mainImage.src);
+	//}
 
 	private reset() {
 
