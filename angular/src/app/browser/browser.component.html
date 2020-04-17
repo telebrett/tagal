@@ -5,7 +5,15 @@
 <div id="contentwrapper">
 	<div id="content">
 		<div id="tags">
-			<button *ngFor="let tag of menuTags" type="button" class="btn btn-sm btn-{{tag.type ? 'primary' : 'secondary'}} mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
+			<ng-container *ngFor="let tag of menuTags">
+				<div *ngIf="tag.tags" ngbDropdown class="mt-1">
+					<button ngbDropdownToggle class="btn btn-sm btn-primary" type="button">{{tag.type}}</button>
+					<div ngbDropdownMenu>
+						<a *ngFor="let subtag of tag.tags" class="dropdown-item" href="#" (click)="selectTag(subtag)">{{subtag.label}}</a>
+					</div>
+				</div>
+				<button *ngIf="! tag.tags" type="button" class="btn btn-sm btn-secondary mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
+			</ng-container>
 		</div>
 		<div id="main" [ngClass]="{'vertical':isVerticalView, 'horizontal':!isVerticalView, 'hideThumbs': mainImage}" #main (scroll)="scrollThumbnails($event)">
 		<!-- Cannot use ngIf on the main verticalmainimage block as it needs to exist to check the available width and height -->

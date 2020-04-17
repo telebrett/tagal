@@ -111,39 +111,64 @@ export class ImagesService {
 		}
         
 		let unsorted = [];
+		let groups = {};
         
 		for (let i = 0; i < this.remainingTags.length; i++) {
 			let tag = this.tags[this.remainingTags[i]];
         
-			if (tag.m && tag.m.datetype) {
-				//if (realTagsOnly) {
-				//	continue;
-				//}
-				switch (tag.m.datetype) {
-					case 'month':
-						if (! showMonth) {
-							continue;
-						}
-						break;
-					case 'day':
-						if (! showDay) {
-							continue;
-						}
-						break;
+			//Tags with metadata that also have 'single' don't have subtags, eg if an image has the "video" tag
+			if (tag.m && ! tag.m.single) {
+
+				let group;
+
+				//Tags with metadata get grouped
+				if (tag.m.datetype) {
+					group = tag.m.datetype;
+					//if (realTagsOnly) {
+					//	continue;
+					//}
+					switch (tag.m.datetype) {
+						case 'month':
+							if (! showMonth) {
+								continue;
+							}
+							break;
+						case 'day':
+							if (! showDay) {
+								continue;
+							}
+							break;
+					}
+				} else {
+					group = tag.m.type;
 				}
+
+				if (! groups[group]) {
+					groups[group] = {
+						tags: [],
+						type: group
+					}
+				}
+
+				groups[group].tags.push(tag);
+				
+			} else {
+				unsorted.push(tag);
 			}
-        
-			unsorted.push(tag);
 		}
-        
+
+		//Do groups
+		let tags = this.sortGroupTags(groups);
+
 		let sorted = unsorted.sort(this.sortTags);
         
-		let o = [];
-        
 		for (let i = 0; i < sorted.length; i++) {
-			o.push(this.niceTag(sorted[i]));
+			tags.push(this.niceTag(sorted[i]));
 		}
-		return o;
+
+		console.log(tags);
+
+		return tags;
 		
 	}
 
@@ -716,6 +741,7 @@ export class ImagesService {
 			label:tag.l === undefined ? tag.t : tag.l,
 		};
 
+		/*
 		if (tag.m && tag.m.datetype) {
 			switch (tag.m.datetype) {
 				case 'year':
@@ -729,6 +755,7 @@ export class ImagesService {
 					break;
 			}
 		}
+	 	*/
 
 		return o;
 	}
@@ -802,6 +829,49 @@ export class ImagesService {
 		return al.toLowerCase() < bl.toLowerCase() ? -1 : 1;
 	}
 
+	private sortGroupTags(groups) {
+
+		let unsorted = [];
+
+		for (let group in groups) {
+
+			let tags = groups[group].tags;
+
+			tags = tags.sort(this.sortTags);
+
+			groups[group].tags = [];
+			for (let i = 0; i < tags.length; i++) {
+				groups[group].tags.push(this.niceTag(tags[i]));
+			}
+
+			unsorted.push(groups[group]);
+
+		}
+
+		return unsorted.sort((a,b) => {
+			if (a.type == 'year') {
+				return -1;
+			} else if(b.type == 'year') {
+				return 1;
+			}
+
+			if (a.type == 'month') {
+				return -1;
+			} else if(b.type == 'month') {
+				return 1;
+			}
+
+			if (a.type == 'day') {
+				return -1;
+			} else if(b.type == 'day') {
+				return 1;
+			}
+
+			return a.type < b.type ? -1 : 1;
+		});
+
+	}
+
 	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
 		
 		if (this.tagIndex[key] !== undefined) {
@@ -826,7 +896,9 @@ export class ImagesService {
 		if (metadata) {
 			o['m'] = metadata;
 
-			if (o['m'].datetype) {
+			if (metadata.label) {
+				o['l'] = metadata.label;
+			} else if (metadata.datetype) {
 				o['l'] = this.buildDateLabel(metadata.dateval, metadata.datetype);
 			}
 		}
