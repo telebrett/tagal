@@ -45,7 +45,7 @@ my $database_type;
 
 #TODO - For s3, the root dir is different
 
-Getopt::Long::GetOptions('public'=>\$PUBLIC,'s3user=s'=>\$S3USER,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR,'help'=>\$HELP, 'restrict=s' => \$RESTRICTPATH, 'force' => \$FORCE);
+Getopt::Long::GetOptions('public'=>\$PUBLIC,'s3user=s'=>\$S3USER,'output=s'=>\$OUTPUT,'imagedir=s'=>\$IMAGEDIR,'help'=>\$HELP, 'dir=s' => \$RESTRICTPATH, 'force' => \$FORCE);
 
 if ($HELP) {
 	pod2usage(0);
@@ -123,8 +123,9 @@ sub build_db {
 
 	my %date_functions = get_date_functions('i.DateTaken');
 
-	my $SQL_IMAGES = "SELECT i.*,$date_functions{year} AS YearTaken,$date_functions{month} AS MonthTaken,$date_functions{day} AS DayOfMonthTaken,$date_functions{epoch} AS SortOrder\n"
-	               . "FROM image i\n";
+	my $SQL_IMAGES = "SELECT i.*,$date_functions{year} AS YearTaken,$date_functions{month} AS MonthTaken,$date_functions{day} AS DayOfMonthTaken,$date_functions{epoch} AS SortOrder, c.Name as Camera\n"
+	               . "FROM image i\n"
+	               . " LEFT JOIN camera c ON c.id = i.CameraID\n";
 
 
 	my @WHERE;;
@@ -177,6 +178,8 @@ sub build_db {
 
 	my $cur_tag = $sth_tags->fetchrow_hashref;
 
+	my $vids_tag = '';
+
 	while (my $image = $sth_image->fetchrow_hashref){
 
 		my $size_ratio = 0;
@@ -213,6 +216,27 @@ sub build_db {
 		if (! defined $data->{tags}->{$dtag}){
 			$data->{tags}->{$dtag} = [];
 			$data->{tagmetadata}->{$dtag} = {datetype=>'day','dateval'=>$image->{DAYOFMONTHTAKEN}};
+		}
+
+		if ($image->{CAMERA}) {
+			my $camera_tag = '__camera__' . $image->{CAMERA};
+			if (defined $data->{tags}->{$camera_tag}) {
+				push @{$data->{tags}->{$camera_tag}}, $image->{ID};
+			} else {
+				$data->{tags}->{$camera_tag} = [$image->{ID}];
+				$data->{tagmetadata}->{$camera_tag} = {type=>'camera', label=>$image->{CAMERA}};
+			}
+		}
+
+		#TODO - This could probably send the length of the video instead of just a bool, it could be useful in the UI
+		if ($image->{ISVIDEO}) {
+			if ($vids_tag eq '') {
+				$vids_tag = '__videos__';
+				$data->{tags}->{$vids_tag} = [];
+				$data->{tagmetadata}->{$vids_tag} = {type=>'video', single=>1};
+			}
+
+			push @{$data->{tags}->{$vids_tag}}, $image->{ID};
 		}
 
 		#write out the psuedo tag for the date the image was taken
@@ -263,12 +287,12 @@ generate_db.pl
 
  Options
 
- -p[ublic] build public db
- -s[3user] The s3user to write out a restricted user for
- -o[output] The path to to write out to
- -i[magedir] The path that the images are in. Defaults to 'pictures'
- -r[estrict] The location of images to restrict to eg "2019/10/02" - mainly for development of the frontend purposes
- -f[orce] If set then it will overwrite the existinf file without asking
+ -p[ublic]    Build public db
+ -s[3user]    The s3user to write out a restricted user for
+ -o[output]   The path to to write out to
+ -i[magedir]  The path that the images are in. Defaults to 'pictures'
+ -d[ir] [dir] eg "-d 2016/01" would generate a database for files starting with that path
+ -f[orce]     If set then it will overwrite the existing file without asking
 
  Note that public / restricted are exclusive options
 
