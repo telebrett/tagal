@@ -123,8 +123,9 @@ sub build_db {
 
 	my %date_functions = get_date_functions('i.DateTaken');
 
-	my $SQL_IMAGES = "SELECT i.*,$date_functions{year} AS YearTaken,$date_functions{month} AS MonthTaken,$date_functions{day} AS DayOfMonthTaken,$date_functions{epoch} AS SortOrder\n"
-	               . "FROM image i\n";
+	my $SQL_IMAGES = "SELECT i.*,$date_functions{year} AS YearTaken,$date_functions{month} AS MonthTaken,$date_functions{day} AS DayOfMonthTaken,$date_functions{epoch} AS SortOrder, c.Name as Camera\n"
+	               . "FROM image i\n"
+	               . " LEFT JOIN camera c ON c.id = i.CameraID\n";
 
 
 	my @WHERE;;
@@ -217,13 +218,22 @@ sub build_db {
 			$data->{tagmetadata}->{$dtag} = {datetype=>'day','dateval'=>$image->{DAYOFMONTHTAKEN}};
 		}
 
+		if ($image->{CAMERA}) {
+			my $camera_tag = '__camera__' . $image->{CAMERA};
+			if (defined $data->{tags}->{$camera_tag}) {
+				push @{$data->{tags}->{$camera_tag}}, $image->{ID};
+			} else {
+				$data->{tags}->{$camera_tag} = [$image->{ID}];
+				$data->{tagmetadata}->{$camera_tag} = {type=>'camera', label=>$image->{CAMERA}};
+			}
+		}
+
 		#TODO - This could probably send the length of the video instead of just a bool, it could be useful in the UI
 		if ($image->{ISVIDEO}) {
-
 			if ($vids_tag eq '') {
 				$vids_tag = '__videos__';
 				$data->{tags}->{$vids_tag} = [];
-				$data->{tagmetadata}->{$vids_tag} = {label=>'Videos'};
+				$data->{tagmetadata}->{$vids_tag} = {type=>'video', single=>1};
 			}
 
 			push @{$data->{tags}->{$vids_tag}}, $image->{ID};
@@ -282,7 +292,7 @@ generate_db.pl
  -o[output]   The path to to write out to
  -i[magedir]  The path that the images are in. Defaults to 'pictures'
  -d[ir] [dir] eg "-d 2016/01" would generate a database for files starting with that path
- -f[orce]     If set then it will overwrite the existinf file without asking
+ -f[orce]     If set then it will overwrite the existing file without asking
 
  Note that public / restricted are exclusive options
 

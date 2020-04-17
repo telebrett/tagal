@@ -10,6 +10,11 @@ CREATE TABLE tag (
 ,IsPerson tinyint(0) NOT NULL DEFAULT '0'
 );
 
+CREATE TABLE camera (
+ id INTEGER PRIMARY KEY AUTOINCREMENT
+ , Name VARCHAR(250)
+);
+
 CREATE TABLE image (
  id INTEGER PRIMARY KEY AUTOINCREMENT
 ,Location varchar(500) NOT NULL
@@ -20,6 +25,8 @@ CREATE TABLE image (
 ,IsPublic INTEGER
 ,IsDirty INTEGER
 ,IsVideo INTEGER
+,CameraID int(10) unsigned
+,FOREIGN KEY(CameraID) REFERENCES camera(id)
 );
 
 CREATE TABLE image_tag (

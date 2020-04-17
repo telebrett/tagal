@@ -63,6 +63,7 @@ if ($OPT_REGENERATETHUMB) {
 	print "Will regenerate thumbnails\n";
 }
 
+
 my $tz = DateTime::TimeZone->new(name=>'local');
 
 get_db();
@@ -81,15 +82,33 @@ my $now = DateTime->now(time_zone=>$tz);
 
 my $build_tags = 1;
 
-my $tags = get_tags();
 
 my $count = 0;
 
+my $tags = {};
+my $cameras = {};
+my $geometry = {};
+
+build_tag_cache();
+build_camera_cache();
+build_geometry_cache();
+
 my $num_forks = 0;
+my $fork_mode = $OPT_MAXPROCESSES > 1;
+
+if ($fork_mode) {
+	#If the children add a geometry or a camera, then they will
+	#send SIGHUP to the parent process
+	$SIG{HUP} = sub {
+		build_camera_cache(1);
+		build_geometry_cache(1);
+		build_tags_cache(1);
+	};
+}
 
 import_directory($OPT_STARTDIR);
 
-if ($OPT_MAXPROCESSES > 1) {
+if ($fork_mode) {
 	print "Waiting for final children\n";
 	while ($num_forks > 0) {
 		my $child = wait();
@@ -99,6 +118,61 @@ if ($OPT_MAXPROCESSES > 1) {
 }
 
 set_setting('LastRun',DateTime::Format::MySQL->format_datetime($now));
+
+sub build_camera_cache {
+	my $recent = shift;
+
+	#there aren't that many cameras to worry about the $recent
+	my $sth = $dbh->prepare('SELECT id, Name FROM camera');
+	$sth->execute();
+
+	$cameras = $sth->fetchall_hashref('NAME');
+
+}
+
+sub build_geometry_cache {
+	my $recent = shift;
+
+	my $SQL = 'SELECT id, ASTEXT(Geometry) AS WKT FROM geometry';
+	if ($recent) {
+		#this only looks for items that have been added in the last 5 seconds
+		#this minimises the database lookups
+		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP()';
+	}
+	my $sth = $dbh->prepare($SQL);
+	$sth->execute();
+
+	if ($recent) {
+		while (my $row = $sth->fetchrow_hashref('WKT')) {
+			$geometry->{$row->{WKT}} = $row;
+		}
+	} else {
+		$geometry = $sth->fetchall_hashref('WKT');
+	}
+
+}
+
+sub build_tag_cache {
+	my $recent = shift;
+
+	my $SQL = 'SELECT * FROM tag';
+	if ($recent) {
+		#this only looks for items that have been added in the last 5 seconds
+		#this minimises the database lookups
+		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP()';
+	}
+	my $sth = $dbh->prepare($SQL);
+	$sth->execute();
+
+	if ($recent) {
+		while (my $row = $sth->fetchrow_hashref('TAG')) {
+			$tags->{$row->{TAG}} = $row;
+		}
+	} else {
+		$tags = $sth->fetchall_hashref('TAG');
+	}
+
+}
 
 sub get_setting {
 
@@ -149,9 +223,6 @@ sub get_sth {
 	
 }
 
-sub get_tags {
-	return $dbh->selectall_hashref('SELECT * FROM tag','TAG');
-}
 
 sub import_directory {
 	my $dir = shift;
@@ -162,6 +233,8 @@ sub import_directory {
 	}
 
 	opendir(my $dh,$fulldir) || die("Can't open dir $dir inside $basedir\n : $!");
+			
+	#TODO - Do a single query to retrieve all the existing images for this directory (watch out for sub dirs, ie - starts with the current dir but does NOT contain further directory separators
 
 	while (my $file = readdir $dh){
 
@@ -187,6 +260,7 @@ sub import_directory {
 		}else{
 
 			if ($file =~ m/\.jpe?g$/i || $file =~ m/\.(mp4|avi|mov|m4v|mkv)$/i){
+
 
 				my $is_movie = 1;
 
@@ -225,7 +299,7 @@ sub import_directory {
 					mkdir $fulldir . '/.preview';
 				}
 
-				if ($OPT_MAXPROCESSES > 1) {
+				if ($fork_mode) {
 
 					if ($num_forks >= $OPT_MAXPROCESSES) {
 						my $childpid = wait();
@@ -245,9 +319,22 @@ sub import_directory {
 						next;
 					}
 
+					#needs a new dbh handle
+					#TODO - After changing to do the single query per directory for existing images
+					#       only call get_db when required, 
+					get_db();
+
 				}
 
 				my $info = ImageInfo($fullpath);
+
+				#TODO - remove this commented code, debug for dev
+				#foreach my $ekey(keys %$info) {
+				#	if ($info->{$ekey} =~ m/canon/i) {
+				#		print $ekey . ':' . $info->{$ekey} . "\n";
+				#	}
+				#}
+
 				my $width = 0;
 				my $height = 0;
 
@@ -330,8 +417,8 @@ sub import_directory {
 					}
 				}
 
-				my $sth = get_sth();
-				my $result = $sth->execute($dirpath);
+				my $sth = $dbh->prepare('SELECT i.*,CASE WHEN it.ImageID IS NULL THEN 0 ELSE 1 END AS HasTags FROM image i LEFT JOIN image_tag it ON i.id = it.ImageID WHERE i.Location = ? GROUP BY i.id');
+				$sth->execute($dirpath) or warn "EXecute failed " . $sth->errstr . "\n";
 				my $row = $sth->fetchrow_hashref('NAME_uc');
 
 				my $image_id;
@@ -356,16 +443,19 @@ sub import_directory {
 					die("Database type $database_type not handled");
 				}
 
+				my $camera_id = get_camera($fullpath, $info);
+
 				#note that $date_insert still uses a placeholder
 				if ($row){
 					$image_id = $row->{ID};
-					my $sth_upd = $dbh->prepare("UPDATE image SET Width=?,Height=?,DateTaken=$date_insert,IsVideo=? WHERE id = ?");
-					$sth_upd->execute($width,$height,$datetime,$is_movie,$image_id);
+					my $sth_upd = $dbh->prepare("UPDATE image SET Width=?,Height=?,DateTaken=$date_insert,IsVideo=?, CameraID=? WHERE id = ?");
+					$sth_upd->execute($width,$height,$datetime,$is_movie,, $camera_id, $image_id);
 				}else{
-					my $sth_ins = $dbh->prepare("INSERT INTO image (Location,DateTaken,Width,Height,IsVideo) VALUES (?,$date_insert,?,?,?)");
-					$sth_ins->execute($dirpath,$datetime,$width,$height,$is_movie);
+					my $sth_ins = $dbh->prepare("INSERT INTO image (Location,DateTaken,Width,Height,IsVideo, CameraID) VALUES (?,$date_insert,?,?,?,?)");
+					$sth_ins->execute($dirpath,$datetime,$width,$height,$is_movie,$camera_id);
 					$image_id = $dbh->last_insert_id(undef,undef,'image',undef);
 				}
+
 
 				my @keywords;
 				
@@ -399,9 +489,26 @@ sub import_directory {
 					my @tag_ids;
 					foreach my $tag (@keywords){
 						if (! defined($tags->{$tag})){
-							my $sth_tag_ins = $dbh->prepare('INSERT INTO tag (Tag) VALUES (?)');
-							$sth_tag_ins->execute($tag);
-							$tags->{$tag} = {ID=>$dbh->last_insert_id(undef,undef,'tag',undef)};
+							my $sth_tag_ins = $dbh->prepare('INSERT INTO tag (Tag, DateAdded) VALUES (?, UTC_TIMESTAMP())');
+							if ($sth_tag_ins->execute($tag)) {
+								$tags->{$tag} = {ID=>$dbh->last_insert_id(undef,undef,'tag',undef)};
+							} elsif ($fork_mode) {
+								#Likely that one of the other child processes inserted it
+								my $dbtag = $dbh->selectrow_hashref('SELECT * FROM tag WHERE Tag = ?', undef, $tag);
+								if ($dbtag) {
+									$tags->{$tag} = $dbtag;
+								} else {
+									warn "Error, insert failed but still could not find tag '" . $tag . "'\n";
+								}
+							} else {
+								warn "Error, insert into tag failed in non fork mode\n";
+							}
+
+							#signal the parent process to add to the cache variables
+							if ($fork_mode) {
+								kill 'HUP', getppid();
+							}
+
 						}
 						push @tag_ids,$tags->{$tag}->{ID};
 					}
@@ -415,7 +522,7 @@ sub import_directory {
 
 				}
 
-				if ($OPT_MAXPROCESSES > 1) {
+				if ($fork_mode) {
 					#to be here, we are in a forked child process
 					exit(0);
 				}
@@ -425,6 +532,69 @@ sub import_directory {
 
 
 	closedir($dh);
+
+}
+
+sub get_camera {
+
+	my $file = shift;
+	my $info = shift;
+
+	my $camera_make = '';
+	my $camera_model = '';
+	if (exists $info->{Make}) {
+		$camera_make = $info->{Make};
+	}
+
+	if (exists $info->{Model}) {
+		$camera_model = $info->{Model};
+	}
+
+	if ($camera_make ne '' && $camera_model ne '') {
+		if (index($camera_model, $camera_make) == 0) {
+			$camera_make = '';
+		} else {
+			$camera_make .= ' ';
+		}
+	}
+
+	if ($camera_make eq '' && $camera_model eq '') {
+		warn "Could not retrieve camera make/model for $file\n";
+	}
+
+	if ($camera_make eq '' && $camera_model eq '') {
+		return undef;
+	}
+
+	my $camera = $camera_make . $camera_model;
+
+	if (! defined($cameras->{$camera})){
+		my $sth_tag_ins = $dbh->prepare('INSERT INTO camera (Name) VALUES (?)');
+		if ($sth_tag_ins->execute($camera)) {
+			$cameras->{$camera} = {ID=>$dbh->last_insert_id(undef,undef,'camera',undef)};
+		} elsif ($fork_mode) {
+			#Likely that one of the other child processes inserted it
+			my $row = $dbh->selectrow_hashref('SELECT * FROM camera WHERE Name = ?', undef, $camera);
+			if ($row) {
+				$cameras->{$camera} = $row;
+			} else {
+				warn "Error, insert failed but still could not find camera '" . $camera . "'\n";
+				return undef;
+			}
+
+		} else {
+			warn "Error, insert into camera failed in non fork mode\n";
+			return undef;
+		}
+
+		#signal the parent process to add to the cache variables
+		if ($fork_mode) {
+			kill 'HUP', getppid();
+		}
+
+	}
+
+	return $cameras->{$camera}->{ID};
 
 }
 
@@ -560,7 +730,7 @@ import_images.pl
   -i[gnorelastmod]     Ignore the last mod date of the files and re import.
   -d[ir] [dir]         eg "-d 2016/01" would only scan that directory in the base directory
   -v[ideosonly]        Only scan for videos
-  -max[processes]      If this is set to > 1, then it will process this many images simultaneously (I suggest keeping this < than the number of vcpus)
+  -max[processes]      If this is set to > 3, then it will process this many images simultaneously (I suggest keeping this < than the number of vcpus)
 
 =head1 DESCRIPTION
 
