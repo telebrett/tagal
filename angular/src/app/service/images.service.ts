@@ -623,7 +623,7 @@ export class ImagesService {
 					tl: top_left, 
 					height: headingHeight,
 					width: maxWidth,
-					heading: image_key[2] + ' ' + image_key[1] + ' ' + image_key[0] //TODO - do a nicer format, probably using moment
+					heading: this.buildDateLabel(image_key[2], 'day') + ' ' + this.buildDateLabel(image_key[1], 'month') + ', ' + image_key[0]
 				};
 
 				//This initial height is the height of the heading, yes it sucks for the service to be tied to the UI in this way, but this needs to know the heights for performance
