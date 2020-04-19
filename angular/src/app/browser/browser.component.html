@@ -35,24 +35,23 @@
 				<source src="{{mainImage.src}}" />
 			</video>
 		</div>
-			<ng-container *ngIf="isVerticalView; then verticalView; else horizontalView"></ng-container>
-			<ng-template #verticalView>
-				<div id="verticalthumbs" #verticalthumbs [ngStyle]="{'height.px':thumbnailHeight}">
-					<div id="verticalWindow" #verticalwindow [ngStyle]="{'marginTop.px':thumbnailTop, 'height.px':thumbnailWindowHeight, 'width.px': thumbnailWindowWidth}">
-						<div *ngFor="let thumb of windowThumbs" class="divthumb" [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}">
-							<ng-container *ngIf="thumb.heading; then vheading; else vthumb"></ng-container>
-							<ng-template #vheading>
-								<h5 (click)="thumbReport($event)">{{thumb.heading}}</h5>
-							</ng-template>
-							<ng-template #vthumb>
-								<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="viewImageFromThumb(thumb)" />
-								<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
-							</ng-template>
-						</div>
+			<app-map *ngIf="isMapMode" [points]="currentPoints">
+			</app-map>
+			<div *ngIf="!isMapMode && isVerticalView" id="verticalthumbs" #verticalthumbs [ngStyle]="{'height.px':thumbnailHeight}">
+				<div id="verticalWindow" #verticalwindow [ngStyle]="{'marginTop.px':thumbnailTop, 'height.px':thumbnailWindowHeight, 'width.px': thumbnailWindowWidth}">
+					<div *ngFor="let thumb of windowThumbs" class="divthumb" [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}">
+						<ng-container *ngIf="thumb.heading; then vheading; else vthumb"></ng-container>
+						<ng-template #vheading>
+							<h5 (click)="thumbReport($event)">{{thumb.heading}}</h5>
+						</ng-template>
+						<ng-template #vthumb>
+							<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="viewImageFromThumb(thumb)" />
+							<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
+						</ng-template>
 					</div>
 				</div>
-			</ng-template>
-			<ng-template #horizontalView>
+			</div>
+			<ng-container *ngIf="!isMapMode && !isVerticalView">
 				<div id="image" #mainimage>
 					<img class="rounded" *ngIf="mainImage" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" />
 				</div>
@@ -63,7 +62,7 @@
 						</div>
 					</div>
 				</div>
-			</ng-template>
+			</ng-container>
 		</div>
 	</div>
 </div>

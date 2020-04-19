@@ -8,12 +8,14 @@ import { BrowserComponent } from './browser/browser.component';
 import { HeaderComponent } from './header/header.component';
 
 import {HttpClientModule} from '@angular/common/http';
+import { MapComponent } from './map/map.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     BrowserComponent,
-    HeaderComponent
+    HeaderComponent,
+    MapComponent
   ],
   imports: [
     BrowserModule,

@@ -36,8 +36,17 @@ export class ImagesService {
 	 * string l  The label name, optional
 	 * object m  Metadata for the tag, note key only exists if there is metadata
 	 * object i  keys are the image indexes, value is true
+	 * object p  keys are the point indexes, value is true
 	 */
 	private tags   = [];
+
+	/**
+	 * Each element is a hash with keys
+	 * float x The longitude of the point
+	 * float y The latitude of the point
+	 * object i  keys are the image indexes, value is true
+	 */
+	private points = [];
 
 	/**
 	 * keys are the tags, values is the index for the tag
@@ -73,6 +82,11 @@ export class ImagesService {
 				let imagehash = {p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2],v:image.length>3};
 
 				this.images[i] = imagehash;
+			}
+
+			//Note, this must be done before the tags
+			for (var i in data.points) {
+				this.addPoint(i, data.points[i]);
 			}
 
 			for (var i in data.tags) {
@@ -166,8 +180,6 @@ export class ImagesService {
 			tags.push(this.niceTag(sorted[i]));
 		}
 
-		console.log(tags);
-
 		return tags;
 		
 	}
@@ -181,6 +193,33 @@ export class ImagesService {
 		}
 
 		return tags;
+
+	}
+
+	public getCurrentPoints() {
+
+		let points = {};
+
+		//The point needs to be in ALL the tags
+		for (let i = 0; i < this.currentTags.length; i++) {
+			for (let pointIndex in this.tags[this.currentTags[i]].p) {
+				if (points[pointIndex] === undefined) {
+					points[pointIndex] = 1;
+				} else {
+					points[pointIndex]++;
+				}
+			}
+		}
+
+		let matchingPoints = [];
+
+		for (let p in points) {
+			if (points[p] == this.currentTags.length) {
+				matchingPoints.push(this.points[p]);
+			}
+		}
+
+		return matchingPoints;
 
 	}
 
@@ -872,6 +911,24 @@ export class ImagesService {
 
 	}
 
+	private addPoint(pointStr: string, imageIndexes: any) {
+
+		let xy = pointStr.split(':');
+
+		let point = {
+			x: parseFloat(xy[0]),
+			y: parseFloat(xy[1]),
+			i: {}
+		};
+
+		for (var i of imageIndexes) {
+			point.i[parseInt(i, 10)] = true;
+		}
+
+		this.points.push(point);
+
+	}
+
 	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
 		
 		if (this.tagIndex[key] !== undefined) {
@@ -880,7 +937,7 @@ export class ImagesService {
 
 		var tagIndex = this.tags.length;
 
-		var o = {t:key,i:{}};
+		var o = {t:key,i:{},p:{}};
 
 		for (var i = 0; i < imageIndexes.length; i++) {
 			o.i[imageIndexes[i]] = true;
@@ -890,6 +947,17 @@ export class ImagesService {
 				this.images[imageIndexes[i]].ot[tagIndex] = true;
 			} else {
 				this.dirty[imageIndexes[i]] = true;
+			}
+		}
+
+		for (var p = 0; p < this.points.length; p++) {
+			//If the point contains any of the images that this tag also contains,
+			//add it to the tags list of points
+			for (var i in this.points[p].i) {
+				if (o.i[i]) {
+					o.p[p] = true;
+					break;
+				}
 			}
 		}
 

@@ -2,6 +2,8 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 import { ImagesService } from '../service/images.service';
 
+import { MapComponent } from '../map/map.component';
+
 /*
  * TODO - Move the position of the previous, next buttons - they jump around
  *      - Don't change the width of the current main image until after it loads
@@ -40,6 +42,7 @@ export class BrowserComponent implements OnInit {
 	private mainciindex;
 
 	public isVerticalView = true;
+	public isMapMode = true;
 
 	public mainImageLoading = false;
 
@@ -120,6 +123,10 @@ export class BrowserComponent implements OnInit {
 		this.menuTags = this.images.getRemainingTags();
 		this.currentTags = this.images.getCurrentTags();
 
+		if (this.isMapMode) {
+			this.currentPoints = this.images.getCurrentPoints();
+		}
+
 		if (this.isVerticalView) {
 
 			let maxWidth = this.domMain.nativeElement.clientWidth - 30;
@@ -156,6 +163,10 @@ export class BrowserComponent implements OnInit {
 	}
 
 	public getWindowThumbs() {
+		if (! this.windowThumbs.length) {
+			return;
+		}
+
 		if (this.isVerticalView) {
 
 			if (this.scrollTimeout) {
