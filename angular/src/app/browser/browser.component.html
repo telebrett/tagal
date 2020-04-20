@@ -5,45 +5,65 @@
 <div id="contentwrapper">
 	<div id="content">
 		<div id="tags">
-			<button *ngFor="let tag of menuTags" type="button" class="btn btn-sm btn-{{tag.type ? 'primary' : 'secondary'}} mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
+			<button type="button" class="btn btn-primary" (click)="toggleMap()">{{isMapMode ? 'Images' : 'Map'}}</button>
+			<ng-container *ngFor="let tag of menuTags">
+				<div *ngIf="tag.tags" ngbDropdown class="mt-1">
+					<button ngbDropdownToggle class="btn btn-sm btn-primary" type="button">{{tag.type}}</button>
+					<div ngbDropdownMenu>
+						<a *ngFor="let subtag of tag.tags" class="dropdown-item" href="#" (click)="selectTag(subtag)">{{subtag.label}}</a>
+					</div>
+				</div>
+				<button *ngIf="! tag.tags" type="button" class="btn btn-sm btn-secondary mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
+			</ng-container>
 		</div>
+		<div id="main" [ngClass]="{'vertical':isVerticalView, 'horizontal':!isVerticalView, 'hideThumbs': mainImage}" #main (scroll)="scrollThumbnails($event)">
 		<!-- Cannot use ngIf on the main verticalmainimage block as it needs to exist to check the available width and height -->
 		<div id="verticalimage" #verticalmainimage [ngClass]="mainImageLoading ? 'loading' : ''" [ngStyle]="{'display': mainImage ? '' : 'none'}">
-  		<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" (click)="hideMainImage()" (load)="mainImageLoaded()" />
+			<div class="controls">
+				<button type="button" class="btn btn-primary" (click)="prevMain()">Previous</button>
+				<button type="button" class="btn btn-primary" (click)="nextMain()">Next</button>
+				<button type="button" class="btn btn-primary" (click)="download()">Download</button>
+				<button type="button" class="btn btn-primary" (click)="hideMainImage()">Close</button>
+			</div>
+			<!--
+			<div *ngIf="mainImage" class="reportblock" [ngStyle]="{'height.px':mainImage.height, 'width.px': mainImage.width}" (click)="hideMainImage()">
+				<p>Width : {{mainImage.width}}</p>
+				<p>Height : {{mainImage.height}}</p>
+			</div>
+			-->
+			<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" (click)="hideMainImage()" (load)="mainImageLoaded()" />
 			<video *ngIf="mainImage && mainImage.v" controls="controls" autoplay="autoplay" name="media" [height]="mainImage.height" [width]="mainImage.width">
 				<source src="{{mainImage.src}}" />
 			</video>
 		</div>
-		<div id="main" [ngClass]="isVerticalView ? 'vertical' : 'horizontal'" #main (scroll)="scrollThumbnails($event)">
-			<ng-container *ngIf="isVerticalView; then verticalView; else horizontalView"></ng-container>
-			<ng-template #verticalView>
-				<div id="verticalthumbs" #verticalthumbs [ngStyle]="{'height.px':thumbnailHeight}">
-					<div id="verticalWindow" #verticalwindow [ngStyle]="{'marginTop.px':thumbnailTop, 'height.px':thumbnailWindowHeight, 'width.px': thumbnailWindowWidth}">
-						<div *ngFor="let thumb of windowThumbs" class="divthumb" [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}">
-							<ng-container *ngIf="thumb.heading; then vheading; else vthumb"></ng-container>
-							<ng-template #vheading>
-  							<h5 (click)="thumbReport($event)">N/A - {{thumb.tl}} : {{thumb.heading}}</h5>
-							</ng-template>
-							<ng-template #vthumb>
-								<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="viewImage(thumb)" />
-								<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
-							</ng-template>
-						</div>
+			<app-map *ngIf="isMapMode" [points]="currentPoints">
+			</app-map>
+			<div *ngIf="!isMapMode && isVerticalView" id="verticalthumbs" #verticalthumbs [ngStyle]="{'height.px':thumbnailHeight}">
+				<div id="verticalWindow" #verticalwindow [ngStyle]="{'marginTop.px':thumbnailTop, 'height.px':thumbnailWindowHeight, 'width.px': thumbnailWindowWidth}">
+					<div *ngFor="let thumb of windowThumbs" class="divthumb" [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}">
+						<ng-container *ngIf="thumb.heading; then vheading; else vthumb"></ng-container>
+						<ng-template #vheading>
+							<h5 (click)="thumbReport($event)">{{thumb.heading}}</h5>
+						</ng-template>
+						<ng-template #vthumb>
+							<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="viewImageFromThumb(thumb)" />
+							<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
+						</ng-template>
 					</div>
 				</div>
-			</ng-template>
-			<ng-template #horizontalView>
+			</div>
+			<ng-container *ngIf="!isMapMode && !isVerticalView">
 				<div id="image" #mainimage>
 					<img class="rounded" *ngIf="mainImage" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" />
 				</div>
 				<div id="thumbnails" (scroll)="scrollThumbnails($event)">
 					<div #thumbwidth class="width" [style.width]="thumbnailWidth">
 						<div #thumbnails class="block" [style.marginLeft]="thumbnailLeft">
-							<img *ngFor="let thumb of windowThumbs" src="{{thumb.src}}" width="{{thumb.width}}" height="{{thumb.height}}" (click)="viewImage(thumb)" />
+							<img *ngFor="let thumb of windowThumbs" src="{{thumb.src}}" width="{{thumb.width}}" height="{{thumb.height}}" (click)="viewImageFromThumb(thumb)" />
 						</div>
 					</div>
 				</div>
-			</ng-template>
+			</ng-container>
 		</div>
 	</div>
 </div>

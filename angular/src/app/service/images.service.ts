@@ -36,8 +36,17 @@ export class ImagesService {
 	 * string l  The label name, optional
 	 * object m  Metadata for the tag, note key only exists if there is metadata
 	 * object i  keys are the image indexes, value is true
+	 * object p  keys are the point indexes, value is true
 	 */
 	private tags   = [];
+
+	/**
+	 * Each element is a hash with keys
+	 * float x The longitude of the point
+	 * float y The latitude of the point
+	 * object i  keys are the image indexes, value is true
+	 */
+	private points = [];
 
 	/**
 	 * keys are the tags, values is the index for the tag
@@ -64,7 +73,7 @@ export class ImagesService {
 
 		return this.http.get(database_source).pipe(map((data:any) => {
 
-			for (var i in data.images) {
+			for (let i in data.images) {
 
 				let image = data.images[i];
 
@@ -75,7 +84,12 @@ export class ImagesService {
 				this.images[i] = imagehash;
 			}
 
-			for (var i in data.tags) {
+			//Note, this must be done before the tags
+			for (let i in data.points) {
+				this.addPoint(i, data.points[i]);
+			}
+
+			for (let i in data.tags) {
 				this.addTag(i, data.tags[i], data.tagmetadata[i], true);
 			}
 
@@ -83,6 +97,10 @@ export class ImagesService {
 
 			return true;
 		}));
+	}
+
+	public download(src: string) : Observable<any> {
+		return this.http.get(src);
 	}
 
 	public getRemainingTags() {
@@ -107,39 +125,62 @@ export class ImagesService {
 		}
         
 		let unsorted = [];
+		let groups = {};
         
 		for (let i = 0; i < this.remainingTags.length; i++) {
 			let tag = this.tags[this.remainingTags[i]];
         
-			if (tag.m && tag.m.datetype) {
-				//if (realTagsOnly) {
-				//	continue;
-				//}
-				switch (tag.m.datetype) {
-					case 'month':
-						if (! showMonth) {
-							continue;
-						}
-						break;
-					case 'day':
-						if (! showDay) {
-							continue;
-						}
-						break;
+			//Tags with metadata that also have 'single' don't have subtags, eg if an image has the "video" tag
+			if (tag.m && ! tag.m.single) {
+
+				let group;
+
+				//Tags with metadata get grouped
+				if (tag.m.datetype) {
+					group = tag.m.datetype;
+					//if (realTagsOnly) {
+					//	continue;
+					//}
+					switch (tag.m.datetype) {
+						case 'month':
+							if (! showMonth) {
+								continue;
+							}
+							break;
+						case 'day':
+							if (! showDay) {
+								continue;
+							}
+							break;
+					}
+				} else {
+					group = tag.m.type;
 				}
+
+				if (! groups[group]) {
+					groups[group] = {
+						tags: [],
+						type: group
+					}
+				}
+
+				groups[group].tags.push(tag);
+				
+			} else {
+				unsorted.push(tag);
 			}
-        
-			unsorted.push(tag);
 		}
-        
+
+		//Do groups
+		let tags = this.sortGroupTags(groups);
+
 		let sorted = unsorted.sort(this.sortTags);
         
-		let o = [];
-        
 		for (let i = 0; i < sorted.length; i++) {
-			o.push(this.niceTag(sorted[i]));
+			tags.push(this.niceTag(sorted[i]));
 		}
-		return o;
+
+		return tags;
 		
 	}
 
@@ -152,6 +193,33 @@ export class ImagesService {
 		}
 
 		return tags;
+
+	}
+
+	public getCurrentPoints() {
+
+		let points = {};
+
+		//The point needs to be in ALL the tags
+		for (let i = 0; i < this.currentTags.length; i++) {
+			for (let pointIndex in this.tags[this.currentTags[i]].p) {
+				if (points[pointIndex] === undefined) {
+					points[pointIndex] = 1;
+				} else {
+					points[pointIndex]++;
+				}
+			}
+		}
+
+		let matchingPoints = [];
+
+		for (let p in points) {
+			if (points[p] == this.currentTags.length) {
+				matchingPoints.push(this.points[p]);
+			}
+		}
+
+		return matchingPoints;
 
 	}
 
@@ -177,11 +245,11 @@ export class ImagesService {
 
 		let end_index   = Math.min(this.currentImages.length,start_index + count);
 
-		var promises = [];
+		let promises = [];
 
 		for (let i = start_index; i < end_index; i++) {
-			var image = this.images[this.currentImages[i]];
-			var thumb = {
+			let image = this.images[this.currentImages[i]];
+			let thumb = {
 				width    : Math.round(image.tw),
 				height   : Math.round(image.th),
 				index    : this.currentImages[i],
@@ -202,14 +270,14 @@ export class ImagesService {
 
 			//if (this.s3) {
 
-			//	var s3path = this.rootImageDir + image.p + '/.thumb/' + image.f;
+			//	let s3path = this.rootImageDir + image.p + '/.thumb/' + image.f;
 
 			//	if (this.s3fails[s3path]) {
 			//		thumb.src = 'failed.png';
 			//		continue;
 			//	}
 
-			//	var s3cached = this.s3lru.get(s3path);
+			//	let s3cached = this.s3lru.get(s3path);
 
 			//	//Still flickers, but only the thumbnails that were not already on the screen
 			//	if (s3cached) {
@@ -226,6 +294,16 @@ export class ImagesService {
 		}
 		
 		return win;
+	}
+
+	public getImageIndex(ciindex: number) {
+
+		if (ciindex < 0 || ciindex >= this.currentImages.length) {
+			return false;
+		}
+
+		return this.currentImages[ciindex];
+
 	}
 
 	public getThumbnailWindowByTop(top: number, maxHeight: number) {
@@ -263,8 +341,6 @@ export class ImagesService {
 
 		}
 
-		console.log('Number of images ' + this.currentImages.length);
-
 		let max_run = 0;
 		while(true) {
 
@@ -290,9 +366,8 @@ export class ImagesService {
 				index    : this.currentImages[start_index],
 				tl       : image.tl,
 				src      : src,
-				v        : image.v
-
-				,ciindex: start_index
+				v        : image.v,
+				ciindex  : start_index
 			}
 
 			if (
@@ -308,17 +383,11 @@ export class ImagesService {
 
 		}
 
-		//TODO - need to return the headings
-
 		return thumbs;
 
 	}
 
 	private calcTopIndex(top: number) {
-
-		//TODO - This is when I click on 2019 only
-		//     - The borderandpadding means it breaks
-		//top = 253705;
 
 		if (top == 0) {
 			return 0;
@@ -391,7 +460,6 @@ export class ImagesService {
 		while (result > 0 && this.images[this.currentImages[result]].tl == this.images[this.currentImages[result-1]].tl) {
 			result--;
 		}
-		//console.log('First in row ' + this.images[this.currentImages[result]].tl);
 
 		return result;
 
@@ -459,6 +527,21 @@ export class ImagesService {
 
 	}
 
+	public getThumbnails(maxWidth: number, maxHeight: number, imageIndexes: any[]) {
+
+		let thumbs = [];
+
+		for (let index of imageIndexes) {
+			let image = this.images[index];
+
+			thumbs.push(this.getImage(index, maxWidth, maxHeight, true));
+
+		}
+
+		return thumbs;
+		
+	}
+
 	public selectTag(index: number) {
 
 		if (this.currentTags.indexOf(index) !== -1) {
@@ -519,7 +602,7 @@ export class ImagesService {
 		let images;
 
 		for (let i = 0; i < this.currentTags.length; i++) {
-			var newimages = {};
+			let newimages = {};
 			for (let x in this.tags[this.currentTags[i]].i) {
 				if (i > 0 && ! images[x]) {
 					continue;
@@ -594,7 +677,7 @@ export class ImagesService {
 					tl: top_left, 
 					height: headingHeight,
 					width: maxWidth,
-					heading: image_key[2] + ' ' + image_key[1] + ' ' + image_key[0] //TODO - do a nicer format, probably using moment
+					heading: this.buildDateLabel(image_key[2], 'day') + ' ' + this.buildDateLabel(image_key[1], 'month') + ', ' + image_key[0]
 				};
 
 				//This initial height is the height of the heading, yes it sucks for the service to be tied to the UI in this way, but this needs to know the heights for performance
@@ -651,8 +734,8 @@ export class ImagesService {
 		//TODO - could possible do some performance improvements here, cache the thumbnailHeight
 		//       and if the same as the last time, just reset the tl property
 
-		for (var i = 0; i < this.currentImages.length; i++) {
-			var image = this.images[this.currentImages[i]];
+		for (let i = 0; i < this.currentImages.length; i++) {
+			let image = this.images[this.currentImages[i]];
 
 			image.th = thumbnailHeight;
 			image.tw = Math.ceil(image.r * thumbnailHeight);
@@ -665,13 +748,23 @@ export class ImagesService {
 		return totalWidth;
 	}
 
-	public getImage(index: number,maxWidth: number,maxHeight: number) {
+	public getImage(index: number,maxWidth: number,maxHeight: number, thumb?: boolean) {
 
 		let image = this.images[index];
 
+		let image_src;
+		if (thumb) {
+			image_src = image.p + '/.thumb/' + image.f;
+			if (image.v) {
+				image_src += '.png';
+			}
+		} else {
+			image_src = image.p + '/' + image.f;
+		}
+
 		let fullImage = {
 			index : index,
-			src : environment.imageSource + image.p + '/' + image.f,
+			src : environment.imageSource + image_src,
 			name : image.f,
 			height: null,
 			width: null,
@@ -707,11 +800,12 @@ export class ImagesService {
 
 	private niceTag(tag) {
 
-		var o = {
+		let o = {
 			index:this.tagIndex[tag.t],
 			label:tag.l === undefined ? tag.t : tag.l,
 		};
 
+		/*
 		if (tag.m && tag.m.datetype) {
 			switch (tag.m.datetype) {
 				case 'year':
@@ -725,6 +819,7 @@ export class ImagesService {
 					break;
 			}
 		}
+	 	*/
 
 		return o;
 	}
@@ -780,8 +875,8 @@ export class ImagesService {
 				}
 			}
 
-			var as = parseInt(a.m.dateval, 10);
-			var bs = parseInt(b.m.dateval, 10);
+			let as = parseInt(a.m.dateval, 10);
+			let bs = parseInt(b.m.dateval, 10);
 			
 			if (a.m.datetype == 'year') {
 				//year descending
@@ -792,10 +887,71 @@ export class ImagesService {
 			}
 		}
 
-		var al = a.l !== undefined ? a.l : a.t
-		var bl = b.l !== undefined ? b.l : b.t
+		let al = a.l !== undefined ? a.l : a.t
+		let bl = b.l !== undefined ? b.l : b.t
 
 		return al.toLowerCase() < bl.toLowerCase() ? -1 : 1;
+	}
+
+	private sortGroupTags(groups) {
+
+		let unsorted = [];
+
+		for (let group in groups) {
+
+			let tags = groups[group].tags;
+
+			tags = tags.sort(this.sortTags);
+
+			groups[group].tags = [];
+			for (let i = 0; i < tags.length; i++) {
+				groups[group].tags.push(this.niceTag(tags[i]));
+			}
+
+			unsorted.push(groups[group]);
+
+		}
+
+		return unsorted.sort((a,b) => {
+			if (a.type == 'year') {
+				return -1;
+			} else if(b.type == 'year') {
+				return 1;
+			}
+
+			if (a.type == 'month') {
+				return -1;
+			} else if(b.type == 'month') {
+				return 1;
+			}
+
+			if (a.type == 'day') {
+				return -1;
+			} else if(b.type == 'day') {
+				return 1;
+			}
+
+			return a.type < b.type ? -1 : 1;
+		});
+
+	}
+
+	private addPoint(pointStr: string, imageIndexes: any) {
+
+		let xy = pointStr.split(':');
+
+		let point = {
+			x: parseFloat(xy[0]),
+			y: parseFloat(xy[1]),
+			i: {}
+		};
+
+		for (let i of imageIndexes) {
+			point.i[parseInt(i, 10)] = true;
+		}
+
+		this.points.push(point);
+
 	}
 
 	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
@@ -804,11 +960,11 @@ export class ImagesService {
 			return false;
 		}
 
-		var tagIndex = this.tags.length;
+		let tagIndex = this.tags.length;
 
-		var o = {t:key,i:{}};
+		let o = {t:key,i:{},p:{}};
 
-		for (var i = 0; i < imageIndexes.length; i++) {
+		for (let i = 0; i < imageIndexes.length; i++) {
 			o.i[imageIndexes[i]] = true;
 			this.images[imageIndexes[i]].t[tagIndex] = true;
 
@@ -819,10 +975,23 @@ export class ImagesService {
 			}
 		}
 
+		for (let p = 0; p < this.points.length; p++) {
+			//If the point contains any of the images that this tag also contains,
+			//add it to the tags list of points
+			for (let i in this.points[p].i) {
+				if (o.i[i]) {
+					o.p[p] = true;
+					break;
+				}
+			}
+		}
+
 		if (metadata) {
 			o['m'] = metadata;
 
-			if (o['m'].datetype) {
+			if (metadata.label) {
+				o['l'] = metadata.label;
+			} else if (metadata.datetype) {
 				o['l'] = this.buildDateLabel(metadata.dateval, metadata.datetype);
 			}
 		}
