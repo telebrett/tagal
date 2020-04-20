@@ -39,6 +39,7 @@ export class MapComponent implements OnInit, OnChanges {
 
 			this.mapView = new MapView(mapViewProperties);
 
+			//TODO - This doesn't work
 			if (this.points && this.points.length) {
 				this.showPoints();
 			}
