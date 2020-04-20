@@ -73,7 +73,7 @@ export class ImagesService {
 
 		return this.http.get(database_source).pipe(map((data:any) => {
 
-			for (var i in data.images) {
+			for (let i in data.images) {
 
 				let image = data.images[i];
 
@@ -85,11 +85,11 @@ export class ImagesService {
 			}
 
 			//Note, this must be done before the tags
-			for (var i in data.points) {
+			for (let i in data.points) {
 				this.addPoint(i, data.points[i]);
 			}
 
-			for (var i in data.tags) {
+			for (let i in data.tags) {
 				this.addTag(i, data.tags[i], data.tagmetadata[i], true);
 			}
 
@@ -245,11 +245,11 @@ export class ImagesService {
 
 		let end_index   = Math.min(this.currentImages.length,start_index + count);
 
-		var promises = [];
+		let promises = [];
 
 		for (let i = start_index; i < end_index; i++) {
-			var image = this.images[this.currentImages[i]];
-			var thumb = {
+			let image = this.images[this.currentImages[i]];
+			let thumb = {
 				width    : Math.round(image.tw),
 				height   : Math.round(image.th),
 				index    : this.currentImages[i],
@@ -270,14 +270,14 @@ export class ImagesService {
 
 			//if (this.s3) {
 
-			//	var s3path = this.rootImageDir + image.p + '/.thumb/' + image.f;
+			//	let s3path = this.rootImageDir + image.p + '/.thumb/' + image.f;
 
 			//	if (this.s3fails[s3path]) {
 			//		thumb.src = 'failed.png';
 			//		continue;
 			//	}
 
-			//	var s3cached = this.s3lru.get(s3path);
+			//	let s3cached = this.s3lru.get(s3path);
 
 			//	//Still flickers, but only the thumbnails that were not already on the screen
 			//	if (s3cached) {
@@ -527,6 +527,21 @@ export class ImagesService {
 
 	}
 
+	public getThumbnails(maxWidth: number, maxHeight: number, imageIndexes: any[]) {
+
+		let thumbs = [];
+
+		for (let index of imageIndexes) {
+			let image = this.images[index];
+
+			thumbs.push(this.getImage(index, maxWidth, maxHeight, true));
+
+		}
+
+		return thumbs;
+		
+	}
+
 	public selectTag(index: number) {
 
 		if (this.currentTags.indexOf(index) !== -1) {
@@ -587,7 +602,7 @@ export class ImagesService {
 		let images;
 
 		for (let i = 0; i < this.currentTags.length; i++) {
-			var newimages = {};
+			let newimages = {};
 			for (let x in this.tags[this.currentTags[i]].i) {
 				if (i > 0 && ! images[x]) {
 					continue;
@@ -719,8 +734,8 @@ export class ImagesService {
 		//TODO - could possible do some performance improvements here, cache the thumbnailHeight
 		//       and if the same as the last time, just reset the tl property
 
-		for (var i = 0; i < this.currentImages.length; i++) {
-			var image = this.images[this.currentImages[i]];
+		for (let i = 0; i < this.currentImages.length; i++) {
+			let image = this.images[this.currentImages[i]];
 
 			image.th = thumbnailHeight;
 			image.tw = Math.ceil(image.r * thumbnailHeight);
@@ -733,13 +748,23 @@ export class ImagesService {
 		return totalWidth;
 	}
 
-	public getImage(index: number,maxWidth: number,maxHeight: number) {
+	public getImage(index: number,maxWidth: number,maxHeight: number, thumb?: boolean) {
 
 		let image = this.images[index];
 
+		let image_src;
+		if (thumb) {
+			image_src = image.p + '/.thumb/' + image.f;
+			if (image.v) {
+				image_src += '.png';
+			}
+		} else {
+			image_src = image.p + '/' + image.f;
+		}
+
 		let fullImage = {
 			index : index,
-			src : environment.imageSource + image.p + '/' + image.f,
+			src : environment.imageSource + image_src,
 			name : image.f,
 			height: null,
 			width: null,
@@ -775,7 +800,7 @@ export class ImagesService {
 
 	private niceTag(tag) {
 
-		var o = {
+		let o = {
 			index:this.tagIndex[tag.t],
 			label:tag.l === undefined ? tag.t : tag.l,
 		};
@@ -850,8 +875,8 @@ export class ImagesService {
 				}
 			}
 
-			var as = parseInt(a.m.dateval, 10);
-			var bs = parseInt(b.m.dateval, 10);
+			let as = parseInt(a.m.dateval, 10);
+			let bs = parseInt(b.m.dateval, 10);
 			
 			if (a.m.datetype == 'year') {
 				//year descending
@@ -862,8 +887,8 @@ export class ImagesService {
 			}
 		}
 
-		var al = a.l !== undefined ? a.l : a.t
-		var bl = b.l !== undefined ? b.l : b.t
+		let al = a.l !== undefined ? a.l : a.t
+		let bl = b.l !== undefined ? b.l : b.t
 
 		return al.toLowerCase() < bl.toLowerCase() ? -1 : 1;
 	}
@@ -921,7 +946,7 @@ export class ImagesService {
 			i: {}
 		};
 
-		for (var i of imageIndexes) {
+		for (let i of imageIndexes) {
 			point.i[parseInt(i, 10)] = true;
 		}
 
@@ -935,11 +960,11 @@ export class ImagesService {
 			return false;
 		}
 
-		var tagIndex = this.tags.length;
+		let tagIndex = this.tags.length;
 
-		var o = {t:key,i:{},p:{}};
+		let o = {t:key,i:{},p:{}};
 
-		for (var i = 0; i < imageIndexes.length; i++) {
+		for (let i = 0; i < imageIndexes.length; i++) {
 			o.i[imageIndexes[i]] = true;
 			this.images[imageIndexes[i]].t[tagIndex] = true;
 
@@ -950,10 +975,10 @@ export class ImagesService {
 			}
 		}
 
-		for (var p = 0; p < this.points.length; p++) {
+		for (let p = 0; p < this.points.length; p++) {
 			//If the point contains any of the images that this tag also contains,
 			//add it to the tags list of points
-			for (var i in this.points[p].i) {
+			for (let i in this.points[p].i) {
 				if (o.i[i]) {
 					o.p[p] = true;
 					break;

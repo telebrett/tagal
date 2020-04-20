@@ -1,55 +1,49 @@
-import { Component, OnInit, ElementRef, ViewChild, Input } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, Input, OnChanges } from '@angular/core';
 import { loadModules } from 'esri-loader';
+
+import { ImagesService } from '../service/images.service';
 
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss']
 })
-export class MapComponent implements OnInit, onChanges {
+export class MapComponent implements OnInit, OnChanges {
 
 	@ViewChild('map', { static:true}) private readonly mapElement: ElementRef;
 
-	@Input points;
+	@Input() points: any[];
 
 	private map;
-	private layer;
+	private mapView;
 
-	private g;
-
-  constructor() {
+  constructor(private images: ImagesService) {
 		loadModules(
 			[
 			'esri/Map',
 			'esri/views/MapView',
-			'esri/Graphic',
-			'esri/layers/GraphicsLayer'
 		]
-		).then(([Map, MapView, Graphic, GraphicsLayer] : [__esri.MapConstructor, __esri.MapViewConstructor]) => {
+		).then(([Map, MapView] : [__esri.MapConstructor, __esri.MapViewConstructor]) => {
 
 			const mapProperties = {
 				basemap: 'topo'
 			};
 
-			const map = new Map(mapProperties);
+			this.map = new Map(mapProperties);
 
 			const mapViewProperties = {
 				container: this.mapElement.nativeElement,
 				zoom: 3,
-				map
+				map: this.map
 			};
 
-			this.map = new MapView(mapViewProperties);
+			this.mapView = new MapView(mapViewProperties);
 
-			this.layer = new GraphicsLayer();
-
-			map.add(this.layer);
-
-			//TODO - This doesn't seem like the best way to pass the constructor around
-			this.g = Graphic;
+			if (this.points && this.points.length) {
+				this.showPoints();
+			}
 
 		});
- 
 	}
 
   ngOnInit(): void {
@@ -61,6 +55,91 @@ export class MapComponent implements OnInit, onChanges {
 			return;
 		}
 
+		this.showPoints();
+
+	}
+
+	private showPoints() {
+		
+		this.map.layers.removeAll();
+
+		loadModules(
+			[
+				'esri/Graphic',
+				'esri/layers/FeatureLayer'
+			]
+		).then(([Graphic, FeatureLayer]) => {
+			let graphics = this.points.map((point, index) => {
+				return new Graphic({
+					attributes: {
+						ObjectId: index,
+					},
+					geometry: {
+						type: 'point',
+						longitude: point.x,
+						latitude: point.y
+					}
+				});
+			});
+
+			let popupTemplate = (feature) => {
+				console.log(feature.graphic.attributes.ObjectId);
+
+				let point = this.points[feature.graphic.attributes.ObjectId];
+
+				let thumbs = this.images.getThumbnails(100, 100, Object.keys(point.i).slice(0, 6));
+
+				let div = document.createElement('div');
+
+				//TODO - Click to view
+				for (let thumb of thumbs) {
+					let img = document.createElement('img');
+					img.src    = thumb.src;
+					img.width  = thumb.width;
+					img.height = thumb.height;
+
+					img.style.border = '1px solid black';
+					img.style.margin = '1px';
+
+					div.appendChild(img);
+				}
+
+				return div;
+			};
+
+			let featureLayer = new FeatureLayer({
+				source: graphics,
+				renderer: {
+					type: "simple",
+					symbol: {
+						type: "simple-marker",
+						color: "#102A44",
+						outline: {
+							color: "#598DD8",
+							width: 2
+						}
+					}
+				},
+				popupTemplate: {
+					title: "Photos",
+					content: popupTemplate,
+				},
+				geometryType: 'point',
+				objectIdField: "ObjectId",
+				fields: [
+					{
+						name: "ObjectId",
+						alias: "ObjectId",
+						type: 'oid'
+					}
+				]
+			});
+
+			this.map.layers.add(featureLayer);
+
+		});
+
+		/*
 		let symbol = {
 			type: 'simple-marker',
 			color: [226, 119, 40],
@@ -86,6 +165,7 @@ export class MapComponent implements OnInit, onChanges {
 			);
 
 		}
+	 */
 
 	}
 

@@ -5,6 +5,7 @@
 <div id="contentwrapper">
 	<div id="content">
 		<div id="tags">
+			<button type="button" class="btn btn-primary" (click)="toggleMap()">{{isMapMode ? 'Images' : 'Map'}}</button>
 			<ng-container *ngFor="let tag of menuTags">
 				<div *ngIf="tag.tags" ngbDropdown class="mt-1">
 					<button ngbDropdownToggle class="btn btn-sm btn-primary" type="button">{{tag.type}}</button>

@@ -42,11 +42,13 @@ export class BrowserComponent implements OnInit {
 	private mainciindex;
 
 	public isVerticalView = true;
-	public isMapMode = true;
+	public isMapMode = false;
 
 	public mainImageLoading = false;
 
 	private scrollTimeout;
+
+	public currentPoints;
 
 	constructor(private images: ImagesService) { }
 
@@ -55,6 +57,10 @@ export class BrowserComponent implements OnInit {
 		 	this.menuTags = this.images.getRemainingTags();
 		});
 		
+	}
+
+	public toggleMap() {
+		this.isMapMode = ! this.isMapMode;
 	}
 
 	public mainImageLoaded() {
@@ -163,7 +169,8 @@ export class BrowserComponent implements OnInit {
 	}
 
 	public getWindowThumbs() {
-		if (! this.windowThumbs.length) {
+
+		if (! this.currentTags.length) {
 			return;
 		}
 
