@@ -12,6 +12,9 @@ type=mysql
 ;No trailing slash
 basedir=/absolute/path/to/imagebasedir
 
+;Rounds the coordinates to this many decimal points. 3 = 111.1 metres, 4 = within 11.1 metres, 5 = 1.1 metres etc
+gpsaccuracy=4
+
 [s3]
 bucket=nameofs3bucket
 ;No leading or trailing slash

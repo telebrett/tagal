@@ -111,7 +111,7 @@ sub get_date_functions {
 }
 
 sub build_db {
-	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{}};
+	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{},points=>{}};
 
 	my @SQL_TAGS_BIND;
 	my @SQL_IMAGES_BIND;
@@ -123,9 +123,11 @@ sub build_db {
 
 	my %date_functions = get_date_functions('i.DateTaken');
 
-	my $SQL_IMAGES = "SELECT i.*,$date_functions{year} AS YearTaken,$date_functions{month} AS MonthTaken,$date_functions{day} AS DayOfMonthTaken,$date_functions{epoch} AS SortOrder, c.Name as Camera\n"
+	my $SQL_IMAGES = "SELECT i.*,$date_functions{year} AS YearTaken,$date_functions{month} AS MonthTaken,$date_functions{day} AS DayOfMonthTaken,$date_functions{epoch} AS SortOrder, c.Name as Camera, X(g.Geometry) AS Lng, Y(g.Geometry) AS Lat\n"
 	               . "FROM image i\n"
-	               . " LEFT JOIN camera c ON c.id = i.CameraID\n";
+	               . " LEFT JOIN camera c ON c.id = i.CameraID\n"
+	               . " LEFT JOIN geometry g ON g.id = i.GeometryID\n"
+	;
 
 
 	my @WHERE;;
@@ -253,6 +255,17 @@ sub build_db {
 			push @{$data->{tags}->{$cur_tag->{TAG}}},$image->{ID};
 
 			$cur_tag = $sth_tags->fetchrow_hashref;
+		}
+
+		if ($image->{LAT} && $image->{LNG}) {
+
+			my $point = $image->{LNG} . ':' . $image->{LAT};
+
+			if (! defined $data->{points}->{$point}) {
+				$data->{points}->{$point} = [];
+			}
+
+			push @{$data->{points}->{$point}}, $image->{ID};
 		}
 
 	}
