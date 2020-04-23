@@ -13,6 +13,7 @@ use Pod::Usage;
 use Cwd qw(abs_path);
 use File::Basename;
 use File::Temp qw/tempfile tempdir/;
+use POSIX;
 
 use IPC::Open3;
 use POSIX qw/:sys_wait_h floor/;
@@ -31,6 +32,12 @@ my $database_type;
 my $sth_find;
 
 my $basedir = $config{images}{basedir};
+my $gpsaccuracy = $config{images}{gpsaccuracy};
+
+if (! $gpsaccuracy =~ m/^\d+$/) {
+	die('Config item images-gpsaccuracy must be a positive int');
+}
+
 #strip trailing slash if found
 $basedir =~ s/\/$//;
 
@@ -45,6 +52,7 @@ my $OPT_MAXPROCESSES = 1;
 #TODO - DEBUG option, print out the raw values being executed in call_system, call_system should also output the STDERR
 #     - The thumbnail and animated PNG conversion use temporary files that get automatically cleaned up, add an option to leave these files alone (possibly
 #       smarter than that, manually clean them up if the code that was using that specific set of files worked)
+#     - Check timestamps, they should be being stored in the UTC timezone
 
 Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB, 'videosonly'=>\$OPT_VIDEOSONLY, 'maxprocesses=i'=>\$OPT_MAXPROCESSES);
 
@@ -235,6 +243,8 @@ sub import_directory {
 	opendir(my $dh,$fulldir) || die("Can't open dir $dir inside $basedir\n : $!");
 			
 	#TODO - Do a single query to retrieve all the existing images for this directory (watch out for sub dirs, ie - starts with the current dir but does NOT contain further directory separators
+	#       BUT, this should only be done when the first image gets to the point of needing to query the database. This way, if we are using the lastmoddate check, then it will
+	#       only query when it needs to but still get the benefit of it
 
 	while (my $file = readdir $dh){
 
@@ -328,13 +338,6 @@ sub import_directory {
 
 				my $info = ImageInfo($fullpath);
 
-				#TODO - remove this commented code, debug for dev
-				#foreach my $ekey(keys %$info) {
-				#	if ($info->{$ekey} =~ m/canon/i) {
-				#		print $ekey . ':' . $info->{$ekey} . "\n";
-				#	}
-				#}
-
 				my $width = 0;
 				my $height = 0;
 
@@ -348,6 +351,56 @@ sub import_directory {
 					$height = $info->{ImageHeight};
 				}elsif (defined $info->{ExitImageHeight}){
 					$height = $info->{ExifImageHeight};
+				}
+
+				my $geometry_id;
+
+				if (defined $info->{GPSLatitude} && defined $info->{GPSLongitude}) {
+
+					my $latitude;
+					my $longitude;
+
+					if ($info->{GPSLatitude} =~ m/^(\d+)\s+deg\s+(\d+)'\s+((?:\d+)?(?:\.\d+)?)"\s+(S|N)$/) {
+						$latitude = $1 + $2/60 + $3/3600;
+
+						if ($4 eq 'S') {
+							$latitude *= -1;
+						}
+
+						$latitude = sprintf('%.' . $gpsaccuracy . 'f', $latitude);
+					}
+
+					if ($info->{GPSLongitude} =~ m/^(\d+)\s+deg\s+(\d+)'\s+((?:\d+)?(?:\.\d+)?)"\s+(W|E)$/) {
+						$longitude = $1 + $2/60 + $3/3600;
+
+						if ($4 eq 'W') {
+							$longitude *= -1;
+						}
+
+						$longitude = sprintf('%.' . $gpsaccuracy . 'f', $longitude);
+					}
+
+					if (defined $latitude && defined $longitude) {
+						my $WKT = "POINT($longitude $latitude)";
+
+						if (not defined($geometry->{$WKT})) {
+							my $sth_geo = $dbh->prepare('INSERT INTO geometry (Geometry, DateAdded) VALUES (GEOMFROMTEXT(?), UTC_TIMESTAMP())');
+							$sth_geo->execute($WKT) or die("Could not insert : " . $DBI::errstr . "\n");
+
+							#I'm not wild about this, this means we are keeping potentially a large hash in memory
+							$geometry->{$WKT} = $dbh->last_insert_id(undef, undef, 'geometry', undef);
+
+							#signal the parent to update it's cache variables
+							if ($fork_mode) {
+								kill 'HUP', getppid();
+							}
+						}
+
+						$geometry_id = $geometry->{$WKT};
+					} else {
+						warn "Could not extract coordinates from " . $info->{GPSLongitude} . ' ' . $info->{GPSLatitude} . "\n";
+					}
+
 				}
 
 				if ($is_movie && $info->{Rotation} && ( $info->{Rotation} eq '90' || $info->{Rotation} eq '270')) {
@@ -445,14 +498,20 @@ sub import_directory {
 
 				my $camera_id = get_camera($fullpath, $info);
 
+				#TODO - Some bug
+				if (defined $geometry_id && $geometry_id == 0) {
+					die("GeometryID IS 0 FOR " . $dirpath . "\n");
+					exit;
+				}
+
 				#note that $date_insert still uses a placeholder
 				if ($row){
 					$image_id = $row->{ID};
-					my $sth_upd = $dbh->prepare("UPDATE image SET Width=?,Height=?,DateTaken=$date_insert,IsVideo=?, CameraID=? WHERE id = ?");
-					$sth_upd->execute($width,$height,$datetime,$is_movie,, $camera_id, $image_id);
+					my $sth_upd = $dbh->prepare("UPDATE image SET Width=?, Height=?, DateTaken=$date_insert, IsVideo=?, CameraID=?, GeometryID=? WHERE id = ?");
+					$sth_upd->execute($width, $height, $datetime, $is_movie,  $camera_id,  $geometry_id,  $image_id);
 				}else{
-					my $sth_ins = $dbh->prepare("INSERT INTO image (Location,DateTaken,Width,Height,IsVideo, CameraID) VALUES (?,$date_insert,?,?,?,?)");
-					$sth_ins->execute($dirpath,$datetime,$width,$height,$is_movie,$camera_id);
+					my $sth_ins = $dbh->prepare("INSERT INTO image (Location, DateTaken, Width, Height, IsVideo, CameraID, GeometryID) VALUES (?, $date_insert, ?, ?, ?, ?, ?)");
+					$sth_ins->execute($dirpath, $datetime, $width, $height, $is_movie, $camera_id, $geometry_id);
 					$image_id = $dbh->last_insert_id(undef,undef,'image',undef);
 				}
 
