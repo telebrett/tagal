@@ -6,7 +6,12 @@ export const environment = {
   production: false,
 	databaseSource: '/assets/database.json',
 	imageSource: '/assets/images',
-	api: ''
+	api: '',
+	map : {
+		lat: -25.5,
+		lng: 134,
+		zoom: 5
+	}
 };
 
 /*

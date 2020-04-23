@@ -2,6 +2,7 @@ import { Component, OnInit, ElementRef, ViewChild, Input, OnChanges } from '@ang
 import { loadModules } from 'esri-loader';
 
 import { ImagesService } from '../service/images.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-map',
@@ -31,11 +32,18 @@ export class MapComponent implements OnInit, OnChanges {
 
 			this.map = new Map(mapProperties);
 
-			const mapViewProperties = {
+			let mapViewProperties:any = {
 				container: this.mapElement.nativeElement,
-				zoom: 3,
+				zoom: environment.map && environment.map.zoom ? environment.map.zoom : 3,
 				map: this.map
 			};
+
+			if (environment.map && environment.map.lat && environment.map.lng) {
+				mapViewProperties.center = [
+					environment.map.lng,
+					environment.map.lat
+				];
+			}
 
 			this.mapView = new MapView(mapViewProperties);
 
@@ -62,14 +70,15 @@ export class MapComponent implements OnInit, OnChanges {
 
 	private showPoints() {
 		
-		this.map.layers.removeAll();
-
 		loadModules(
 			[
 				'esri/Graphic',
 				'esri/layers/FeatureLayer'
 			]
 		).then(([Graphic, FeatureLayer]) => {
+
+			this.map.layers.removeAll();
+
 			let graphics = this.points.map((point, index) => {
 				return new Graphic({
 					attributes: {
@@ -117,7 +126,7 @@ export class MapComponent implements OnInit, OnChanges {
 						color: "#102A44",
 						outline: {
 							color: "#598DD8",
-							width: 2
+							width: 1 
 						}
 					}
 				},
