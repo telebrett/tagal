@@ -109,6 +109,12 @@ export class MapComponent implements OnInit, OnChanges {
 					div.appendChild(img);
 				}
 
+				//TODO - Add an indicator with the number of images at this point
+				//     - Add a link to view the images, this will add a "tag" which is the Lat/Lng into the "selected tags"
+				//       If the user clicks on a link, then show vertical thumbnails, if they click on an image, then
+				//       show the image in fullscreen with the horizontal thumbnails
+				//       
+
 				return div;
 			};
 
@@ -143,34 +149,6 @@ export class MapComponent implements OnInit, OnChanges {
 			this.map.layers.add(featureLayer);
 
 		});
-
-		/*
-		let symbol = {
-			type: 'simple-marker',
-			color: [226, 119, 40],
-			outline: {
-				color: [255, 255, 255],
-				width: 1
-			}
-		}
-
-		this.layer.removeAll();
-
-		for (let point of this.points) {
-
-			this.layer.add(
-				new this.g({
-					geometry: {
-						type: 'point',
-						longitude: point.x,
-						latitude: point.y
-					},
-					symbol: symbol
-				})
-			);
-
-		}
-	 */
 
 	}
 

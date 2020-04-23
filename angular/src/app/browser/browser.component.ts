@@ -7,6 +7,8 @@ import { MapComponent } from '../map/map.component';
 /*
  * TODO - Move the position of the previous, next buttons - they jump around
  *      - Don't change the width of the current main image until after it loads
+ *      - When in vertical list mode and you click on an image, show the main image with
+ *        the horizontal thumbnails instead of taking up the full screen
  */
 
 @Component({
