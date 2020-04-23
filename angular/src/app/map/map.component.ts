@@ -19,6 +19,9 @@ export class MapComponent implements OnInit, OnChanges {
 	private mapView;
 
   constructor(private images: ImagesService) {
+	}
+
+  ngOnInit(): void {
 		loadModules(
 			[
 			'esri/Map',
@@ -47,28 +50,20 @@ export class MapComponent implements OnInit, OnChanges {
 
 			this.mapView = new MapView(mapViewProperties);
 
-			//TODO - This doesn't work
-			if (this.points && this.points.length) {
-				this.showPoints();
-			}
+			this.showPoints();
 
 		});
-	}
-
-  ngOnInit(): void {
   }
 
 	ngOnChanges(): void {
+		this.showPoints();
+	}
+
+	private showPoints() {
 
 		if (! this.points) {
 			return;
 		}
-
-		this.showPoints();
-
-	}
-
-	private showPoints() {
 		
 		loadModules(
 			[

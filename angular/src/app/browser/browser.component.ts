@@ -61,6 +61,7 @@ export class BrowserComponent implements OnInit {
 
 	public toggleMap() {
 		this.isMapMode = ! this.isMapMode;
+		this.reset();
 	}
 
 	public mainImageLoaded() {
@@ -131,9 +132,7 @@ export class BrowserComponent implements OnInit {
 
 		if (this.isMapMode) {
 			this.currentPoints = this.images.getCurrentPoints();
-		}
-
-		if (this.isVerticalView) {
+		} else if (this.isVerticalView) {
 
 			let maxWidth = this.domMain.nativeElement.clientWidth - 30;
 
