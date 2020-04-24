@@ -254,7 +254,8 @@ export class ImagesService {
 				height   : Math.round(image.th),
 				index    : this.currentImages[i],
 				left     : image.tl,
-				src      : null
+				src      : null,
+				ciindex  : i
 				//TODO - This is for admin mode - not ported yet
 				//selected : this.selected[this.currentImages[i]]
 			};

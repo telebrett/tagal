@@ -4,6 +4,8 @@ import { ImagesService } from '../service/images.service';
 
 import { MapComponent } from '../map/map.component';
 
+import { CarouselComponent } from '../carousel/carousel.component';
+
 /*
  * TODO - Move the position of the previous, next buttons - they jump around
  *      - Don't change the width of the current main image until after it loads
@@ -18,16 +20,16 @@ import { MapComponent } from '../map/map.component';
 })
 export class BrowserComponent implements OnInit {
 
-	@ViewChild('thumbwidth') domThumbWidth: ElementRef;
-	@ViewChild('thumbnails') domThumbnails: ElementRef;
+	//@ViewChild('carousel') domCarousel: ElementRef;
+	@ViewChild('carousel') carousel: CarouselComponent;
+
 	@ViewChild('mainimage') domMainImage: ElementRef;
 	@ViewChild('verticalmainimage') domVerticalMainImage: ElementRef;
 
 	@ViewChild('main') domMain: ElementRef;
 	@ViewChild('verticalthumbs') domVerticalThumbs: ElementRef;
 
-	public thumbnailWidth = '0px';
-	public thumbnailLeft = '0px';
+	public carouselWidth = 0;
 
 	public thumbnailHeight = 0;
 	public thumbnailTop = 0;
@@ -43,7 +45,7 @@ export class BrowserComponent implements OnInit {
 	public mainImage;
 	private mainciindex;
 
-	public isVerticalView = true;
+	public isVerticalView = false;
 	public isMapMode = false;
 
 	public mainImageLoading = false;
@@ -146,14 +148,8 @@ export class BrowserComponent implements OnInit {
 			this.getWindowThumbs();
 
 		} else {
-			let width = this.images.setThumbnailHeights(this.domThumbWidth.nativeElement.parentElement.clientHeight);
-			this.thumbnailWidth = width + 'px';
-			this.thumbnailLeft = '0px';
-			this.domThumbWidth.nativeElement.parentElement.scrollLeft = 0;
-
-			this.getWindowThumbs();
+			this.carousel.reset();
 		}
-
 
 	}
 
@@ -198,10 +194,6 @@ export class BrowserComponent implements OnInit {
 			}, 300);
 
 
-		} else {
-			let left = Math.floor(this.domThumbWidth.nativeElement.parentElement.scrollLeft);
-			this.windowThumbs = this.images.getThumbnailWindowByLeft(left, 50);
-			this.thumbnailLeft = Math.round(this.windowThumbs[0].left) + 'px';
 		}
 	}
 

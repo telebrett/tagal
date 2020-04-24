@@ -107,13 +107,7 @@ div.reportblock {
 	position:absolute;
 	bottom:0px;
 	width:100%;
-	overflow-x:auto;
 	height:$thumbnail-height;
-	border-top:1px solid black;
-}
-
-#thumbnails img {
-	border-right:1px solid black;
 }
 
 #image {

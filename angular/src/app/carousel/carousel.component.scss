@@ -1,0 +1,11 @@
+.carousel {
+	width:100%;
+	overflow-x:auto;
+	overflow-y:hidden;
+	height:100%;
+	border-top:1px solid black;
+}
+
+.carousel img {
+	border-right:1px solid black;
+}
