@@ -36,17 +36,8 @@ export class ImagesService {
 	 * string l  The label name, optional
 	 * object m  Metadata for the tag, note key only exists if there is metadata
 	 * object i  keys are the image indexes, value is true
-	 * object p  keys are the point indexes, value is true
 	 */
 	private tags   = [];
-
-	/**
-	 * Each element is a hash with keys
-	 * float x The longitude of the point
-	 * float y The latitude of the point
-	 * object i  keys are the image indexes, value is true
-	 */
-	private points = [];
 
 	/**
 	 * keys are the tags, values is the index for the tag
@@ -82,11 +73,6 @@ export class ImagesService {
 				let imagehash = {p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2],v:image.length>3};
 
 				this.images[i] = imagehash;
-			}
-
-			//Note, this must be done before the tags
-			for (let i in data.points) {
-				this.addPoint(i, data.points[i]);
 			}
 
 			for (let i in data.tags) {
@@ -198,6 +184,9 @@ export class ImagesService {
 
 	public getCurrentPoints() {
 
+		return [];
+		/*
+
 		let points = {};
 
 		//The point needs to be in ALL the tags
@@ -220,6 +209,8 @@ export class ImagesService {
 		}
 
 		return matchingPoints;
+	 */
+
 
 	}
 
@@ -314,6 +305,10 @@ export class ImagesService {
 		let stop = top + maxHeight;
 
 		let thumbs = [];
+
+		if (this.vblocks.length == 0) {
+			return thumbs;
+		}
 
 		//Find the first vblock
 		let vblock_index = 0;
@@ -799,6 +794,28 @@ export class ImagesService {
 
 	}
 
+	public getPoints() {
+
+		let points = [];
+
+		let check = (tags) => {
+			for (let i = 0; i < tags.length; i++) {
+				let tag = this.tags[i];
+
+				if (tag.m && tag.m.type == 'point') {
+					points.push(tag);
+				}
+			}
+
+		}
+
+		check(this.remainingTags);
+		check(this.currentTags);
+
+		return points;
+
+	}
+
 	private niceTag(tag) {
 
 		let o = {
@@ -937,6 +954,7 @@ export class ImagesService {
 
 	}
 
+	/*
 	private addPoint(pointStr: string, imageIndexes: any) {
 
 		let xy = pointStr.split(':');
@@ -954,6 +972,7 @@ export class ImagesService {
 		this.points.push(point);
 
 	}
+ */
 
 	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
 		
@@ -976,6 +995,7 @@ export class ImagesService {
 			}
 		}
 
+		/*
 		for (let p = 0; p < this.points.length; p++) {
 			//If the point contains any of the images that this tag also contains,
 			//add it to the tags list of points
@@ -986,6 +1006,7 @@ export class ImagesService {
 				}
 			}
 		}
+	 */
 
 		if (metadata) {
 			o['m'] = metadata;

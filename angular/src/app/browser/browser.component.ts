@@ -2,17 +2,15 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 import { ImagesService } from '../service/images.service';
 
-import { MapComponent } from '../map/map.component';
-
+import { MapComponent }      from '../map/map.component';
 import { CarouselComponent } from '../carousel/carousel.component';
 import { VarouselComponent } from '../varousel/varousel.component';
 
 /*
  * TODO - Move the position of the previous, next buttons - they jump around
  *      - Don't change the width of the current main image until after it loads
- *      - When in vertical list mode and you click on an image, show the main image with
- *        the horizontal thumbnails instead of taking up the full screen
- *      - Change the lat/lng points to normal tags with metadata
+ *      - When viewing an image, the horizontal carousel is at the start, it should be at the position of the
+ *        currently viewed image
  */
 
 @Component({
@@ -23,6 +21,7 @@ import { VarouselComponent } from '../varousel/varousel.component';
 export class BrowserComponent implements OnInit {
 
 	//@ViewChild('carousel') domCarousel: ElementRef;
+	@ViewChild('map')      map     : MapComponent;
 	@ViewChild('carousel') carousel: CarouselComponent;
 	@ViewChild('varousel') varousel: VarouselComponent;
 
@@ -50,8 +49,6 @@ export class BrowserComponent implements OnInit {
 	public mainImageLoading = false;
 
 	private scrollTimeout;
-
-	public currentPoints;
 
 	constructor(private images: ImagesService) { }
 
@@ -99,16 +96,9 @@ export class BrowserComponent implements OnInit {
 		let height;
 		let width;
 
-		//if (this.isVerticalView) {
-		//	ref = this.domVerticalMainImage.nativeElement;
-		//	height = ref.parentNode.clientHeight
-		//	width = ref.parentNode.clientWidth;
-		//	ref.style.marginTop = this.domMain.nativeElement.scrollTop + 'px';
-		//} else {
-			ref = this.domMain.nativeElement;
-			height = ref.clientHeight - 150; //Horizontal thumbnail height
-			width = ref.clientWidth;
-		//}
+		ref = this.domMain.nativeElement;
+		height = ref.clientHeight - 150; //Horizontal thumbnail height
+		width = ref.clientWidth;
 
 		this.mainImage = this.images.getImage(index, width, height);
 	}
@@ -133,6 +123,13 @@ export class BrowserComponent implements OnInit {
 		this.menuTags = this.images.getRemainingTags();
 		this.currentTags = this.images.getCurrentTags();
 
+		if (this.isMapMode && this.map) {
+			this.map.reset();
+		} else if(this.varousel) {
+			this.varousel.reset();
+		}
+
+		/*
 		if (this.isMapMode) {
 			this.currentPoints = this.images.getCurrentPoints();
 		} else if (this.isVerticalView) {
@@ -140,6 +137,7 @@ export class BrowserComponent implements OnInit {
 		} else {
 			this.carousel.reset();
 		}
+	 */
 
 	}
 

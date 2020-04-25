@@ -27,7 +27,7 @@
 				</div>
 			</div>
 			<ng-container *ngIf="! mainImage">
-				<app-map      *ngIf="isMapMode" [points]="currentPoints"></app-map>
+				<app-map      *ngIf="isMapMode"  #map></app-map>
 				<app-varousel *ngIf="!isMapMode" #varousel (selectedThumb)="viewImageFromThumb($event)"></app-varousel>
 			</ng-container>
 		</div>

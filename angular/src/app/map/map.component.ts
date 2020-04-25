@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, Input, OnChanges } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { loadModules } from 'esri-loader';
 
 import { ImagesService } from '../service/images.service';
@@ -9,17 +9,15 @@ import { environment } from '../../environments/environment';
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss']
 })
-export class MapComponent implements OnInit, OnChanges {
+export class MapComponent implements OnInit {
 
 	@ViewChild('map', { static:true}) private readonly mapElement: ElementRef;
 
-	@Input() points: any[];
-
 	private map;
 	private mapView;
+	private points = [];
 
-  constructor(private images: ImagesService) {
-	}
+  constructor(private images: ImagesService) { }
 
   ngOnInit(): void {
 		loadModules(
@@ -55,16 +53,12 @@ export class MapComponent implements OnInit, OnChanges {
 		});
   }
 
-	ngOnChanges(): void {
+	public reset() {
 		this.showPoints();
 	}
 
 	private showPoints() {
 
-		if (! this.points) {
-			return;
-		}
-		
 		loadModules(
 			[
 				'esri/Graphic',
@@ -74,15 +68,24 @@ export class MapComponent implements OnInit, OnChanges {
 
 			this.map.layers.removeAll();
 
+			this.points = this.images.getPoints();
+
+			if (this.points.length == 0) {
+				return;
+			}
+
+			//TODO - if the number of points is greater than X show a message re more tags required
+
 			let graphics = this.points.map((point, index) => {
+
 				return new Graphic({
 					attributes: {
 						ObjectId: index,
 					},
 					geometry: {
 						type: 'point',
-						longitude: point.x,
-						latitude: point.y
+						longitude: point.m.x,
+						latitude: point.m.y
 					}
 				});
 			});
