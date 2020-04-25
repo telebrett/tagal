@@ -8,6 +8,7 @@ import { ImagesService } from '../service/images.service';
 })
 export class VarouselComponent {
 
+	@ViewChild('scroller') domScroller: ElementRef;
 	@ViewChild('content') domContent: ElementRef;
 
 	@Output() selectedThumb: EventEmitter<any> = new EventEmitter();
@@ -33,7 +34,7 @@ export class VarouselComponent {
 
 			this.windowWidth = maxWidth; 
 
-			this.domContent.nativeElement.scrollTop = 0;
+			this.domScroller.nativeElement.scrollTop = 0;
 
 			this.getWindow();
 
@@ -63,9 +64,9 @@ export class VarouselComponent {
 
 		let buffer = 3000;
 
-		let top = Math.max(0, Math.floor(this.domContent.nativeElement.parentElement.scrollTop) - buffer);
+		let top = Math.max(0, Math.floor(this.domScroller.nativeElement.scrollTop) - buffer);
 
-		this.thumbs = this.images.getThumbnailWindowByTop(top, this.domContent.nativeElement.parentElement.clientHeight + buffer*2);
+		this.thumbs = this.images.getThumbnailWindowByTop(top, this.domScroller.nativeElement.clientHeight + buffer*2);
 
 		this.windowTop = Math.round(this.thumbs[0].tl);
 
