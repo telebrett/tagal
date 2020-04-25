@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
+import { Component, ViewChild, ElementRef, Output, EventEmitter, OnInit } from '@angular/core';
 import { ImagesService } from '../service/images.service';
 
 @Component({
@@ -7,7 +7,7 @@ import { ImagesService } from '../service/images.service';
   styleUrls: ['./carousel.component.scss']
 })
 
-export class CarouselComponent { 
+export class CarouselComponent implements OnInit { 
 
 	@ViewChild('width') domWidth: ElementRef;
 
@@ -20,6 +20,14 @@ export class CarouselComponent {
 	private timeout;
 
 	constructor(private images: ImagesService) { }
+
+	public ngOnInit() {
+		//We can't read from the dom, as the dom node doesn't 49exist yet
+		
+		//TODO - Bug, not set to the correct width
+		this.thumbsWidth = this.images.setThumbnailHeights(150);
+		this.getWindow();
+	}
 
 	public scroll(event) {
 
@@ -40,15 +48,16 @@ export class CarouselComponent {
 	}
 
 	public reset() {
-
-		this.thumbsWidth = this.images.setThumbnailHeights(this.domWidth.nativeElement.parentElement.clientHeight);
 		this.domWidth.nativeElement.parentElement.scrollLeft = 0;
 		this.getWindow();
 	}
 
 	private getWindow() {
 
-			let left = Math.floor(this.domWidth.nativeElement.parentElement.scrollLeft);
+			let left = 0;
+			if (this.domWidth && this.domWidth.nativeElement) {
+				left = Math.floor(this.domWidth.nativeElement.parentElement.scrollLeft);
+			}
 
 			this.thumbs = this.images.getThumbnailWindowByLeft(left, 50);
 

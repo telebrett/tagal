@@ -45,6 +45,7 @@ $thumbnail-height: 150px;
 #main {
 	height:100%;
 	margin-left:$tags-width;
+	position:relative;
 }
 
 #main.horizontal {

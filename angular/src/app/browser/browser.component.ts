@@ -26,11 +26,7 @@ export class BrowserComponent implements OnInit {
 	@ViewChild('carousel') carousel: CarouselComponent;
 	@ViewChild('varousel') varousel: VarouselComponent;
 
-	@ViewChild('mainimage') domMainImage: ElementRef;
-	@ViewChild('verticalmainimage') domVerticalMainImage: ElementRef;
-
 	@ViewChild('main') domMain: ElementRef;
-	@ViewChild('verticalthumbs') domVerticalThumbs: ElementRef;
 
 	public carouselWidth = 0;
 
@@ -103,16 +99,16 @@ export class BrowserComponent implements OnInit {
 		let height;
 		let width;
 
-		if (this.isVerticalView) {
-			ref = this.domVerticalMainImage.nativeElement;
-			height = ref.parentNode.clientHeight
-			width = ref.parentNode.clientWidth;
-			ref.style.marginTop = this.domMain.nativeElement.scrollTop + 'px';
-		} else {
-			ref = this.domMainImage.nativeElement;
-			height = ref.clientHeight;
+		//if (this.isVerticalView) {
+		//	ref = this.domVerticalMainImage.nativeElement;
+		//	height = ref.parentNode.clientHeight
+		//	width = ref.parentNode.clientWidth;
+		//	ref.style.marginTop = this.domMain.nativeElement.scrollTop + 'px';
+		//} else {
+			ref = this.domMain.nativeElement;
+			height = ref.clientHeight - 150; //Horizontal thumbnail height
 			width = ref.clientWidth;
-		}
+		//}
 
 		this.mainImage = this.images.getImage(index, width, height);
 	}
