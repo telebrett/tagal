@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
+import { Component, ViewChild, ElementRef, Output, EventEmitter, OnInit } from '@angular/core';
 import { ImagesService } from '../service/images.service';
 
 @Component({
@@ -6,7 +6,7 @@ import { ImagesService } from '../service/images.service';
   templateUrl: './varousel.component.html',
   styleUrls: ['./varousel.component.scss']
 })
-export class VarouselComponent {
+export class VarouselComponent implements OnInit {
 
 	@ViewChild('scroller') domScroller: ElementRef;
 	@ViewChild('content') domContent: ElementRef;
@@ -24,19 +24,25 @@ export class VarouselComponent {
 
 	private timeout;
 
-	constructor(private images: ImagesService) { }
+	constructor(private images: ImagesService, private elRef: ElementRef) { }
+
+	public ngOnInit() {
+		this.reset();
+	}
 	
 	public reset() {
 
-			let maxWidth = this.domContent.nativeElement.clientWidth - 30;
+		let maxWidth = this.elRef.nativeElement.offsetParent.clientWidth - 30;
 
-			this.varouselHeight = this.images.setvblocks(25, 200, maxWidth);
+		this.varouselHeight = this.images.setvblocks(25, 200, maxWidth);
 
-			this.windowWidth = maxWidth; 
+		this.windowWidth = maxWidth; 
 
+		if (this.domScroller && this.domScroller.nativeElement) {
 			this.domScroller.nativeElement.scrollTop = 0;
+		}
 
-			this.getWindow();
+		this.getWindow();
 
 	}
 
@@ -64,14 +70,20 @@ export class VarouselComponent {
 
 		let buffer = 3000;
 
-		let top = Math.max(0, Math.floor(this.domScroller.nativeElement.scrollTop) - buffer);
+		let top = 0;
+		if (this.domScroller && this.domScroller.nativeElement) {
+			top = Math.max(0, Math.floor(this.domScroller.nativeElement.scrollTop) - buffer);
+		}
 
-		this.thumbs = this.images.getThumbnailWindowByTop(top, this.domScroller.nativeElement.clientHeight + buffer*2);
+		this.thumbs = this.images.getThumbnailWindowByTop(top, this.elRef.nativeElement.offsetParent.clientHeight + buffer*2);
 
-		this.windowTop = Math.round(this.thumbs[0].tl);
+		if (this.thumbs.length) {
 
-		let last = this.thumbs[this.thumbs.length-1];
-		this.windowHeight = Math.ceil(last.tl + last.height - this.windowTop + 5);
+			this.windowTop = Math.round(this.thumbs[0].tl);
+
+			let last = this.thumbs[this.thumbs.length-1];
+			this.windowHeight = Math.ceil(last.tl + last.height - this.windowTop + 5);
+		}
 
 		//console.log('Num ' + this.thumbs.length + ', top ' + this.windowTop + ', height ' + this.windowHeight + ', for ' + this.domContent.nativeElement.clientHeight);
 
