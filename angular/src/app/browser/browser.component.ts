@@ -5,12 +5,14 @@ import { ImagesService } from '../service/images.service';
 import { MapComponent } from '../map/map.component';
 
 import { CarouselComponent } from '../carousel/carousel.component';
+import { VarouselComponent } from '../varousel/varousel.component';
 
 /*
  * TODO - Move the position of the previous, next buttons - they jump around
  *      - Don't change the width of the current main image until after it loads
  *      - When in vertical list mode and you click on an image, show the main image with
  *        the horizontal thumbnails instead of taking up the full screen
+ *      - Change the lat/lng points to normal tags with metadata
  */
 
 @Component({
@@ -22,6 +24,7 @@ export class BrowserComponent implements OnInit {
 
 	//@ViewChild('carousel') domCarousel: ElementRef;
 	@ViewChild('carousel') carousel: CarouselComponent;
+	@ViewChild('varousel') varousel: VarouselComponent;
 
 	@ViewChild('mainimage') domMainImage: ElementRef;
 	@ViewChild('verticalmainimage') domVerticalMainImage: ElementRef;
@@ -45,7 +48,7 @@ export class BrowserComponent implements OnInit {
 	public mainImage;
 	private mainciindex;
 
-	public isVerticalView = false;
+	public isVerticalView = true;
 	public isMapMode = false;
 
 	public mainImageLoading = false;
@@ -137,64 +140,11 @@ export class BrowserComponent implements OnInit {
 		if (this.isMapMode) {
 			this.currentPoints = this.images.getCurrentPoints();
 		} else if (this.isVerticalView) {
-
-			let maxWidth = this.domMain.nativeElement.clientWidth - 30;
-
-			this.thumbnailHeight = this.images.setvblocks(25, 200, maxWidth);
-
-			this.thumbnailWindowWidth = maxWidth; 
-
-			this.domMain.nativeElement.scrollTop = 0;
-			this.getWindowThumbs();
-
+			this.varousel.reset();
 		} else {
 			this.carousel.reset();
 		}
 
-	}
-
-	public thumbReport(event) {
-		console.log('Block Top : ' + (event.srcElement.offsetTop + event.srcElement.offsetParent.offsetTop - 5) + ', left' + event.srcElement.offsetLeft);
-	}
-
-	public scrollThumbnails(event) {
-		//TODO - This could do a performance improvement and ONLY redo the thumbs
-		//       if we are close to the edge
-		//     - Investigate if moving to doing this in a timeout means that the browser
-		//       doesn't 'stall' waiting for this handler to return
-		this.getWindowThumbs();
-	}
-
-	public getWindowThumbs() {
-
-		if (! this.currentTags.length) {
-			return;
-		}
-
-		if (this.isVerticalView) {
-
-			if (this.scrollTimeout) {
-				clearTimeout(this.scrollTimeout);
-			}
-
-			this.scrollTimeout = setTimeout(() => {
-
-				let buffer = 3000;
-
-				let top = Math.max(0, Math.floor(this.domMain.nativeElement.scrollTop) - buffer);
-				this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight + buffer*2);
-
-				this.thumbnailTop = Math.round(this.windowThumbs[0].tl);
-
-				let last = this.windowThumbs[this.windowThumbs.length-1];
-				this.thumbnailWindowHeight = Math.ceil(last.tl + last.height - this.thumbnailTop + 5);
-
-				console.log('Num ' + this.windowThumbs.length + ', top ' + this.thumbnailTop + ', height ' + this.thumbnailWindowHeight + ', for ' + this.domMain.nativeElement.clientHeight);
-
-			}, 300);
-
-
-		}
 	}
 
 	public selectTag(tag: any) {
@@ -208,6 +158,5 @@ export class BrowserComponent implements OnInit {
 		this.images.deselectTag(tag.index);
 		this.reset();
 	}
-
 
 }

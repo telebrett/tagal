@@ -10,7 +10,7 @@ import { HeaderComponent } from './header/header.component';
 import {HttpClientModule} from '@angular/common/http';
 import { MapComponent } from './map/map.component';
 import { CarouselComponent } from './carousel/carousel.component';
-import { VcarouselComponent } from './vcarousel/vcarousel.component';
+import { VarouselComponent } from './varousel/varousel.component';
 
 @NgModule({
   declarations: [
@@ -19,7 +19,7 @@ import { VcarouselComponent } from './vcarousel/vcarousel.component';
     HeaderComponent,
     MapComponent,
     CarouselComponent,
-    VcarouselComponent
+    VarouselComponent
   ],
   imports: [
     BrowserModule,

@@ -45,15 +45,10 @@ $thumbnail-height: 150px;
 #main {
 	height:100%;
 	margin-left:$tags-width;
-	position:relative;
 }
 
 #main.horizontal {
 	padding-bottom:$thumbnail-height;
-}
-
-#main.vertical {
-	overflow-y:auto;
 }
 
 #main.vertical.hideThumbs {
@@ -65,36 +60,6 @@ $thumbnail-height: 150px;
 	right:0px;
 	top:0px;
 	z-index:2;
-}
-
-.divthumb {
-	//margin:0px;
-	margin:5px;
-	float:left;
-}
-
-#verticalWindow {
-	position:absolute;
-	top:0px;
-	width:100%;
-	overflow-y:hidden;
-	overflow-x:hidden;
-}
-
-#verticalWindow h5 {
-	border-bottom:1px solid black;
-	font-size:1em;
-	height:25px;
-	margin:0px;
-	padding:0px;
-}
-
-#verticalWindow img {
-	border:1px solid black;
-}
-
-.hideThumbs #verticalWindow {
-	visibility:hidden;
 }
 
 div.reportblock {

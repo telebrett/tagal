@@ -22,7 +22,17 @@ export class CarouselComponent {
 	constructor(private images: ImagesService) { }
 
 	public scroll(event) {
-		this.getWindow();
+
+		if (this.timeout) {
+			clearTimeout(this.timeout);
+		}
+
+		this.timeout = setTimeout(() => {
+
+			this.timeout = null;
+			this.getWindow();
+			
+		}, 300);
 	}
 
 	public open(thumb) {
