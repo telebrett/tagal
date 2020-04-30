@@ -41,7 +41,7 @@ export class BrowserComponent implements OnInit {
 	public windowThumbs = [];
 
 	public mainImage;
-	private mainciindex;
+	public mainciindex;
 
 	public isVerticalView = true;
 	public isMapMode = false;
@@ -61,6 +61,7 @@ export class BrowserComponent implements OnInit {
 
 	public toggleMap() {
 		this.isMapMode = ! this.isMapMode;
+		this.mainImage = this.mainciindex = null;
 		this.reset();
 	}
 

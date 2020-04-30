@@ -23,11 +23,12 @@
 					<img class="rounded" *ngIf="mainImage" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" />
 				</div>
 				<div id="thumbnails">
-					<app-carousel #carousel (selectedThumb)="viewImageFromThumb($event)"></app-carousel>
+					<app-carousel #carousel [mainciindex]="mainciindex" (selectedThumb)="viewImageFromThumb($event)"></app-carousel>
 				</div>
 			</div>
 			<ng-container *ngIf="! mainImage">
-				<app-map      *ngIf="isMapMode"  #map></app-map>
+				<!-- TODO - This is wrong, need to add a "view main image from main index". but the prev and aren't going to work correctly in this case -->
+				<app-map      *ngIf="isMapMode"  #map (selectedThumb)="viewImageFromIndex($event)" (selectedPoint)="selectTag($event)"></app-map>
 				<app-varousel *ngIf="!isMapMode" #varousel (selectedThumb)="viewImageFromThumb($event)"></app-varousel>
 			</ng-container>
 		</div>

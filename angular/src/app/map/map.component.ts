@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, Output, EventEmitter } from '@angular/core';
 import { loadModules } from 'esri-loader';
 
 import { ImagesService } from '../service/images.service';
@@ -12,6 +12,9 @@ import { environment } from '../../environments/environment';
 export class MapComponent implements OnInit {
 
 	@ViewChild('map', { static:true}) private readonly mapElement: ElementRef;
+
+	@Output() selectedThumb: EventEmitter<any> = new EventEmitter();
+	@Output() selectedPoint: EventEmitter<any> = new EventEmitter();
 
 	private map;
 	private mapView;
@@ -91,7 +94,6 @@ export class MapComponent implements OnInit {
 			});
 
 			let popupTemplate = (feature) => {
-				console.log(feature.graphic.attributes.ObjectId);
 
 				let point = this.points[feature.graphic.attributes.ObjectId];
 
@@ -108,6 +110,12 @@ export class MapComponent implements OnInit {
 
 					img.style.border = '1px solid black';
 					img.style.margin = '1px';
+
+					//TODO - I think this causes a memory leak, but I'm unsure how to get an "ondestroy" method for the popuptemplate
+					//img.addEventListener('click', this.selectedThumb.emit(thumb));
+					img.addEventListener('click', (event) => {
+						this.selectedThumb.emit(thumb)
+					});
 
 					div.appendChild(img);
 				}

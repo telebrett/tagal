@@ -222,11 +222,19 @@ export class ImagesService {
 
 	}
 
+	//TODO - This can probably be removed
 	public getThumbnailsByPage(pageOffset: number,count: number) {
 
 		let start_index = count * pageOffset;
 
 		return this.getThumbnailWindow(start_index, count);
+
+	}
+
+	public getThumbnailLeft(index: number) {
+		if (this.currentImages[index] && this.images[this.currentImages[index]]) {
+			return this.images[this.currentImages[index]].tl;
+		}
 
 	}
 
@@ -290,7 +298,7 @@ export class ImagesService {
 
 	public getImageIndex(ciindex: number) {
 
-		if (ciindex < 0 || ciindex >= this.currentImages.length) {
+		if (ciindex === undefined || ciindex < 0 || ciindex >= this.currentImages.length) {
 			return false;
 		}
 
@@ -559,22 +567,10 @@ export class ImagesService {
 			this.currentImages = this.currentImages.filter(function(v){return ts[v] !== undefined});
 		}
 
-		this.currentImages.sort((a_index, b_index) => {
-			let a_o = this.images[a_index].o;
-			let b_o = this.images[b_index].o;
-
-			if (a_o == b_o) {
-				return 0;
-			} else if(a_o < b_o) {
-				return -1;
-			} else {
-				return 1;
-			}
-
-		});
-
+		this.sortCurrentImages();
 		this.setRemainingTags();
 	}
+
 
 	public deselectTag(index: number) {
 
@@ -613,6 +609,7 @@ export class ImagesService {
 			this.currentImages.push(parseInt(i));
 		}
 
+		this.sortCurrentImages();
 		this.setRemainingTags();
 	}
 
@@ -813,6 +810,23 @@ export class ImagesService {
 		check(this.currentTags);
 
 		return points;
+
+	}
+
+	private sortCurrentImages() {
+		this.currentImages.sort((a_index, b_index) => {
+			let a_o = this.images[a_index].o;
+			let b_o = this.images[b_index].o;
+
+			if (a_o == b_o) {
+				return 0;
+			} else if(a_o < b_o) {
+				return -1;
+			} else {
+				return 1;
+			}
+
+		});
 
 	}
 

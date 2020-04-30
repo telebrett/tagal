@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input, Output, EventEmitter, OnInit, AfterViewInit } from '@angular/core';
 import { ImagesService } from '../service/images.service';
 
 @Component({
@@ -7,10 +7,11 @@ import { ImagesService } from '../service/images.service';
   styleUrls: ['./carousel.component.scss']
 })
 
-export class CarouselComponent implements OnInit { 
+export class CarouselComponent implements OnInit, AfterViewInit { 
 
 	@ViewChild('width') domWidth: ElementRef;
 
+	@Input() mainciindex: number;
 	@Output() selectedThumb: EventEmitter<any> = new EventEmitter();
 
 	public left   = 0;
@@ -24,9 +25,19 @@ export class CarouselComponent implements OnInit {
 	public ngOnInit() {
 		//We can't read from the dom, as the dom node doesn't 49exist yet
 		
-		//TODO - Bug, not set to the correct width
 		this.thumbsWidth = this.images.setThumbnailHeights(150);
 		this.getWindow();
+	}
+
+	public ngAfterViewInit() {
+		if (this.mainciindex) {
+			//TODO - if we are at the end, we probably want to find the leftmost image
+			//       keeps the mainimage in frame
+			let left = this.images.getThumbnailLeft(this.mainciindex);
+			if (left) {
+				this.domWidth.nativeElement.parentElement.scrollLeft = left;
+			}
+		}
 	}
 
 	public scroll(event) {
