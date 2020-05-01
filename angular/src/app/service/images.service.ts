@@ -238,6 +238,14 @@ export class ImagesService {
 
 	}
 
+	public getThumbnailWidth(index: number) {
+		if (this.currentImages[index] && this.images[this.currentImages[index]]) {
+			return this.images[this.currentImages[index]].tw;
+		}
+
+	}
+
+
 	private getThumbnailWindow(start_index,count) {
 
 		let win = [];

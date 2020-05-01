@@ -35,11 +35,20 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnChanges {
 
 	public ngAfterViewInit() {
 		if (this.mainciindex && this.domWidth) {
-			//TODO - if we are at the end, we probably want to find the leftmost image
-			//       keeps the mainimage in frame
 			let left = this.images.getThumbnailLeft(this.mainciindex);
 			if (left) {
-				this.domWidth.nativeElement.parentElement.scrollLeft = left;
+
+				//Work out if this thumbnail is visible on the screen
+				let width = this.images.getThumbnailWidth(this.mainciindex);
+
+				let dom = this.domWidth.nativeElement.parentElement;
+
+				let minLeft = dom.scrollLeft;
+				let maxLeft = minLeft + dom.clientWidth - width;
+
+				if (left < minLeft || left > maxLeft) {
+					this.domWidth.nativeElement.parentElement.scrollLeft = left + width - dom.clientWidth;
+				}
 			}
 		}
 	}

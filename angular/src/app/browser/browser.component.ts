@@ -11,7 +11,6 @@ import { VarouselComponent } from '../varousel/varousel.component';
  * TODO - Handle window resize
  *
  * BUGS - Doesn't always happen, but if you click quickly through the images using the "next" button, sometimes it doesn't load the final image
-
  */
 
 @Component({
@@ -158,7 +157,7 @@ export class BrowserComponent implements OnInit {
 	public selectTag(tag: any, imageIndex?: number) {
 
 		this.mainImage = null;
-		if (tag.index) {
+		if (tag.index !== undefined) {
 			this.images.selectTag(tag.index);
 		} else {
 			this.images.selectTag(tag);
