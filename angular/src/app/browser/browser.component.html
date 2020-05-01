@@ -21,7 +21,11 @@
 			<div *ngIf="mainImage">
 				<div id="image">
 					<div class="controls">
-						<button type="button" class="btn btn-primary">D</button>
+						<button type="button" class="btn btn-primary"
+							fileSaver
+							[fileName]="mainImage.name"
+							[url]="mainImage.src"
+							>D</button>
 						<button type="button" class="btn btn-primary" (click)="prevMain()">&lt;</button>
 						<button type="button" class="btn btn-primary" (click)="nextMain()">&gt;</button>
 						<button type="button" class="btn btn-primary" (click)="hideMainImage()">X</button>

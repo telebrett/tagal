@@ -1,6 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { FileSaverModule } from 'ngx-filesaver';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -24,8 +25,9 @@ import { VarouselComponent } from './varousel/varousel.component';
   imports: [
     BrowserModule,
     AppRoutingModule,
-	HttpClientModule,
-	NgbModule
+		HttpClientModule,
+		FileSaverModule,
+		NgbModule
   ],
   providers: [],
   bootstrap: [AppComponent]
