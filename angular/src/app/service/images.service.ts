@@ -296,6 +296,16 @@ export class ImagesService {
 		return win;
 	}
 
+	public getCurrentImageIndex(imageIndex: any) {
+		let result = this.currentImages.indexOf(parseInt(imageIndex, 10));
+
+		if (result === -1) {
+			return false;
+		}
+
+		return result;
+	}
+
 	public getImageIndex(ciindex: number) {
 
 		if (ciindex === undefined || ciindex < 0 || ciindex >= this.currentImages.length) {
@@ -795,19 +805,33 @@ export class ImagesService {
 
 		let points = [];
 
-		let check = (tags) => {
-			for (let i = 0; i < tags.length; i++) {
-				let tag = this.tags[i];
+	 	if (this.currentTags.length) {
 
+			let checked_tags = {};
+
+			for (let imageIndex of this.currentImages) {
+				for (let tagIndex of Object.keys(this.images[imageIndex].t)) {
+					if (! checked_tags[tagIndex]) {
+						checked_tags[tagIndex] = true;
+
+						let tag = this.tags[tagIndex];
+
+						if (tag.m && tag.m.type == 'point') {
+							points.push(tag);
+						}
+
+					}
+				}
+
+			}
+
+		} else {
+			for (let tag of this.tags) {
 				if (tag.m && tag.m.type == 'point') {
 					points.push(tag);
 				}
 			}
-
 		}
-
-		check(this.remainingTags);
-		check(this.currentTags);
 
 		return points;
 
@@ -828,6 +852,10 @@ export class ImagesService {
 
 		});
 
+	}
+
+	public getTagIndex(tag) {
+		return this.tagIndex[tag.t];
 	}
 
 	private niceTag(tag) {

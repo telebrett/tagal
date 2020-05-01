@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Input, Output, EventEmitter, OnInit, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input, Output, EventEmitter, OnInit, AfterViewInit, OnChanges } from '@angular/core';
 import { ImagesService } from '../service/images.service';
 
 @Component({
@@ -7,7 +7,7 @@ import { ImagesService } from '../service/images.service';
   styleUrls: ['./carousel.component.scss']
 })
 
-export class CarouselComponent implements OnInit, AfterViewInit { 
+export class CarouselComponent implements OnInit, AfterViewInit, OnChanges { 
 
 	@ViewChild('width') domWidth: ElementRef;
 
@@ -29,8 +29,12 @@ export class CarouselComponent implements OnInit, AfterViewInit {
 		this.getWindow();
 	}
 
+	public ngOnChanges() {
+		this.ngAfterViewInit();
+	}
+
 	public ngAfterViewInit() {
-		if (this.mainciindex) {
+		if (this.mainciindex && this.domWidth) {
 			//TODO - if we are at the end, we probably want to find the leftmost image
 			//       keeps the mainimage in frame
 			let left = this.images.getThumbnailLeft(this.mainciindex);

@@ -9,8 +9,8 @@ import { VarouselComponent } from '../varousel/varousel.component';
 /*
  * TODO - Move the position of the previous, next buttons - they jump around
  *      - Don't change the width of the current main image until after it loads
- *      - When viewing an image, the horizontal carousel is at the start, it should be at the position of the
- *        currently viewed image
+ *      - Change the __videos__tag label in the UI
+ *
  */
 
 @Component({
@@ -43,7 +43,6 @@ export class BrowserComponent implements OnInit {
 	public mainImage;
 	public mainciindex;
 
-	public isVerticalView = true;
 	public isMapMode = false;
 
 	public mainImageLoading = false;
@@ -130,22 +129,34 @@ export class BrowserComponent implements OnInit {
 			this.varousel.reset();
 		}
 
-		/*
-		if (this.isMapMode) {
-			this.currentPoints = this.images.getCurrentPoints();
-		} else if (this.isVerticalView) {
-			this.varousel.reset();
-		} else {
-			this.carousel.reset();
-		}
-	 */
+	}
+
+	public selectTagHideMap(event: any) {
+
+		this.isMapMode = false;
+		this.selectTag(event.tag, event.imageIndex);
 
 	}
 
-	public selectTag(tag: any) {
+	public selectTag(tag: any, imageIndex?: number) {
+
 		this.mainImage = null;
-		this.images.selectTag(tag.index);
+		if (tag.index) {
+			this.images.selectTag(tag.index);
+		} else {
+			this.images.selectTag(tag);
+		}
 		this.reset();
+
+		if (imageIndex) {
+
+			let ciindex = this.images.getCurrentImageIndex(imageIndex);
+			if (ciindex !== false) {
+				this.viewImageFromIndex(ciindex);
+			}
+
+		}
+
 	}
 
 	public deselectTag(tag: any) {

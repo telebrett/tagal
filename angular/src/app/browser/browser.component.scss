@@ -56,12 +56,6 @@ $thumbnail-height: 150px;
 	overflow-y:hidden;
 }
 
-#main.vertical .controls {
-	position:absolute;
-	right:0px;
-	top:0px;
-	z-index:2;
-}
 
 div.reportblock {
 	border:1px solid black;
@@ -90,4 +84,11 @@ div.reportblock {
 		background-image:url('/assets/Spinner-1s-200px.png');
 		background-position:center;
 		background-repeat:no-repeat;
-	}
+}
+
+#main .controls {
+	position:absolute;
+	right:0px;
+	top:0px;
+	z-index:2;
+}

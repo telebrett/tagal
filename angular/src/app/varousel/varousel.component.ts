@@ -8,10 +8,6 @@ import { ImagesService } from '../service/images.service';
 })
 export class VarouselComponent implements OnInit {
 	
-	//TODO BUG - Click 2019, February, then remove "February", scroll to the bottom, the 
-	//           entire set is not showing
-	//           And the top of the iamges starts at 28th October, weird
-
 	@ViewChild('scroller') domScroller: ElementRef;
 	@ViewChild('content') domContent: ElementRef;
 

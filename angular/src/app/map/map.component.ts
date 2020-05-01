@@ -4,6 +4,7 @@ import { loadModules } from 'esri-loader';
 import { ImagesService } from '../service/images.service';
 import { environment } from '../../environments/environment';
 
+//TODO - Need to remember zoom and center point
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -101,7 +102,6 @@ export class MapComponent implements OnInit {
 
 				let div = document.createElement('div');
 
-				//TODO - Click to view
 				for (let thumb of thumbs) {
 					let img = document.createElement('img');
 					img.src    = thumb.src;
@@ -114,17 +114,24 @@ export class MapComponent implements OnInit {
 					//TODO - I think this causes a memory leak, but I'm unsure how to get an "ondestroy" method for the popuptemplate
 					//img.addEventListener('click', this.selectedThumb.emit(thumb));
 					img.addEventListener('click', (event) => {
-						this.selectedThumb.emit(thumb)
+						this.selectedThumb.emit({tag: this.images.getTagIndex(point), imageIndex:thumb.index})
 					});
 
 					div.appendChild(img);
+
 				}
 
-				//TODO - Add an indicator with the number of images at this point
-				//     - Add a link to view the images, this will add a "tag" which is the Lat/Lng into the "selected tags"
-				//       If the user clicks on a link, then show vertical thumbnails, if they click on an image, then
-				//       show the image in fullscreen with the horizontal thumbnails
-				//       
+				let p = document.createElement('p');
+				p.style.marginTop = '5px';
+				p.style.cursor = 'pointer';
+				p.appendChild(document.createElement('a'));
+				p.firstChild.appendChild(document.createTextNode('View all images (' + Object.keys(point.i).length + ')'));
+				
+				//TODO - Same as above re potential memory leak
+				p.firstChild.addEventListener('click', (event) => {
+					this.selectedPoint.emit({tag: this.images.getTagIndex(point)});
+				});
+				div.appendChild(p);
 
 				return div;
 			};

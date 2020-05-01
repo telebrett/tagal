@@ -20,15 +20,23 @@
 		<div id="main" #main>
 			<div *ngIf="mainImage">
 				<div id="image">
-					<img class="rounded" *ngIf="mainImage" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" />
+					<div class="controls">
+						<button type="button" class="btn btn-primary">D</button>
+						<button type="button" class="btn btn-primary" (click)="prevMain()">&lt;</button>
+						<button type="button" class="btn btn-primary" (click)="nextMain()">&gt;</button>
+						<button type="button" class="btn btn-primary" (click)="hideMainImage()">X</button>
+					</div>
+					<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" (load)="mainImageLoaded()" />
+					<video *ngIf="mainImage && mainImage.v" controls="controls" autoplay="autoplay" name="media" [height]="mainImage.height" [width]="mainImage.width">
+						<source src="{{mainImage.src}}" />
+					</video>
 				</div>
 				<div id="thumbnails">
 					<app-carousel #carousel [mainciindex]="mainciindex" (selectedThumb)="viewImageFromThumb($event)"></app-carousel>
 				</div>
 			</div>
 			<ng-container *ngIf="! mainImage">
-				<!-- TODO - This is wrong, need to add a "view main image from main index". but the prev and aren't going to work correctly in this case -->
-				<app-map      *ngIf="isMapMode"  #map (selectedThumb)="viewImageFromIndex($event)" (selectedPoint)="selectTag($event)"></app-map>
+				<app-map      *ngIf="isMapMode"  #map (selectedThumb)="selectTagHideMap($event)" (selectedPoint)="selectTagHideMap($event)"></app-map>
 				<app-varousel *ngIf="!isMapMode" #varousel (selectedThumb)="viewImageFromThumb($event)"></app-varousel>
 			</ng-container>
 		</div>
