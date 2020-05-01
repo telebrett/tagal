@@ -115,7 +115,7 @@ export class ImagesService {
         
 		for (let i = 0; i < this.remainingTags.length; i++) {
 			let tag = this.tags[this.remainingTags[i]];
-        
+
 			//Tags with metadata that also have 'single' don't have subtags, eg if an image has the "video" tag
 			if (tag.m && ! tag.m.single) {
 
@@ -146,7 +146,7 @@ export class ImagesService {
 				if (! groups[group]) {
 					groups[group] = {
 						tags: [],
-						type: group
+						type: group.charAt(0).toUpperCase() + group.slice(1)
 					}
 				}
 
@@ -860,9 +860,20 @@ export class ImagesService {
 
 	private niceTag(tag) {
 
+		let label = tag.l;
+
+		if (label === undefined) {
+		 	if (tag.m && tag.m.type) {
+				label = tag.m.type.charAt(0).toUpperCase() + tag.m.type.slice(1);
+			} else {
+				label = tag.t;
+			}
+		}
+
 		let o = {
 			index:this.tagIndex[tag.t],
-			label:tag.l === undefined ? tag.t : tag.l,
+			label:label,
+			primary: tag.m !== undefined
 		};
 
 		/*
@@ -945,6 +956,10 @@ export class ImagesService {
 				//both is a "month" or "day" marker
 				return as < bs ? -1 : 1;
 			}
+		} else if(a.m && a.m.type == 'video') {
+			return -1;
+		} else if(b.m && b.m.type == 'video') {
+			return 1;
 		}
 
 		let al = a.l !== undefined ? a.l : a.t
@@ -973,21 +988,21 @@ export class ImagesService {
 		}
 
 		return unsorted.sort((a,b) => {
-			if (a.type == 'year') {
+			if (a.type == 'Year') {
 				return -1;
-			} else if(b.type == 'year') {
+			} else if(b.type == 'Year') {
 				return 1;
 			}
 
-			if (a.type == 'month') {
+			if (a.type == 'Month') {
 				return -1;
-			} else if(b.type == 'month') {
+			} else if(b.type == 'Month') {
 				return 1;
 			}
 
-			if (a.type == 'day') {
+			if (a.type == 'Day') {
 				return -1;
-			} else if(b.type == 'day') {
+			} else if(b.type == 'Day') {
 				return 1;
 			}
 

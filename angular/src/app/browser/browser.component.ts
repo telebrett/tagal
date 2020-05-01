@@ -7,11 +7,10 @@ import { CarouselComponent } from '../carousel/carousel.component';
 import { VarouselComponent } from '../varousel/varousel.component';
 
 /*
- * TODO - Move the position of the previous, next buttons - they jump around
- *      - Don't change the width of the current main image until after it loads
- *      - Change the __videos__tag label in the UI
- *      - When closing the main image, set the varousel scrollTop so that the last main image was being viewed
+ * TODO - Handle window resize
  *
+ * BUGS - Doesn't always happen, but if you click quickly through the images using the "next" button, sometimes it doesn't load the final image
+
  */
 
 @Component({
@@ -27,6 +26,7 @@ export class BrowserComponent implements OnInit {
 	@ViewChild('varousel') varousel: VarouselComponent;
 
 	@ViewChild('main') domMain: ElementRef;
+	@ViewChild('video') domVideo: ElementRef;
 
 	public carouselWidth = 0;
 
@@ -35,6 +35,9 @@ export class BrowserComponent implements OnInit {
 
 	public thumbnailWindowHeight = 0;
 	public thumbnailWindowWidth  = 0;
+
+	public mainImageHeight = 0;
+	public mainImageWidth  = 0;
 
 	public menuTags = [];
 	public currentTags = [];
@@ -67,7 +70,8 @@ export class BrowserComponent implements OnInit {
 
 	public mainImageLoaded() {
 		this.mainImageLoading = false;
-		return false;
+		this.mainImageHeight = this.mainImage.height;
+		this.mainImageWidth = this.mainImage.width;
 	}
 
 	public hideMainImage() {
@@ -102,6 +106,17 @@ export class BrowserComponent implements OnInit {
 		width = ref.clientWidth;
 
 		this.mainImage = this.images.getImage(index, width, height);
+
+		if (this.mainImage.v) {
+			//Videos don't fire an onload
+			this.mainImageHeight = this.mainImage.height;
+			this.mainImageWidth = this.mainImage.width;
+
+			//Required if a video is already playing
+			if (this.domVideo) {
+				this.domVideo.nativeElement.load();
+			}
+		}
 	}
 
 	public prevMain() {

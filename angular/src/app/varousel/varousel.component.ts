@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input, Output, EventEmitter, OnInit, AfterViewInit } from '@angular/core';
 import { ImagesService } from '../service/images.service';
 
 @Component({
@@ -6,11 +6,12 @@ import { ImagesService } from '../service/images.service';
   templateUrl: './varousel.component.html',
   styleUrls: ['./varousel.component.scss']
 })
-export class VarouselComponent implements OnInit {
+export class VarouselComponent implements OnInit, AfterViewInit {
 	
 	@ViewChild('scroller') domScroller: ElementRef;
 	@ViewChild('content') domContent: ElementRef;
 
+	@Input() mainciindex: number;
 	@Output() selectedThumb: EventEmitter<any> = new EventEmitter();
 
 	//This is set to the total height of the content we are scrolling through
@@ -28,6 +29,15 @@ export class VarouselComponent implements OnInit {
 
 	public ngOnInit() {
 		this.reset();
+	}
+
+	public ngAfterViewInit() {
+		if (this.mainciindex) {
+			let left = this.images.getThumbnailLeft(this.mainciindex);
+			if (left) {
+				this.domScroller.nativeElement.scrollTop = left;
+			}
+		}
 	}
 	
 	public reset() {

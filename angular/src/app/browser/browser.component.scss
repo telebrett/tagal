@@ -39,6 +39,14 @@ $thumbnail-height: 150px;
 	button {
 		display:block;
 		width:100%;
+		text-align:left;
+	}
+
+	.dropdown-toggle:after {
+		position:absolute;
+		right:0.255em;
+		top:0.35em;
+		font-size:2em;
 	}
 }
 

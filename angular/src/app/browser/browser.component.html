@@ -13,7 +13,7 @@
 						<a *ngFor="let subtag of tag.tags" class="dropdown-item" href="#" (click)="selectTag(subtag)">{{subtag.label}}</a>
 					</div>
 				</div>
-				<button *ngIf="! tag.tags" type="button" class="btn btn-sm btn-secondary mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
+				<button *ngIf="! tag.tags" type="button" class="btn btn-sm {{tag.primary ? 'btn-primary' : 'btn-secondary'}} mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
 			</ng-container>
 	  </div>
 
@@ -26,8 +26,8 @@
 						<button type="button" class="btn btn-primary" (click)="nextMain()">&gt;</button>
 						<button type="button" class="btn btn-primary" (click)="hideMainImage()">X</button>
 					</div>
-					<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImage.height" [width]="mainImage.width" (load)="mainImageLoaded()" />
-					<video *ngIf="mainImage && mainImage.v" controls="controls" autoplay="autoplay" name="media" [height]="mainImage.height" [width]="mainImage.width">
+					<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImageHeight" [width]="mainImageWidth" (load)="mainImageLoaded()" />
+					<video *ngIf="mainImage && mainImage.v" #video controls="controls" autoplay="autoplay" name="media" [height]="mainImageHeight" [width]="mainImageWidth">
 						<source src="{{mainImage.src}}" />
 					</video>
 				</div>
@@ -37,7 +37,7 @@
 			</div>
 			<ng-container *ngIf="! mainImage">
 				<app-map      *ngIf="isMapMode"  #map (selectedThumb)="selectTagHideMap($event)" (selectedPoint)="selectTagHideMap($event)"></app-map>
-				<app-varousel *ngIf="!isMapMode" #varousel (selectedThumb)="viewImageFromThumb($event)"></app-varousel>
+				<app-varousel *ngIf="!isMapMode" #varousel [mainciindex]="mainciindex" (selectedThumb)="viewImageFromThumb($event)"></app-varousel>
 			</ng-container>
 		</div>
 	</div>
