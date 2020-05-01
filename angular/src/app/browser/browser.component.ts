@@ -10,6 +10,7 @@ import { VarouselComponent } from '../varousel/varousel.component';
  * TODO - Move the position of the previous, next buttons - they jump around
  *      - Don't change the width of the current main image until after it loads
  *      - Change the __videos__tag label in the UI
+ *      - When closing the main image, set the varousel scrollTop so that the last main image was being viewed
  *
  */
 
