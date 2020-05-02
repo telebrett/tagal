@@ -19,6 +19,12 @@ use IPC::Open3;
 use POSIX qw/:sys_wait_h floor/;
 use String::ShellQuote qw(shell_quote);
 
+use IPC::Cmd qw/can_run/;
+
+die "exiftool is required" unless can_run('exiftool');
+die "ffmpeg is required" unless can_run('ffmpeg');
+die "apngasm is required" unless can_run('apngasm');
+
 use Config::IniFiles;
 tie my %config, 'Config::IniFiles',(-file=>abs_path(dirname(abs_path($0)) . '/../config.ini'));
 
