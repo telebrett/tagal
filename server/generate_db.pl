@@ -111,7 +111,7 @@ sub get_date_functions {
 }
 
 sub build_db {
-	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{},points=>{}};
+	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{}};
 
 	my @SQL_TAGS_BIND;
 	my @SQL_IMAGES_BIND;
@@ -259,13 +259,15 @@ sub build_db {
 
 		if ($image->{LAT} && $image->{LNG}) {
 
-			my $point = $image->{LNG} . ':' . $image->{LAT};
+			my $point_tag = '__' . $image->{LNG} . ':' . $image->{LAT} . '__';
 
-			if (! defined $data->{points}->{$point}) {
-				$data->{points}->{$point} = [];
+			if (! defined $data->{tags}->{$point_tag}) {
+				$data->{tags}->{$point_tag} = [];
+				$data->{tagmetadata}->{$point_tag} = {type => 'point', y => $image->{LAT}, x => $image->{LNG}};
+
 			}
 
-			push @{$data->{points}->{$point}}, $image->{ID};
+			push @{$data->{tags}->{$point_tag}}, $image->{ID};
 		}
 
 	}
