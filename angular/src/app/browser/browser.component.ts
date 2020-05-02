@@ -27,6 +27,7 @@ export class BrowserComponent implements OnInit {
 
 	@ViewChild('main') domMain: ElementRef;
 	@ViewChild('video') domVideo: ElementRef;
+	@ViewChild('exif') domExif: ElementRef;
 
 	public carouselWidth = 0;
 
@@ -45,6 +46,7 @@ export class BrowserComponent implements OnInit {
 	public windowThumbs = [];
 
 	public mainImage;
+	public mainImageExif;
 	public mainciindex;
 
 	public isMapMode = false;
@@ -64,7 +66,6 @@ export class BrowserComponent implements OnInit {
 
 	public toggleMap() {
 		this.isMapMode = ! this.isMapMode;
-		this.mainImage = this.mainciindex = null;
 		this.reset();
 	}
 
@@ -76,6 +77,7 @@ export class BrowserComponent implements OnInit {
 
 	public hideMainImage() {
 		this.mainImage = null;
+		this.mainImageExif = null;
 	}
 
 	public viewImageFromThumb(thumb) {
@@ -127,17 +129,38 @@ export class BrowserComponent implements OnInit {
 		this.viewImageFromIndex(this.mainciindex + 1);
 	}
 
-	public download() {
-	}
+	public toggleExifData() {
+		if (this.mainImageExif) {
+			this.mainImageExif = false;
+		} else {
 
-	//public download() : Observable<any> {
-	//	return this.images.download(this.mainImage.src);
-	//}
+			this.images.exifdata(this.mainciindex).subscribe((result) => {
+				this.mainImageExif = result.pop();
+
+				let removeTags = ['SourceFile', 'Directory', 'FileAccessDate', 'FileInodeChangeDate' ,'FileModifyDate', 'FileName', 'FilePermissions', 'FileNumber', 'SourceFile'];
+
+				for (let tag of removeTags) {
+					delete this.mainImageExif[tag];
+				}
+
+				this.domExif.nativeElement.style.top = '38px';
+
+				let height = this.domMain.nativeElement.clientHeight;
+				height -= 38;
+				height -= 150;
+
+				this.domExif.nativeElement.style.height = height + 'px';
+			});
+
+		}
+	}
 
 	private reset() {
 
 		this.menuTags = this.images.getRemainingTags();
 		this.currentTags = this.images.getCurrentTags();
+
+		this.mainImage = this.mainciindex = this.mainImageExif = null;
 
 		if (this.isMapMode && this.map) {
 			this.map.reset();

@@ -13,6 +13,8 @@ import { MapComponent } from './map/map.component';
 import { CarouselComponent } from './carousel/carousel.component';
 import { VarouselComponent } from './varousel/varousel.component';
 
+import { DeCamelCase } from './tools/decamelcase-pipe';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -20,14 +22,15 @@ import { VarouselComponent } from './varousel/varousel.component';
     HeaderComponent,
     MapComponent,
     CarouselComponent,
-    VarouselComponent
+    VarouselComponent,
+    DeCamelCase
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-		HttpClientModule,
-		FileSaverModule,
-		NgbModule
+    HttpClientModule,
+    FileSaverModule,
+    NgbModule
   ],
   providers: [],
   bootstrap: [AppComponent]

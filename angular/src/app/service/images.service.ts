@@ -85,8 +85,14 @@ export class ImagesService {
 		}));
 	}
 
-	public download(src: string) : Observable<any> {
-		return this.http.get(src);
+	public exifdata(ciindex: any) : Observable<any> {
+
+		let image = this.images[this.currentImages[ciindex]];
+
+		let exif_url = environment.imageSource + image.p + '/.exif/' + image.f + '.json';
+
+		return this.http.get(exif_url);
+
 	}
 
 	public getRemainingTags() {

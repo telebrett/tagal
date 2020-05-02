@@ -20,7 +20,7 @@
 		<div id="main" #main>
 			<div *ngIf="mainImage">
 				<div id="image">
-					<div class="controls">
+					<div class="controls btn-group">
 						<button type="button" class="btn btn-primary"
 							fileSaver
 							[fileName]="mainImage.name"
@@ -28,9 +28,20 @@
 							>D</button>
 						<button type="button" class="btn btn-primary" (click)="prevMain()">&lt;</button>
 						<button type="button" class="btn btn-primary" (click)="nextMain()">&gt;</button>
+						<button type="button" class="btn btn-primary" (click)="toggleExifData()">I</button>
 						<button type="button" class="btn btn-primary" (click)="hideMainImage()">X</button>
 					</div>
-					<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImageHeight" [width]="mainImageWidth" (load)="mainImageLoaded()" />
+					<div #exif class="exif" [ngStyle]="{'right.px': mainImageExif ? '0' : '-350'}">
+						<div class="content">
+							<table>
+								<tr *ngFor="let item of mainImageExif | keyvalue">
+									<td>{{item.key | decamelcase}}</td>
+									<td>{{item.value}}</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+					<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImageHeight" [width]="mainImageWidth" (load)="mainImageLoaded()" (click)="hideMainImage()" />
 					<video *ngIf="mainImage && mainImage.v" #video controls="controls" autoplay="autoplay" name="media" [height]="mainImageHeight" [width]="mainImageWidth">
 						<source src="{{mainImage.src}}" />
 					</video>
