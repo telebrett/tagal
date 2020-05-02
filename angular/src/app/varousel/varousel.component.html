@@ -1,0 +1,16 @@
+<div #scroller class="varousel" (scroll)="scroll()">
+ <div #content class="content" [ngStyle]="{'height.px': varouselHeight}">
+  <div class="window" #window [ngStyle]="{'marginTop.px':windowTop, 'height.px':windowHeight, 'width.px':windowWidth}">
+ 	<div *ngFor="let thumb of thumbs" class="divthumb" [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}">
+ 		<ng-container *ngIf="thumb.heading; then vheading; else vthumb"></ng-container>
+ 		<ng-template #vheading>
+ 			<h5 (click)="debugReport($event)">{{thumb.heading}}</h5>
+ 		</ng-template>
+ 		<ng-template #vthumb>
+ 			<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="open(thumb)" />
+ 			<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
+ 		</ng-template>
+ 	</div>
+  </div>
+ </div>
+</div>

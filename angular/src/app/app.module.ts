@@ -9,13 +9,17 @@ import { HeaderComponent } from './header/header.component';
 
 import {HttpClientModule} from '@angular/common/http';
 import { MapComponent } from './map/map.component';
+import { CarouselComponent } from './carousel/carousel.component';
+import { VarouselComponent } from './varousel/varousel.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     BrowserComponent,
     HeaderComponent,
-    MapComponent
+    MapComponent,
+    CarouselComponent,
+    VarouselComponent
   ],
   imports: [
     BrowserModule,

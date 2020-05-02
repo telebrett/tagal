@@ -1,0 +1,33 @@
+.varousel {
+	height:100%;
+	width:100%;
+	overflow-y:auto;
+	position:relative;
+}
+
+.window {
+	position:absolute;
+	top:0px;
+	width:100%;
+	overflow-y:hidden;
+	overflow-x:hidden;
+}
+
+.window h5 {
+	border-bottom:1px solid black;
+	font-size:1em;
+	height:25px;
+	margin:0px;
+	padding:0px;
+}
+
+.window img {
+	border:1px solid black;
+}
+
+.divthumb {
+	//margin:0px;
+	margin:5px;
+	float:left;
+}
+

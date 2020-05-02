@@ -52,50 +52,10 @@ $thumbnail-height: 150px;
 	padding-bottom:$thumbnail-height;
 }
 
-#main.vertical {
-	overflow-y:auto;
-}
-
 #main.vertical.hideThumbs {
 	overflow-y:hidden;
 }
 
-#main.vertical .controls {
-	position:absolute;
-	right:0px;
-	top:0px;
-	z-index:2;
-}
-
-.divthumb {
-	//margin:0px;
-	margin:5px;
-	float:left;
-}
-
-#verticalWindow {
-	position:absolute;
-	top:0px;
-	width:100%;
-	overflow-y:hidden;
-	overflow-x:hidden;
-}
-
-#verticalWindow h5 {
-	border-bottom:1px solid black;
-	font-size:1em;
-	height:25px;
-	margin:0px;
-	padding:0px;
-}
-
-#verticalWindow img {
-	border:1px solid black;
-}
-
-.hideThumbs #verticalWindow {
-	visibility:hidden;
-}
 
 div.reportblock {
 	border:1px solid black;
@@ -107,13 +67,7 @@ div.reportblock {
 	position:absolute;
 	bottom:0px;
 	width:100%;
-	overflow-x:auto;
 	height:$thumbnail-height;
-	border-top:1px solid black;
-}
-
-#thumbnails img {
-	border-right:1px solid black;
 }
 
 #image {
@@ -130,4 +84,11 @@ div.reportblock {
 		background-image:url('/assets/Spinner-1s-200px.png');
 		background-position:center;
 		background-repeat:no-repeat;
-	}
+}
+
+#main .controls {
+	position:absolute;
+	right:0px;
+	top:0px;
+	z-index:2;
+}

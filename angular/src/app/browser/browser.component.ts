@@ -2,11 +2,15 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 import { ImagesService } from '../service/images.service';
 
-import { MapComponent } from '../map/map.component';
+import { MapComponent }      from '../map/map.component';
+import { CarouselComponent } from '../carousel/carousel.component';
+import { VarouselComponent } from '../varousel/varousel.component';
 
 /*
  * TODO - Move the position of the previous, next buttons - they jump around
  *      - Don't change the width of the current main image until after it loads
+ *      - Change the __videos__tag label in the UI
+ *
  */
 
 @Component({
@@ -16,16 +20,14 @@ import { MapComponent } from '../map/map.component';
 })
 export class BrowserComponent implements OnInit {
 
-	@ViewChild('thumbwidth') domThumbWidth: ElementRef;
-	@ViewChild('thumbnails') domThumbnails: ElementRef;
-	@ViewChild('mainimage') domMainImage: ElementRef;
-	@ViewChild('verticalmainimage') domVerticalMainImage: ElementRef;
+	//@ViewChild('carousel') domCarousel: ElementRef;
+	@ViewChild('map')      map     : MapComponent;
+	@ViewChild('carousel') carousel: CarouselComponent;
+	@ViewChild('varousel') varousel: VarouselComponent;
 
 	@ViewChild('main') domMain: ElementRef;
-	@ViewChild('verticalthumbs') domVerticalThumbs: ElementRef;
 
-	public thumbnailWidth = '0px';
-	public thumbnailLeft = '0px';
+	public carouselWidth = 0;
 
 	public thumbnailHeight = 0;
 	public thumbnailTop = 0;
@@ -39,16 +41,13 @@ export class BrowserComponent implements OnInit {
 	public windowThumbs = [];
 
 	public mainImage;
-	private mainciindex;
+	public mainciindex;
 
-	public isVerticalView = true;
 	public isMapMode = false;
 
 	public mainImageLoading = false;
 
 	private scrollTimeout;
-
-	public currentPoints;
 
 	constructor(private images: ImagesService) { }
 
@@ -61,6 +60,8 @@ export class BrowserComponent implements OnInit {
 
 	public toggleMap() {
 		this.isMapMode = ! this.isMapMode;
+		this.mainImage = this.mainciindex = null;
+		this.reset();
 	}
 
 	public mainImageLoaded() {
@@ -95,16 +96,9 @@ export class BrowserComponent implements OnInit {
 		let height;
 		let width;
 
-		if (this.isVerticalView) {
-			ref = this.domVerticalMainImage.nativeElement;
-			height = ref.parentNode.clientHeight
-			width = ref.parentNode.clientWidth;
-			ref.style.marginTop = this.domMain.nativeElement.scrollTop + 'px';
-		} else {
-			ref = this.domMainImage.nativeElement;
-			height = ref.clientHeight;
-			width = ref.clientWidth;
-		}
+		ref = this.domMain.nativeElement;
+		height = ref.clientHeight - 150; //Horizontal thumbnail height
+		width = ref.clientWidth;
 
 		this.mainImage = this.images.getImage(index, width, height);
 	}
@@ -129,85 +123,40 @@ export class BrowserComponent implements OnInit {
 		this.menuTags = this.images.getRemainingTags();
 		this.currentTags = this.images.getCurrentTags();
 
-		if (this.isMapMode) {
-			this.currentPoints = this.images.getCurrentPoints();
+		if (this.isMapMode && this.map) {
+			this.map.reset();
+		} else if(this.varousel) {
+			this.varousel.reset();
 		}
 
-		if (this.isVerticalView) {
+	}
 
-			let maxWidth = this.domMain.nativeElement.clientWidth - 30;
+	public selectTagHideMap(event: any) {
 
-			this.thumbnailHeight = this.images.setvblocks(25, 200, maxWidth);
+		this.isMapMode = false;
+		this.selectTag(event.tag, event.imageIndex);
 
-			this.thumbnailWindowWidth = maxWidth; 
+	}
 
-			this.domMain.nativeElement.scrollTop = 0;
-			this.getWindowThumbs();
+	public selectTag(tag: any, imageIndex?: number) {
 
+		this.mainImage = null;
+		if (tag.index) {
+			this.images.selectTag(tag.index);
 		} else {
-			let width = this.images.setThumbnailHeights(this.domThumbWidth.nativeElement.parentElement.clientHeight);
-			this.thumbnailWidth = width + 'px';
-			this.thumbnailLeft = '0px';
-			this.domThumbWidth.nativeElement.parentElement.scrollLeft = 0;
-
-			this.getWindowThumbs();
+			this.images.selectTag(tag);
 		}
+		this.reset();
 
+		if (imageIndex) {
 
-	}
-
-	public thumbReport(event) {
-		console.log('Block Top : ' + (event.srcElement.offsetTop + event.srcElement.offsetParent.offsetTop - 5) + ', left' + event.srcElement.offsetLeft);
-	}
-
-	public scrollThumbnails(event) {
-		//TODO - This could do a performance improvement and ONLY redo the thumbs
-		//       if we are close to the edge
-		//     - Investigate if moving to doing this in a timeout means that the browser
-		//       doesn't 'stall' waiting for this handler to return
-		this.getWindowThumbs();
-	}
-
-	public getWindowThumbs() {
-
-		if (! this.currentTags.length) {
-			return;
-		}
-
-		if (this.isVerticalView) {
-
-			if (this.scrollTimeout) {
-				clearTimeout(this.scrollTimeout);
+			let ciindex = this.images.getCurrentImageIndex(imageIndex);
+			if (ciindex !== false) {
+				this.viewImageFromIndex(ciindex);
 			}
 
-			this.scrollTimeout = setTimeout(() => {
-
-				let buffer = 3000;
-
-				let top = Math.max(0, Math.floor(this.domMain.nativeElement.scrollTop) - buffer);
-				this.windowThumbs = this.images.getThumbnailWindowByTop(top, this.domMain.nativeElement.clientHeight + buffer*2);
-
-				this.thumbnailTop = Math.round(this.windowThumbs[0].tl);
-
-				let last = this.windowThumbs[this.windowThumbs.length-1];
-				this.thumbnailWindowHeight = Math.ceil(last.tl + last.height - this.thumbnailTop + 5);
-
-				console.log('Num ' + this.windowThumbs.length + ', top ' + this.thumbnailTop + ', height ' + this.thumbnailWindowHeight + ', for ' + this.domMain.nativeElement.clientHeight);
-
-			}, 300);
-
-
-		} else {
-			let left = Math.floor(this.domThumbWidth.nativeElement.parentElement.scrollLeft);
-			this.windowThumbs = this.images.getThumbnailWindowByLeft(left, 50);
-			this.thumbnailLeft = Math.round(this.windowThumbs[0].left) + 'px';
 		}
-	}
 
-	public selectTag(tag: any) {
-		this.mainImage = null;
-		this.images.selectTag(tag.index);
-		this.reset();
 	}
 
 	public deselectTag(tag: any) {
@@ -215,6 +164,5 @@ export class BrowserComponent implements OnInit {
 		this.images.deselectTag(tag.index);
 		this.reset();
 	}
-
 
 }

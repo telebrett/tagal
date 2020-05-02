@@ -36,17 +36,8 @@ export class ImagesService {
 	 * string l  The label name, optional
 	 * object m  Metadata for the tag, note key only exists if there is metadata
 	 * object i  keys are the image indexes, value is true
-	 * object p  keys are the point indexes, value is true
 	 */
 	private tags   = [];
-
-	/**
-	 * Each element is a hash with keys
-	 * float x The longitude of the point
-	 * float y The latitude of the point
-	 * object i  keys are the image indexes, value is true
-	 */
-	private points = [];
 
 	/**
 	 * keys are the tags, values is the index for the tag
@@ -82,11 +73,6 @@ export class ImagesService {
 				let imagehash = {p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2],v:image.length>3};
 
 				this.images[i] = imagehash;
-			}
-
-			//Note, this must be done before the tags
-			for (let i in data.points) {
-				this.addPoint(i, data.points[i]);
 			}
 
 			for (let i in data.tags) {
@@ -198,6 +184,9 @@ export class ImagesService {
 
 	public getCurrentPoints() {
 
+		return [];
+		/*
+
 		let points = {};
 
 		//The point needs to be in ALL the tags
@@ -220,6 +209,8 @@ export class ImagesService {
 		}
 
 		return matchingPoints;
+	 */
+
 
 	}
 
@@ -231,11 +222,19 @@ export class ImagesService {
 
 	}
 
+	//TODO - This can probably be removed
 	public getThumbnailsByPage(pageOffset: number,count: number) {
 
 		let start_index = count * pageOffset;
 
 		return this.getThumbnailWindow(start_index, count);
+
+	}
+
+	public getThumbnailLeft(index: number) {
+		if (this.currentImages[index] && this.images[this.currentImages[index]]) {
+			return this.images[this.currentImages[index]].tl;
+		}
 
 	}
 
@@ -254,7 +253,8 @@ export class ImagesService {
 				height   : Math.round(image.th),
 				index    : this.currentImages[i],
 				left     : image.tl,
-				src      : null
+				src      : null,
+				ciindex  : i
 				//TODO - This is for admin mode - not ported yet
 				//selected : this.selected[this.currentImages[i]]
 			};
@@ -296,9 +296,19 @@ export class ImagesService {
 		return win;
 	}
 
+	public getCurrentImageIndex(imageIndex: any) {
+		let result = this.currentImages.indexOf(parseInt(imageIndex, 10));
+
+		if (result === -1) {
+			return false;
+		}
+
+		return result;
+	}
+
 	public getImageIndex(ciindex: number) {
 
-		if (ciindex < 0 || ciindex >= this.currentImages.length) {
+		if (ciindex === undefined || ciindex < 0 || ciindex >= this.currentImages.length) {
 			return false;
 		}
 
@@ -313,6 +323,10 @@ export class ImagesService {
 		let stop = top + maxHeight;
 
 		let thumbs = [];
+
+		if (this.vblocks.length == 0) {
+			return thumbs;
+		}
 
 		//Find the first vblock
 		let vblock_index = 0;
@@ -563,22 +577,10 @@ export class ImagesService {
 			this.currentImages = this.currentImages.filter(function(v){return ts[v] !== undefined});
 		}
 
-		this.currentImages.sort((a_index, b_index) => {
-			let a_o = this.images[a_index].o;
-			let b_o = this.images[b_index].o;
-
-			if (a_o == b_o) {
-				return 0;
-			} else if(a_o < b_o) {
-				return -1;
-			} else {
-				return 1;
-			}
-
-		});
-
+		this.sortCurrentImages();
 		this.setRemainingTags();
 	}
+
 
 	public deselectTag(index: number) {
 
@@ -617,6 +619,7 @@ export class ImagesService {
 			this.currentImages.push(parseInt(i));
 		}
 
+		this.sortCurrentImages();
 		this.setRemainingTags();
 	}
 
@@ -798,6 +801,63 @@ export class ImagesService {
 
 	}
 
+	public getPoints() {
+
+		let points = [];
+
+	 	if (this.currentTags.length) {
+
+			let checked_tags = {};
+
+			for (let imageIndex of this.currentImages) {
+				for (let tagIndex of Object.keys(this.images[imageIndex].t)) {
+					if (! checked_tags[tagIndex]) {
+						checked_tags[tagIndex] = true;
+
+						let tag = this.tags[tagIndex];
+
+						if (tag.m && tag.m.type == 'point') {
+							points.push(tag);
+						}
+
+					}
+				}
+
+			}
+
+		} else {
+			for (let tag of this.tags) {
+				if (tag.m && tag.m.type == 'point') {
+					points.push(tag);
+				}
+			}
+		}
+
+		return points;
+
+	}
+
+	private sortCurrentImages() {
+		this.currentImages.sort((a_index, b_index) => {
+			let a_o = this.images[a_index].o;
+			let b_o = this.images[b_index].o;
+
+			if (a_o == b_o) {
+				return 0;
+			} else if(a_o < b_o) {
+				return -1;
+			} else {
+				return 1;
+			}
+
+		});
+
+	}
+
+	public getTagIndex(tag) {
+		return this.tagIndex[tag.t];
+	}
+
 	private niceTag(tag) {
 
 		let o = {
@@ -936,6 +996,7 @@ export class ImagesService {
 
 	}
 
+	/*
 	private addPoint(pointStr: string, imageIndexes: any) {
 
 		let xy = pointStr.split(':');
@@ -953,6 +1014,7 @@ export class ImagesService {
 		this.points.push(point);
 
 	}
+ */
 
 	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
 		
@@ -975,6 +1037,7 @@ export class ImagesService {
 			}
 		}
 
+		/*
 		for (let p = 0; p < this.points.length; p++) {
 			//If the point contains any of the images that this tag also contains,
 			//add it to the tags list of points
@@ -985,6 +1048,7 @@ export class ImagesService {
 				}
 			}
 		}
+	 */
 
 		if (metadata) {
 			o['m'] = metadata;
