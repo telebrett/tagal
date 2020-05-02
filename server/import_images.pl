@@ -54,8 +54,6 @@ my $OPT_EXIFDATA = 0;
 #     - The thumbnail and animated PNG conversion use temporary files that get automatically cleaned up, add an option to leave these files alone (possibly
 #       smarter than that, manually clean them up if the code that was using that specific set of files worked)
 #     - Check timestamps, they should be being stored in the UTC timezone
-#TODO - Bug with fork mode, something wrong with the database handle
-
 Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB, 'exifdata'=>\$OPT_EXIFDATA, 'videosonly'=>\$OPT_VIDEOSONLY, 'maxprocesses=i'=>\$OPT_MAXPROCESSES);
 
 pod2usage(1) if $OPT_USAGE;
@@ -113,7 +111,7 @@ if ($fork_mode) {
 	$SIG{HUP} = sub {
 		build_camera_cache(1);
 		build_geometry_cache(1);
-		build_tags_cache(1);
+		build_tag_cache(1);
 	};
 }
 
@@ -148,13 +146,17 @@ sub build_geometry_cache {
 	if ($recent) {
 		#this only looks for items that have been added in the last 5 seconds
 		#this minimises the database lookups
-		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP()';
+		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP())';
 	}
 	my $sth = $dbh->prepare($SQL);
+	if (! $sth) {
+		die("$SQL Could not insert : " . $DBI::errstr . "\n");
+	}
+
 	$sth->execute();
 
 	if ($recent) {
-		while (my $row = $sth->fetchrow_hashref('WKT')) {
+		while (my $row = $sth->fetchrow_hashref) {
 			$geometry->{$row->{WKT}} = $row;
 		}
 	} else {
@@ -170,13 +172,13 @@ sub build_tag_cache {
 	if ($recent) {
 		#this only looks for items that have been added in the last 5 seconds
 		#this minimises the database lookups
-		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP()';
+		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP())';
 	}
 	my $sth = $dbh->prepare($SQL);
 	$sth->execute();
 
 	if ($recent) {
-		while (my $row = $sth->fetchrow_hashref('TAG')) {
+		while (my $row = $sth->fetchrow_hashref) {
 			$tags->{$row->{TAG}} = $row;
 		}
 	} else {
@@ -210,9 +212,9 @@ sub set_setting {
 
 sub get_db {
 
-	#if ($dbh) {
-	#	return $dbh;
-	#}
+	if ($dbh) {
+		return $dbh;
+	}
 
 	$database_type = $config{db}{type} || 'mysql';
 
@@ -343,12 +345,7 @@ sub import_directory {
 						next;
 					}
 
-					#$dbh = undef;
-
-					##needs a new dbh handle
-					##TODO - After changing to do the single query per directory for existing images
-					##       only call get_db when required, 
-					get_db();
+					$dbh = undef;
 
 				}
 
@@ -400,6 +397,7 @@ sub import_directory {
 						my $WKT = "POINT($longitude $latitude)";
 
 						if (not defined($geometry->{$WKT})) {
+							get_db();
 							my $sth_geo = $dbh->prepare('INSERT INTO geometry (Geometry, DateAdded) VALUES (GEOMFROMTEXT(?), UTC_TIMESTAMP())');
 							$sth_geo->execute($WKT) or die("Could not insert : " . $DBI::errstr . "\n");
 
@@ -504,6 +502,15 @@ sub import_directory {
 					}
 				}
 
+				if (defined $last_run && $file_stat->[9] > $last_run) {
+					if ($fork_mode) {
+						exit;
+					}
+
+					next;
+				}
+
+				get_db();
 				my $sth = $dbh->prepare('SELECT i.*,CASE WHEN it.ImageID IS NULL THEN 0 ELSE 1 END AS HasTags FROM image i LEFT JOIN image_tag it ON i.id = it.ImageID WHERE i.Location = ? GROUP BY i.id');
 				$sth->execute($dirpath) or warn "EXecute failed " . $sth->errstr . "\n";
 				my $row = $sth->fetchrow_hashref('NAME_uc');
