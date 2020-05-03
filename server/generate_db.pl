@@ -1,20 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
 
-
-# SELECT t.Tag, it.ImageID
-# FROM image i
-#  JOIN s3user s3 ON s3.Username = 'mpt'
-#  JOIN s3user_tag s3t ON s3t.S3UserID = s3.id
-#  JOIN image_tag s3it ON s3it.ImageID = i.id AND s3it.TagID = s3t.TagID
-# 
-#  JOIN image_tag it ON it.ImageID = i.id
-#  JOIN tag t ON t.id = it.TagID
-# 
-# 
-# ORDER BY i.DateTaken, i.id
-# ;
-
 use DBI;
 use Data::Dumper;
 use DateTime;
@@ -25,6 +11,12 @@ use File::Basename;
 use File::Spec;
 use Getopt::Long;
 use Pod::Usage;
+use File::Temp qw/tempfile/;
+use IPC::Open3;
+use IPC::Cmd qw/can_run/;
+
+die "jq is required" unless can_run('jq');
+die "sha256sum is required" unless can_run('sha256sum');
 
 use JSON::XS;
 
@@ -111,7 +103,7 @@ sub get_date_functions {
 }
 
 sub build_db {
-	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{},points=>{}};
+	my $data = {imagedir=>$IMAGEDIR,images=>{},tags=>{},tagmetadata=>{}};
 
 	my @SQL_TAGS_BIND;
 	my @SQL_IMAGES_BIND;
@@ -168,8 +160,11 @@ sub build_db {
 	}
 
 	#Note, these two statements MUST be ordered the same
-	$SQL_TAGS .= "ORDER BY i.DateTaken, i.id";
-	$SQL_IMAGES .= "ORDER BY i.DateTaken, i.id";
+	#We also want to minimise the risk of new images changing
+	#the index of an image in a previously generated database.json file
+	#Obviously if the SQL database has been purged then a mismatch is required
+	$SQL_TAGS .= "ORDER BY i.id, i.DateTaken";
+	$SQL_IMAGES .= "ORDER BY i.id, i.DateTaken";
 
 	#Note, these two statements MUST be ordered the same
 	my $sth_tags = $dbh->prepare($SQL_TAGS);
@@ -230,7 +225,6 @@ sub build_db {
 			}
 		}
 
-		#TODO - This could probably send the length of the video instead of just a bool, it could be useful in the UI
 		if ($image->{ISVIDEO}) {
 			if ($vids_tag eq '') {
 				$vids_tag = '__videos__';
@@ -259,20 +253,36 @@ sub build_db {
 
 		if ($image->{LAT} && $image->{LNG}) {
 
-			my $point = $image->{LNG} . ':' . $image->{LAT};
+			my $point_tag = '__' . $image->{LNG} . ':' . $image->{LAT} . '__';
 
-			if (! defined $data->{points}->{$point}) {
-				$data->{points}->{$point} = [];
+			if (! defined $data->{tags}->{$point_tag}) {
+				$data->{tags}->{$point_tag} = [];
+				$data->{tagmetadata}->{$point_tag} = {type => 'point', y => $image->{LAT}, x => $image->{LNG}};
+
 			}
 
-			push @{$data->{points}->{$point}}, $image->{ID};
+			push @{$data->{tags}->{$point_tag}}, $image->{ID};
 		}
 
 	}
+	
+	my ($tmp_fh, $tmp_file) = tempfile();
+	print $tmp_fh encode_json($data);
+	close $tmp_fh;
 
-	open (FILE,'>' . $OUTPUT);
-	print FILE encode_json($data);
+	my $hash_pid = open3(undef, \*HASH_OUT, undef, 'sha256sum', $tmp_file);
+	waitpid($hash_pid, 0);
+
+	my $hash_output = <HASH_OUT>;
+	#strip the filename off the end
+	$hash_output =~ s/\s+.*$//g;
+
+	open FILE, '>', $OUTPUT;
+	my $jq_pid = open3(undef, '>&FILE', undef, 'jq','. += {hash: "' . $hash_output . '"}', $tmp_file);
+	waitpid($jq_pid, 0);
 	close FILE;
+
+	unlink $tmp_file;
 
 }
 

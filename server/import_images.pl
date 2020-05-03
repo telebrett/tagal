@@ -19,6 +19,12 @@ use IPC::Open3;
 use POSIX qw/:sys_wait_h floor/;
 use String::ShellQuote qw(shell_quote);
 
+use IPC::Cmd qw/can_run/;
+
+die "exiftool is required" unless can_run('exiftool');
+die "ffmpeg is required" unless can_run('ffmpeg');
+die "apngasm is required" unless can_run('apngasm');
+
 use Config::IniFiles;
 tie my %config, 'Config::IniFiles',(-file=>abs_path(dirname(abs_path($0)) . '/../config.ini'));
 
@@ -48,13 +54,13 @@ my $OPT_IGNORELASTMOD = 0;
 my $OPT_REGENERATETHUMB = 0;
 my $OPT_VIDEOSONLY = 0;
 my $OPT_MAXPROCESSES = 1;
+my $OPT_EXIFDATA = 0;
 
 #TODO - DEBUG option, print out the raw values being executed in call_system, call_system should also output the STDERR
 #     - The thumbnail and animated PNG conversion use temporary files that get automatically cleaned up, add an option to leave these files alone (possibly
 #       smarter than that, manually clean them up if the code that was using that specific set of files worked)
 #     - Check timestamps, they should be being stored in the UTC timezone
-
-Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB, 'videosonly'=>\$OPT_VIDEOSONLY, 'maxprocesses=i'=>\$OPT_MAXPROCESSES);
+Getopt::Long::GetOptions('man'=>\$OPT_MAN,'help'=>\$OPT_USAGE,'dir:s'=>\$OPT_STARTDIR,'ignorelastmod'=>\$OPT_IGNORELASTMOD,'thumbnails'=>\$OPT_REGENERATETHUMB, 'exifdata'=>\$OPT_EXIFDATA, 'videosonly'=>\$OPT_VIDEOSONLY, 'maxprocesses=i'=>\$OPT_MAXPROCESSES);
 
 pod2usage(1) if $OPT_USAGE;
 pod2usage(-exitval=>0,-verbose=>2) if ($OPT_MAN);
@@ -69,6 +75,10 @@ if ($OPT_STARTDIR) {
 
 if ($OPT_REGENERATETHUMB) {
 	print "Will regenerate thumbnails\n";
+}
+
+if ($OPT_EXIFDATA) {
+	print "Will regenerate exif metadata\n";
 }
 
 
@@ -87,9 +97,6 @@ if ($OPT_IGNORELASTMOD) {
 }
 
 my $now = DateTime->now(time_zone=>$tz);
-
-my $build_tags = 1;
-
 
 my $count = 0;
 
@@ -110,7 +117,7 @@ if ($fork_mode) {
 	$SIG{HUP} = sub {
 		build_camera_cache(1);
 		build_geometry_cache(1);
-		build_tags_cache(1);
+		build_tag_cache(1);
 	};
 }
 
@@ -145,13 +152,17 @@ sub build_geometry_cache {
 	if ($recent) {
 		#this only looks for items that have been added in the last 5 seconds
 		#this minimises the database lookups
-		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP()';
+		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP())';
 	}
 	my $sth = $dbh->prepare($SQL);
+	if (! $sth) {
+		die("$SQL Could not insert : " . $DBI::errstr . "\n");
+	}
+
 	$sth->execute();
 
 	if ($recent) {
-		while (my $row = $sth->fetchrow_hashref('WKT')) {
+		while (my $row = $sth->fetchrow_hashref) {
 			$geometry->{$row->{WKT}} = $row;
 		}
 	} else {
@@ -167,13 +178,13 @@ sub build_tag_cache {
 	if ($recent) {
 		#this only looks for items that have been added in the last 5 seconds
 		#this minimises the database lookups
-		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP()';
+		$SQL .= ' WHERE DateAdded > TIMESTAMPADD(SECOND, -5, UTC_TIMESTAMP())';
 	}
 	my $sth = $dbh->prepare($SQL);
 	$sth->execute();
 
 	if ($recent) {
-		while (my $row = $sth->fetchrow_hashref('TAG')) {
+		while (my $row = $sth->fetchrow_hashref) {
 			$tags->{$row->{TAG}} = $row;
 		}
 	} else {
@@ -206,6 +217,10 @@ sub set_setting {
 }
 
 sub get_db {
+
+	if ($dbh) {
+		return $dbh;
+	}
 
 	$database_type = $config{db}{type} || 'mysql';
 
@@ -271,7 +286,6 @@ sub import_directory {
 
 			if ($file =~ m/\.jpe?g$/i || $file =~ m/\.(mp4|avi|mov|m4v|mkv)$/i){
 
-
 				my $is_movie = 1;
 
 				if ($file =~ m/\.jpe?g$/i) {
@@ -281,12 +295,9 @@ sub import_directory {
 
 				my $file_stat = stat($fullpath);
 
-				if (defined $last_run && $file_stat->[9] > $last_run){
-					#nothing changed since last run
-					next;
-				}
-
 				my $thumbnail = $fulldir . '/.thumb/' . $file;
+				my $exifdata  = $fulldir . '/.exif/' . $file . '.json';
+
 				my $preview;
 
 				if ($is_movie) {
@@ -297,12 +308,22 @@ sub import_directory {
 					$preview .= '.png';
 				}
 
-				if (not $build_tags and -e $thumbnail && (! $is_movie || -e $preview)){
-					next;
+				if (! $OPT_REGENERATETHUMB && ! $OPT_EXIFDATA) {
+					if (
+						defined $last_run && $file_stat->[9] > $last_run
+						&& -e $thumbnail && -e $exifdata && (! $is_movie || -e $preview)
+					){
+						#nothing changed since last run and no thumbnails or exif data to run
+						next;
+					}
 				}
 
 				if (! -d $fulldir . '/.thumb'){
 					mkdir $fulldir . '/.thumb';
+				}
+
+				if (! -d $fulldir . '/.exif'){
+					mkdir $fulldir . '/.exif';
 				}
 
 				if ($is_movie && ! -d $fulldir . '/.preview'){
@@ -326,13 +347,11 @@ sub import_directory {
 					}
 
 					if ($child != 0) {
+						#We are in the parent process
 						next;
 					}
 
-					#needs a new dbh handle
-					#TODO - After changing to do the single query per directory for existing images
-					#       only call get_db when required, 
-					get_db();
+					$dbh = undef;
 
 				}
 
@@ -384,6 +403,7 @@ sub import_directory {
 						my $WKT = "POINT($longitude $latitude)";
 
 						if (not defined($geometry->{$WKT})) {
+							get_db();
 							my $sth_geo = $dbh->prepare('INSERT INTO geometry (Geometry, DateAdded) VALUES (GEOMFROMTEXT(?), UTC_TIMESTAMP())');
 							$sth_geo->execute($WKT) or die("Could not insert : " . $DBI::errstr . "\n");
 
@@ -411,6 +431,7 @@ sub import_directory {
 				}
 
 				my $force_thumb = $OPT_REGENERATETHUMB;
+				my $force_exif  = $OPT_EXIFDATA;
 				my $force_preview = $OPT_REGENERATETHUMB;
 
 				if (! $force_thumb && -e $thumbnail) {
@@ -419,6 +440,15 @@ sub import_directory {
 					if ($thumb_stat->[9] < $file_stat->[9]) {
 						#thumbnail lastmoddate is earlier than the file last mod date, most likely due to tags, but regenerate the thumbnail anyway
 						$force_thumb = 1;
+					}
+				}
+
+				if (! $force_exif && -e $exifdata) {
+					my $exif_stat = stat($exifdata);
+
+					if ($exif_stat->[9] < $file_stat->[9]) {
+						#exifdata lastmoddate is earlier than the file last mod date, most likely due to tags, but regenerate the exifdata anyway
+						$force_exif = 1;
 					}
 				}
 
@@ -432,6 +462,14 @@ sub import_directory {
 				}
 
 				my $thumb_exists = -e $thumbnail;
+
+				if ($force_exif || ! -e $exifdata) {
+					#$info is not really a hash, and exiftool doesn't support writing to json files
+					open EXIF, '>', $exifdata;
+					my $exif_pid = open3(undef, '>&EXIF', undef, 'exiftool', '--ThumbnailImage', '-json', $fullpath);
+					waitpid($exif_pid, 0);
+					close EXIF;
+				}
 
 				if ($is_movie) {
 					my $preview_exists = -e $preview;
@@ -470,6 +508,15 @@ sub import_directory {
 					}
 				}
 
+				if (defined $last_run && $file_stat->[9] > $last_run) {
+					if ($fork_mode) {
+						exit;
+					}
+
+					next;
+				}
+
+				get_db();
 				my $sth = $dbh->prepare('SELECT i.*,CASE WHEN it.ImageID IS NULL THEN 0 ELSE 1 END AS HasTags FROM image i LEFT JOIN image_tag it ON i.id = it.ImageID WHERE i.Location = ? GROUP BY i.id');
 				$sth->execute($dirpath) or warn "EXecute failed " . $sth->errstr . "\n";
 				my $row = $sth->fetchrow_hashref('NAME_uc');
