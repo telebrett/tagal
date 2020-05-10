@@ -9,6 +9,7 @@ import { VarouselComponent } from '../varousel/varousel.component';
 
 /*
  * TODO - Handle window resize
+ *      - Is there any reason to have the "Point" tag dropdown?
  *
  * BUGS - Doesn't always happen, but if you click quickly through the images using the "next" button, sometimes it doesn't load the final image
  */
@@ -50,6 +51,11 @@ export class BrowserComponent implements OnInit {
 	public mainciindex;
 
 	public isMapMode = false;
+	public showTools = false;
+
+	public selectMode = false;
+	public viewingSelected = false;
+	public numSelected;
 
 	public mainImageLoading = false;
 
@@ -60,8 +66,17 @@ export class BrowserComponent implements OnInit {
 	ngOnInit() {
 		this.images.loadImages().subscribe(() => {
 		 	this.menuTags = this.images.getRemainingTags();
+			this.numSelected = this.images.getNumSelected();
+			this.selectMode = this.images.storageGet('selectMode');
 		});
-		
+
+		this.showTools = this.images.hasAPI();
+	}
+
+	public toggleSelectMode() {
+		this.selectMode = ! this.selectMode;
+		this.images.storageSet('selectMode', this.selectMode);
+		//TODO - Should we hide the map when select mode is on?
 	}
 
 	public toggleMap() {
@@ -80,14 +95,44 @@ export class BrowserComponent implements OnInit {
 		this.mainImageExif = null;
 	}
 
-	public viewImageFromThumb(thumb) {
-	
-		//videos don't trigger a 'load' event
-		this.mainImageLoading = ! thumb.v;
+	public clickThumb(thumb) {
 
-		this.viewImageFromIndex(thumb.ciindex);
+		if (this.selectMode) {
+			this.images.toggleSelectImageFromIndex(thumb);
+		} else {
+			//videos don't trigger a 'load' event
+			this.mainImageLoading = ! thumb.v;
+
+			this.viewImageFromIndex(thumb.ciindex);
+		}
 	}
-	
+
+	public selectAll() {
+		//If we are "viewing selected" than "select" actually deselects
+		this.setSelectAll(this.viewingSelected ? false : true);
+		this.numSelected = this.images.getNumSelected();
+	}
+
+	public selectNone() {
+		//If we are "viewing selected" than "deselect" actually selects
+		this.setSelectAll(this.viewingSelected ? true : false);
+		this.numSelected = this.images.getNumSelected();
+	}
+
+	private setSelectAll(select: boolean) {
+		this.images.setCurrentImagesSelect(select);
+
+		if (this.varousel) {
+			this.varousel.setThumbsSelect(select);
+		}
+
+		if (this.carousel) {
+			this.carousel.setThumbsSelect(select);
+		}
+
+		this.numSelected = this.images.getNumSelected();
+	}
+
 	public viewImageFromIndex(ciindex: number) {
 
 		let index = this.images.getImageIndex(ciindex);
@@ -119,6 +164,12 @@ export class BrowserComponent implements OnInit {
 				this.domVideo.nativeElement.load();
 			}
 		}
+	}
+
+	public viewSelected() {
+		this.viewingSelected = true;
+		this.images.setCurrentImagesToSelected();
+		this.reset();
 	}
 
 	public prevMain() {
@@ -179,6 +230,8 @@ export class BrowserComponent implements OnInit {
 
 	public selectTag(tag: any, imageIndex?: number) {
 
+		this.viewingSelected = false;
+
 		this.mainImage = null;
 		if (tag.index !== undefined) {
 			this.images.selectTag(tag.index);
@@ -200,6 +253,7 @@ export class BrowserComponent implements OnInit {
 
 	public deselectTag(tag: any) {
 		this.mainImage = null;
+		this.viewingSelected = false;
 		this.images.deselectTag(tag.index);
 		this.reset();
 	}

@@ -1,10 +1,43 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import {Observable} from "rxjs";
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 
+import {LOCAL_STORAGE, StorageService } from 'ngx-webstorage-service';
+
+/*
+TODO ADMIN MODE
+- Use local storage, but only for the selection, changes will be applied on the server
+  BUT, maybe we could do the following
+  - Generate a JSON DB which is ONLY based off what is in the images (ie exclude rows which IsNew is true and include the rows marked as IsDeleted)
+	- Generate a JSON DB which is based off what is in the database (include rows which IsNew is true and ignore the rows marked as IsDeleted)
+
+- Select images
+- Add a special tag on the left to "Show selected"
+- Then add tools for
+  - Apply union of tags to all selected (eg if some have A, and some have B, after this applies, then ALL will have 
+  - Remove tag X from all
+	- Add tag X to all
+  - Rotate 90 CW / CCW (this would operate on the images files directly)
+ - Right click on a tag to edit it's metadata
+   - Geocode - note that a Point could have multiple tags
+	 - IsPerson
+
+ REST API CHANGES
+ - Add a "build actual images" db - this would return a failure if ANY image record is marked as "dirty"
+ - Commit "dirty"
+ - Rotate images (only handle a single image)
+
+ DB changes
+ - Remove "IsDirty" from the image
+ - Add "IsDeleted" to image_tag - any records for an image marked as IsDeleted will be deleted if import_images.pl / write_images.pl is run (ie when the database is 'synced' to it's image)
+ - Change "Written" in image_tag to "IsNew"
+*/
+
+const STORAGE_HASH     = 'dbhash';
+const STORAGE_SELECTED = 'selected';
 
 @Injectable({
   providedIn: 'root'
@@ -13,13 +46,14 @@ export class ImagesService {
 
 	/**
 	 * Each element is a hash with keys
+	 * int     id the database id of the image
 	 * string  p  Image path, relative to /pictures
 	 * int     o  sort order of the image
 	 * string  f  Image filename eg 'foo.jpg'
 	 * float   r  The ratio of height to width TODO width to height?
 	 * object  t  hash of tag indexes - the tags that have possibly been added / removed
 	 * object  ot hash of tag indexes - this is the list of tags that the image has on disk
-	 * bool    s  True if the image is currently marked as selected
+	 * bool    s  True if the image is currently marked as selected (key may not exist)
 	 * bool    v  True if the image is actually a video.
 	 *
 	 * The following keys are set by setThumbnails and will change - eg tl
@@ -55,7 +89,9 @@ export class ImagesService {
 
 	private vblocks = [];
 
-	constructor(private http: HttpClient) { 
+	private numSelected = 0;
+
+	constructor(private http: HttpClient, @Inject(LOCAL_STORAGE) private storage: StorageService) { 
 	}
 
 	public loadImages() : Observable<boolean> {
@@ -64,25 +100,78 @@ export class ImagesService {
 
 		return this.http.get(database_source).pipe(map((data:any) => {
 
-			for (let i in data.images) {
+			let si = 0;
+			let image_indexes = {};
+			for (let image_id in data.images) {
 
-				let image = data.images[i];
+				let image = data.images[image_id];
 
 				let path = image[0].match(/^(.*)\/(.*)$/);
 
-				let imagehash = {p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2],v:image.length>3};
+				let imagehash = {id:image_id, p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2],v:image.length>3};
 
-				this.images[i] = imagehash;
+				image_indexes[image_id] = si;
+
+				//The json file is keyed by the image database id
+				//But we use arrays instead of hashes as array lookups are significantly faster than hash lookups
+				this.images[si++] = imagehash;
 			}
 
-			for (let i in data.tags) {
-				this.addTag(i, data.tags[i], data.tagmetadata[i], true);
+			for (let tag_index in data.tags) {
+
+				//Map the json indexes to our array indexes
+				let local_image_indexes = [];
+				for (let image_id of data.tags[tag_index]) {
+					local_image_indexes.push(image_indexes[image_id]);
+				}
+
+				this.addTag(tag_index, local_image_indexes, data.tagmetadata[tag_index], true);
 			}
 
 			this.setRemainingTags();
 
+			if (this.hasAPI()) {
+				let mismatched_hash = false;
+
+				if (this.storage.has(STORAGE_HASH)) {
+					this.storage.set(STORAGE_HASH, data.hash);
+				} else {
+					let hash = this.storage.get(STORAGE_HASH);
+					if (hash != data.hash) {
+						mismatched_hash = true;
+					}
+				}
+
+				//TODO - What to do on mismatched hash
+				if (this.storage.has(STORAGE_SELECTED)) {
+					let selected = this.storage.get(STORAGE_SELECTED);
+
+					for (let index in selected) {
+						this.images[index].s = true;
+						this.numSelected++;
+					}
+				}
+			}
+
 			return true;
 		}));
+
+	}
+
+	public storageSet(key: string, value: any) {
+		this.storage.set(key, value);
+	}
+
+	public storageGet(key: string) {
+		return this.storage.get(key);
+	}
+
+	public hasAPI() : boolean {
+		if (environment.api) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public exifdata(ciindex: any) : Observable<any> {
@@ -268,9 +357,8 @@ export class ImagesService {
 				index    : this.currentImages[i],
 				left     : image.tl,
 				src      : null,
-				ciindex  : i
-				//TODO - This is for admin mode - not ported yet
-				//selected : this.selected[this.currentImages[i]]
+				ciindex  : i,
+				s        : image.s
 			};
 
 			let src = image.p;
@@ -328,6 +416,59 @@ export class ImagesService {
 
 		return this.currentImages[ciindex];
 
+	}
+
+	public getNumSelected() {
+		return this.numSelected;
+	}
+
+	public setCurrentImagesSelect(select: boolean) {
+
+		for (let index of this.currentImages) {
+			this.images[index].s = select;
+		}
+
+		if (select) {
+			this.numSelected += this.currentImages.length;
+		} else {
+			this.numSelected -= this.currentImages.length;
+		}
+
+	}
+
+	public toggleSelectImageFromIndex(thumb) {
+
+		let index = this.getImageIndex(thumb.ciindex);
+
+		if (! index) {
+			return;
+		}
+
+		let image = this.images[index];
+
+		let hash = {};
+
+		if (this.storage.has(STORAGE_SELECTED)) {
+			hash = this.storage.get(STORAGE_SELECTED);
+		}
+
+		if (image.s) {
+			delete hash[index];
+			image.s = false;
+		} else {
+			hash[index] = image.s = true;
+			image.s = true;
+		}
+
+		thumb.s = image.s;
+
+		if (thumb.s) {
+			this.numSelected++;
+		} else {
+			this.numSelected--;
+		}
+
+		this.storage.set(STORAGE_SELECTED, hash);
 	}
 
 	public getThumbnailWindowByTop(top: number, maxHeight: number) {
@@ -395,7 +536,8 @@ export class ImagesService {
 				tl       : image.tl,
 				src      : src,
 				v        : image.v,
-				ciindex  : start_index
+				ciindex  : start_index,
+				s        : image.s
 			}
 
 			if (
@@ -595,6 +737,16 @@ export class ImagesService {
 		this.setRemainingTags();
 	}
 
+	public setCurrentImagesToSelected() {
+
+		this.currentImages = [];
+
+		for (let [index, image] of this.images.entries()) {
+			if (image.s) {
+				this.currentImages.push(index);
+			}
+		}
+	}
 
 	public deselectTag(index: number) {
 
@@ -808,7 +960,7 @@ export class ImagesService {
 
 		//Don't have previews of images
 		if (! image.v && environment.api) {
-			fullImage.previewSrc = environment.api + 'preview/' + index + '/' + fullImage.width + '/' + fullImage.height; 
+			fullImage.previewSrc = environment.api + 'preview/' + image.id + '/' + fullImage.width + '/' + fullImage.height; 
 		}
 
 		return fullImage;
@@ -1025,26 +1177,6 @@ export class ImagesService {
 
 	}
 
-	/*
-	private addPoint(pointStr: string, imageIndexes: any) {
-
-		let xy = pointStr.split(':');
-
-		let point = {
-			x: parseFloat(xy[0]),
-			y: parseFloat(xy[1]),
-			i: {}
-		};
-
-		for (let i of imageIndexes) {
-			point.i[parseInt(i, 10)] = true;
-		}
-
-		this.points.push(point);
-
-	}
- */
-
 	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
 		
 		if (this.tagIndex[key] !== undefined) {
@@ -1065,19 +1197,6 @@ export class ImagesService {
 				this.dirty[imageIndexes[i]] = true;
 			}
 		}
-
-		/*
-		for (let p = 0; p < this.points.length; p++) {
-			//If the point contains any of the images that this tag also contains,
-			//add it to the tags list of points
-			for (let i in this.points[p].i) {
-				if (o.i[i]) {
-					o.p[p] = true;
-					break;
-				}
-			}
-		}
-	 */
 
 		if (metadata) {
 			o['m'] = metadata;

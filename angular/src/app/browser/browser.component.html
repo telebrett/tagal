@@ -1,10 +1,23 @@
 <div id="header">
+	<div class="tools" *ngIf="showTools">
+		<span class="mr-1">{{numSelected}} selected</span>
+		<div class="btn-group">
+			<button type="button" class="btn btn-primary" (click)="toggleSelectMode()">{{selectMode ? 'View' : 'Select'}} mode</button>
+			<button type="button" class="btn btn-primary" (click)="selectAll()">+</button>
+			<button type="button" class="btn btn-primary" (click)="selectNone()">-</button>
+			<button type="button" class="btn btn-primary">Add tag</button>
+			<button type="button" class="btn btn-primary">Remove tag</button>
+			<button type="button" class="btn btn-primary">CW</button>
+			<button type="button" class="btn btn-primary">CCW</button>
+		</div>
+	</div>
 	<!-- TODO - Show the number of images currently showing -->
 	<button *ngFor="let tag of currentTags" type="button" class="btn btn-primary" (click)="deselectTag(tag)">{{tag.label}}</button>
 </div>
 <div id="contentwrapper">
 	<div id="content">
 		<div id="tags">
+			<button *ngIf="showTools" type="button" class="btn btn-primary mb-1" (click)="viewSelected()">View Selected</button>
 			<button type="button" class="btn btn-primary" (click)="toggleMap()">{{isMapMode ? 'Images' : 'Map'}}</button>
 			<ng-container *ngFor="let tag of menuTags">
 				<div *ngIf="tag.tags" ngbDropdown class="mt-1">
@@ -47,12 +60,12 @@
 					</video>
 				</div>
 				<div id="thumbnails">
-					<app-carousel #carousel [mainciindex]="mainciindex" (selectedThumb)="viewImageFromThumb($event)"></app-carousel>
+					<app-carousel #carousel [mainciindex]="mainciindex" (selectedThumb)="clickThumb($event)"></app-carousel>
 				</div>
 			</div>
 			<ng-container *ngIf="! mainImage">
 				<app-map      *ngIf="isMapMode"  #map (selectedThumb)="selectTagHideMap($event)" (selectedPoint)="selectTagHideMap($event)"></app-map>
-				<app-varousel *ngIf="!isMapMode" #varousel [mainciindex]="mainciindex" (selectedThumb)="viewImageFromThumb($event)"></app-varousel>
+				<app-varousel *ngIf="!isMapMode" #varousel [mainciindex]="mainciindex" [viewingSelected]="viewingSelected" (selectedThumb)="clickThumb($event)"></app-varousel>
 			</ng-container>
 		</div>
 	</div>

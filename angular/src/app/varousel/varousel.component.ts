@@ -1,6 +1,12 @@
 import { Component, ViewChild, ElementRef, Input, Output, EventEmitter, OnInit, AfterViewInit } from '@angular/core';
 import { ImagesService } from '../service/images.service';
 
+/*
+ * TODO - Click on the day heading to select that day (and month if no month already selected)
+ *      - Select all / none in the current set
+ *      - Right click when in select mode to view the image anyway
+ */
+
 @Component({
   selector: 'app-varousel',
   templateUrl: './varousel.component.html',
@@ -12,6 +18,8 @@ export class VarouselComponent implements OnInit, AfterViewInit {
 	@ViewChild('content') domContent: ElementRef;
 
 	@Input() mainciindex: number;
+	@Input() viewingSelected: boolean;
+
 	@Output() selectedThumb: EventEmitter<any> = new EventEmitter();
 
 	//This is set to the total height of the content we are scrolling through
@@ -37,6 +45,12 @@ export class VarouselComponent implements OnInit, AfterViewInit {
 			if (left) {
 				this.domScroller.nativeElement.scrollTop = left;
 			}
+		}
+	}
+
+	public setThumbsSelect(select : boolean) {
+		for (let thumb of this.thumbs) {
+			thumb.s = select;
 		}
 	}
 	
