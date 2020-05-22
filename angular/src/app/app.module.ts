@@ -15,6 +15,8 @@ import { VarouselComponent } from './varousel/varousel.component';
 
 import { DeCamelCase } from './tools/decamelcase-pipe';
 
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -30,7 +32,9 @@ import { DeCamelCase } from './tools/decamelcase-pipe';
     AppRoutingModule,
     HttpClientModule,
     FileSaverModule,
-    NgbModule
+    NgbModule,
+		ReactiveFormsModule,
+		FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

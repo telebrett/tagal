@@ -134,3 +134,83 @@ div.reportblock {
 .tools {
 	float:right;
 }
+
+.edittagslist, .legend {
+	font-size:9pt;
+
+	input {
+		border:0px;
+		outline-width:0;
+		background-color:transparent;
+		margin-right:5px;
+		padding:5px;
+	}
+
+	input:focus {
+		outline-width:0;
+	}
+
+
+	span {
+		background-color: $secondary;
+		color: white;
+		border-radius: 0.25em;
+		border: 1px solid $secondary;
+		padding: 2px;
+		padding-left:4px;
+		padding-right:4px;
+		font-size:9pt;
+		margin-right:5px;
+		margin-bottom:5px;
+		cursor:pointer;
+
+		display:inline-block;
+	
+		.toggleremove {
+			padding:0px;
+			margin:0px;
+			margin-left:5px;
+		}
+
+	}
+
+	span.all {
+		background-color: $primary;
+		border-color:$primary;
+
+		.toggleremove {
+			background-color: $primary;
+			border-color:$primary;
+		}
+	}
+
+	span.delete {
+		background-color: red;
+		border-color:red;
+
+		.toggleremove {
+			background-color: red;
+			border-color:red;
+		}
+	}
+
+	span.new {
+		background-color: green;
+		border-color:green;
+
+		.toggleremove {
+			background-color: green;
+			border-color:green;
+		}
+	}
+}
+
+.legend {
+
+	border-bottom:1px solid #dee2e6;
+	margin-bottom:5px;
+
+	span {
+		cursor: default;
+	}
+}

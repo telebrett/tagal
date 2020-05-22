@@ -1,12 +1,45 @@
+<ng-template #tagresult let-r="result" let-t="term">
+	<ngb-highlight [result]="r.label" [term]="t"></ngb-highlight>
+</ng-template>
+<ng-template #edittags let-modal>
+	<div class="modal-header">
+		<h4 class="modal-title">Edit tags</h4>
+			<button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+				<span aria-hidden="true">&times;</span>
+			</button>
+	</div>
+	<div class="modal-body">
+			<div class="legend">
+				<span class="all">All</span>
+				<span class="delete">Remove</span>
+				<span class="new">New</span>
+			</div>
+			<div class="edittagslist">
+				<span *ngFor="let tag of currentEditTags" title="Apply to all?" [ngClass]="{'all': tag.applyAll, 'delete': tag.delete, 'new': tag.index == -1}" (click)="toggleTagAll(tag)">{{tag.label}} 
+					<span class="toggleremove" title="{{tag.delete ? 'Undo ?' : 'Remove from all?'}}" (click)="toggleUnsetTag(tag); $event.stopPropagation()">{{tag.delete ? '+' : 'x' }}</span></span>
+				<input type="text" id="addTagName" 
+				 [ngbTypeahead]="searchTag" (selectItem)="addTagFromSearch($event)"
+				 [(ngModel)]="tagModel" [inputFormatter]="tagFormatter" [resultTemplate]="tagresult"
+				 />
+			</div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-light" (click)="applyTagChanges()">Apply changes</button>
+		<button type="button" class="btn btn-light" (click)="modal.close('Close click')">Cancel</button>
+	</div>
+</ng-template>
 <div id="header">
 	<div class="tools" *ngIf="showTools">
 		<span class="mr-1">{{numSelected}} selected</span>
-		<div class="btn-group">
+		<div class="btn-group mr-1">
 			<button type="button" class="btn btn-primary" (click)="toggleSelectMode()">{{selectMode ? 'View' : 'Select'}} mode</button>
-			<button type="button" class="btn btn-primary" (click)="selectAll()">+</button>
-			<button type="button" class="btn btn-primary" (click)="selectNone()">-</button>
-			<button type="button" class="btn btn-primary">Add tag</button>
-			<button type="button" class="btn btn-primary">Remove tag</button>
+			<button type="button" class="btn btn-primary" (click)="selectAll()">Select all</button>
+			<button type="button" class="btn btn-primary" (click)="selectNone()">Select none</button>
+		</div>
+		<div class="btn-group mr-1">
+			<button type="button" class="btn btn-primary" (click)="editTags()">Edit tags</button>
+		</div>
+		<div class="btn-group">
 			<button type="button" class="btn btn-primary">CW</button>
 			<button type="button" class="btn btn-primary">CCW</button>
 		</div>

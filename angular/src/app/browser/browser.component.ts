@@ -1,4 +1,8 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { FormGroup, FormControl } from '@angular/forms';
+import { Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
 
 import { ImagesService } from '../service/images.service';
 
@@ -10,6 +14,11 @@ import { VarouselComponent } from '../varousel/varousel.component';
 /*
  * TODO - Handle window resize
  *      - Is there any reason to have the "Point" tag dropdown?
+ *      - Editing image tags
+ *        - Create a new/edit tag form component. Provide a tool to geocode the tag
+ *        - Clicking on edit tag should also show a "apply to all selected images" checkbox
+ *        - Remove tag from images
+ *        - Delete tag completely
  *
  * BUGS - Doesn't always happen, but if you click quickly through the images using the "next" button, sometimes it doesn't load the final image
  */
@@ -17,7 +26,7 @@ import { VarouselComponent } from '../varousel/varousel.component';
 @Component({
 	selector: 'app-browser',
 	templateUrl: './browser.component.html',
-	styleUrls: ['./browser.component.scss']
+	styleUrls: ['./browser.component.scss'],
 })
 export class BrowserComponent implements OnInit {
 
@@ -29,6 +38,41 @@ export class BrowserComponent implements OnInit {
 	@ViewChild('main') domMain: ElementRef;
 	@ViewChild('video') domVideo: ElementRef;
 	@ViewChild('exif') domExif: ElementRef;
+
+	@ViewChild('edittags') domModalEditTags: ElementRef;
+
+	searchTag = (text$: Observable<string>) => 
+		text$.pipe(
+			debounceTime(200),
+			distinctUntilChanged(),
+			map(term => {
+				//TODO - Pass in the tags that the selected set all have already
+				//       so they can be excluded from the results
+				let tags = this.images.searchTag(term);
+				for (let tag of tags) {
+					if (term.toLowerCase() == tag.label.toLowerCase()) {
+						return tags;
+					}
+				}
+
+				tags.unshift({
+					index   : -1,
+					label   : term,
+					applyAll: true,
+					delete  : false
+				});
+				return tags;
+
+			})
+	);
+
+	tagFormatter = (tag: {label: string}) => tag.label;
+
+	public tagModel: any;
+
+	public imageTags = new FormGroup({
+		addTagName: new FormControl('')
+	});
 
 	public carouselWidth = 0;
 
@@ -59,9 +103,12 @@ export class BrowserComponent implements OnInit {
 
 	public mainImageLoading = false;
 
+	public currentEditTags = [];
+	public currentImagesLength = 0;
+
 	private scrollTimeout;
 
-	constructor(private images: ImagesService) { }
+	constructor(private images: ImagesService, private modalService: NgbModal) { }
 
 	ngOnInit() {
 		this.images.loadImages().subscribe(() => {
@@ -88,6 +135,8 @@ export class BrowserComponent implements OnInit {
 		this.mainImageLoading = false;
 		this.mainImageHeight = this.mainImage.height;
 		this.mainImageWidth = this.mainImage.width;
+
+		//TODO - If API available, then show the tags that apply to this image
 	}
 
 	public hideMainImage() {
@@ -95,10 +144,29 @@ export class BrowserComponent implements OnInit {
 		this.mainImageExif = null;
 	}
 
+	public editTags() {
+
+		this.currentEditTags = [];
+		this.currentImagesLength = this.images.getCurrentImagesLength();
+
+		for (let tag of this.images.getCurrentImagesTags()) {
+
+			tag.applyAll = tag.countInCurrent == this.currentImagesLength;
+			tag.delete = false;
+
+			this.currentEditTags.push(tag);
+		}
+
+		//TODO - Set focus on the typeahead
+
+		this.modalService.open(this.domModalEditTags, { centered: true});
+	}
+
 	public clickThumb(thumb) {
 
 		if (this.selectMode) {
 			this.images.toggleSelectImageFromIndex(thumb);
+			this.numSelected = this.images.getNumSelected();
 		} else {
 			//videos don't trigger a 'load' event
 			this.mainImageLoading = ! thumb.v;
@@ -204,6 +272,47 @@ export class BrowserComponent implements OnInit {
 			});
 
 		}
+	}
+
+	public toggleTagAll(tag) {
+		if (tag.countInCurrent == this.currentImagesLength) {
+			return;
+		}
+		tag.applyAll = ! tag.applyAll;
+	}
+
+	public toggleUnsetTag(tag){ 
+		if (tag.index == -1) {
+
+			for (let [index, searchTag] of this.currentEditTags.entries()) {
+				if (searchTag == tag) {
+					this.currentEditTags.splice(index, 1);
+				}
+			}
+
+			return;
+
+		}
+
+		tag.delete = ! tag.delete;
+		//this.currentEditTags = this.images.unsetTagAgainstCurrentImages(index);
+	}
+
+	public addTagFromSearch(event) {
+		console.log(event);
+
+		this.tagModel = null;
+		event.preventDefault();
+
+		if (event.item.index == -1) {
+			event.item.countInCurrent = this.currentImagesLength;
+		}
+
+		this.currentEditTags.push(event.item);
+	}
+
+	public applyTagChanges() {
+		//TODO - probably need to, you know, do stuff
 	}
 
 	private reset() {

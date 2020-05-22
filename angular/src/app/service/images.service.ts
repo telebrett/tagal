@@ -52,7 +52,7 @@ export class ImagesService {
 	 * string  f  Image filename eg 'foo.jpg'
 	 * float   r  The ratio of height to width TODO width to height?
 	 * object  t  hash of tag indexes - the tags that have possibly been added / removed
-	 * object  ot hash of tag indexes - this is the list of tags that the image has on disk
+	 * object  ot hash of tag indexes - this is the list of tags that the image has on disk TODO - This may change
 	 * bool    s  True if the image is currently marked as selected (key may not exist)
 	 * bool    v  True if the image is actually a video.
 	 *
@@ -340,6 +340,35 @@ export class ImagesService {
 
 	}
 
+	public searchTag(term: string) {
+
+		term = term.toLowerCase();
+
+		let matches = [];
+
+		if (! term.length) {
+			return matches;
+		}
+
+		for (let [index, tag] of this.tags.entries()) {
+
+			if (tag.m && (tag.m.datetype || tag.m.type == 'camera' || tag.m.type == 'point' || tag.m.type == 'video')) {
+				continue;
+			}
+
+			let label = tag.t;
+
+			label = label.toLowerCase();
+
+			if (label.indexOf(term) != -1) {
+				matches.push({label: tag.t, index: index});
+			}
+		}
+
+		return matches;
+
+	}
+
 
 	private getThumbnailWindow(start_index,count) {
 
@@ -424,15 +453,30 @@ export class ImagesService {
 
 	public setCurrentImagesSelect(select: boolean) {
 
+		let hash = {};
+
+		if (this.storage.has(STORAGE_SELECTED)) {
+			hash = this.storage.get(STORAGE_SELECTED);
+		}
+
 		for (let index of this.currentImages) {
 			this.images[index].s = select;
+			if (select) {
+				hash[index] = true;
+			} else {
+				delete hash[index];
+			}
 		}
 
 		if (select) {
 			this.numSelected += this.currentImages.length;
+			this.numSelected = Math.min(this.currentImages.length, this.numSelected);
 		} else {
 			this.numSelected -= this.currentImages.length;
+			this.numSelected = Math.max(0, this.numSelected);
 		}
+
+		this.storage.set(STORAGE_SELECTED, hash);
 
 	}
 
@@ -748,6 +792,44 @@ export class ImagesService {
 		}
 	}
 
+	public getCurrentImagesLength() {
+		return this.currentImages.length;
+	}
+
+	public getCurrentImagesTags() {
+
+		let currentTags = {};
+
+		for (let imageIndex of this.currentImages) {
+			for (let tagIndex of Object.keys(this.images[imageIndex].t)) {
+
+				let tag = this.tags[tagIndex];
+
+				if (tag.m && (tag.m.datetype || tag.m.type == 'camera' || tag.m.type == 'point' || tag.m.type == 'video')) {
+					continue;
+				}
+
+				if (currentTags[tagIndex]) {
+					currentTags[tagIndex]++;
+				} else {
+					currentTags[tagIndex] = 1;
+				}
+			}
+		}
+
+		let tags = [];
+
+		for (let tagIndex of Object.keys(currentTags)) {
+
+			let tag = this.niceTag(this.tags[tagIndex], currentTags[tagIndex]);
+			tags.push(tag);
+
+		}
+
+		return tags;
+
+	}
+
 	public deselectTag(index: number) {
 
 		let ct_index = this.currentTags.indexOf(index);
@@ -1024,7 +1106,7 @@ export class ImagesService {
 		return this.tagIndex[tag.t];
 	}
 
-	private niceTag(tag) {
+	private niceTag(tag, countInCurrent?: number) {
 
 		let label = tag.l;
 
@@ -1039,7 +1121,8 @@ export class ImagesService {
 		let o = {
 			index:this.tagIndex[tag.t],
 			label:label,
-			primary: tag.m !== undefined
+			primary: tag.m !== undefined,
+			countInCurrent: countInCurrent
 		};
 
 		/*
