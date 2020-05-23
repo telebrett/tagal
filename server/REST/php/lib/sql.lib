@@ -6,6 +6,7 @@ abstract class SQL {
 	const VERB_DELETE = 'DELETE';
 	const VERB_UPDATE = 'UPDATE';
 	const VERB_INSERT = 'INSERT';
+	const VERB_INSERTSELECT = 'INSERTSELECT';
 
 	const JA = '___JOINALIAS___';
 	const IN = 'IN';
@@ -65,6 +66,9 @@ abstract class SQL {
 		$this->positional_args = array();
 
 		switch ($this->verb) {
+			case self::VERB_INSERTSELECT:
+				$SQL = $this->insertLine();
+				//deliberate fallthrough
 			case self::VERB_SELECT:
 			case self::VERB_DELETE:
 				$SQL .= ' ' . $this->buildColumns() . "\n";
@@ -97,15 +101,12 @@ abstract class SQL {
 
 	public function exec() {
 
-		//TODO - Make this configurable
-		//error_log('SQL ' . $this . "\n");
-		//error_log('ARGS ' . var_export($this->positional_args,TRUE) . "\n");
-
 		$this->sth = $this->db->prepare($this);
 
 		if (! $this->sth) {
 			return FALSE;
 		}
+
 
 		$result = $this->sth->execute($this->positional_args);
 
@@ -113,9 +114,15 @@ abstract class SQL {
 			error_log('Error in ' . get_class($this));
 			error_log('Statement ' . $this->__toString());
 			error_log(var_export($this->sth->errorInfo(),true));
+
 		}
 
 		return $result;
+	}
+
+	public function debug() {
+		error_log($this->__toString());
+		error_log(var_export($this->positional_args, TRUE));
 	}
 
 	/**
@@ -393,4 +400,32 @@ class INSERT_SQL extends SQL {
 		return $SQL;
 
 	}
+}
+
+class INSERTSELECT_SQL extends SELECT_SQL {
+
+	private $insert_table;
+	private $insert_cols = array();
+
+	public function insertTable($table) {
+		$this->insert_table = $table;
+	}
+
+	public function insertCol($col) {
+		$this->insert_cols[] = $col;
+	}
+
+	public function insertLine() {
+
+		if (! $this->insert_table) {
+			throw new Exception("insert table not specified");
+		}
+
+		if (empty($this->insert_cols)) {
+			throw new Exception("insert columns not specified");
+		}
+
+		return 'INSERT INTO ' . $this->insert_table . ' (' . implode(', ', $this->insert_cols) . ') SELECT';
+	}
+
 }

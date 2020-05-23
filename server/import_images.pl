@@ -624,7 +624,7 @@ sub import_directory {
 						push @ins_val,$image_id,$tag_id;
 					}
 
-					$dbh->do("INSERT INTO image_tag (ImageID,TagID) VALUES " . join(',',map{'(?,?)'} @tag_ids),{},@ins_val);
+					$dbh->do("INSERT INTO image_tag (ImageID,TagID,IsWritten) VALUES " . join(',',map{'(?,?, 1)'} @tag_ids),{},@ins_val);
 
 				}
 

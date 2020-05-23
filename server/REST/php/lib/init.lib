@@ -48,14 +48,9 @@ class REST {
 				//thought about using the PECL json_post but that would require
 				//a system wide change or a specific PHP handler, eg php-fpm, too much effort required
 
-				if (isset($_POST['data'])) {
-					$source = json_decode($_POST['data'],TRUE);
-
-					if ($source === NULL) {
-						self::send_error_message('Invalid JSON');
-					}
-				} else {
-					self::send_error_message('missing json encoded \'data\' variable');
+				$source = json_decode(file_get_contents('php://input'), TRUE);
+				if ($source === NULL) {
+					self::send_error_message('Invalid JSON');
 				}
 
 				$list   =  static::$POST_ARGS;
