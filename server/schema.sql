@@ -40,7 +40,6 @@ CREATE TABLE image (
 ,Height int unsigned
 -- If already public on S3
 ,IsPublic tinyint(1) UNSIGNED NOT NULL DEFAULT '0'
-,IsDirty tinyint(1) UNSIGNED NOT NULL DEFAULT '0'
 ,IsVideo tinyint(1) UNSIGNED NOT NULL DEFAULT '0'
 ,CameraID int(10) unsigned
 ,GeometryID int(10) unsigned
@@ -52,6 +51,8 @@ CREATE TABLE image (
 CREATE TABLE image_tag (
  ImageID int(10) unsigned NOT NULL
 ,TagID int(10) unsigned NOT NULL
+,IsWritten tinyint(1) unsigned NOT NULL
+,IsDeleted tinyint(1) unsigned NOT NULL
 ,PRIMARY KEY(ImageID,TagID)
 ,FOREIGN KEY(ImageID) REFERENCES image(id)
 ,FOREIGN KEY(TagID) REFERENCES tag(id)

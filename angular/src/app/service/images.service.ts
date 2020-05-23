@@ -14,26 +14,25 @@ TODO ADMIN MODE
   - Generate a JSON DB which is ONLY based off what is in the images (ie exclude rows which IsNew is true and include the rows marked as IsDeleted)
 	- Generate a JSON DB which is based off what is in the database (include rows which IsNew is true and ignore the rows marked as IsDeleted)
 
-- Select images
-- Add a special tag on the left to "Show selected"
+X Select images
+- Add a special tag on the left to "Show selected" (this is done, but need to toggle to be able to go back to the current tagset)
 - Then add tools for
-  - Apply union of tags to all selected (eg if some have A, and some have B, after this applies, then ALL will have 
-  - Remove tag X from all
-	- Add tag X to all
-  - Rotate 90 CW / CCW (this would operate on the images files directly)
- - Right click on a tag to edit it's metadata
+  X Apply union of tags to all selected (eg if some have A, and some have B, after this applies, then ALL will have 
+  X Remove tag X from all
+	X Add tag X to all
+  - Rotate 90 CW / CCW (this would operate on the images files directly), it would also require either
+	  the new dimensions to be in the tagalapi/diffs endpoint OR it would have to modify / rewrite the database.json file
+  - Right click on a tag to edit it's metadata
    - Geocode - note that a Point could have multiple tags
 	 - IsPerson
+	 - SubTag - if this is true, then don't show it until a parent tag has been selected, eg I have three tags "Moore park tigers", "Under 7's", "Under 5's" - If "Under 5's and "Under 7's" were marked as sub tags
+	   then they would only appear when the "Moore park tigers" is set - or some other tag
+		 
+		 Another one could be "Campsites"
 
  REST API CHANGES
- - Add a "build actual images" db - this would return a failure if ANY image record is marked as "dirty"
  - Commit "dirty"
  - Rotate images (only handle a single image)
-
- DB changes
- - Remove "IsDirty" from the image
- - Add "IsDeleted" to image_tag - any records for an image marked as IsDeleted will be deleted if import_images.pl / write_images.pl is run (ie when the database is 'synced' to it's image)
- - Change "Written" in image_tag to "IsNew"
 */
 
 const STORAGE_HASH     = 'dbhash';
@@ -52,7 +51,6 @@ export class ImagesService {
 	 * string  f  Image filename eg 'foo.jpg'
 	 * float   r  The ratio of height to width TODO width to height?
 	 * object  t  hash of tag indexes - the tags that have possibly been added / removed
-	 * object  ot hash of tag indexes - this is the list of tags that the image has on disk TODO - This may change
 	 * bool    s  True if the image is currently marked as selected (key may not exist)
 	 * bool    v  True if the image is actually a video.
 	 *
@@ -77,6 +75,12 @@ export class ImagesService {
 	 * keys are the tags, values is the index for the tag
 	 */
 	private tagIndex = {};
+
+	/**
+	 * Keys are the image ids, values are the index in this.images
+	 * Note, this is only populated if the API is available
+	 */
+	private imageIDIndex = {};
 
 	private monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
@@ -108,13 +112,17 @@ export class ImagesService {
 
 				let path = image[0].match(/^(.*)\/(.*)$/);
 
-				let imagehash = {id:image_id, p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2],v:image.length>3};
+				let imagehash = {id:image_id, p:path[1],f:path[2],r:image[1],t:{},o:image[2],v:image.length>3};
 
 				image_indexes[image_id] = si;
 
 				//The json file is keyed by the image database id
 				//But we use arrays instead of hashes as array lookups are significantly faster than hash lookups
 				this.images[si++] = imagehash;
+			}
+
+			if (this.hasAPI()) {
+				this.imageIDIndex = image_indexes;
 			}
 
 			for (let tag_index in data.tags) {
@@ -125,10 +133,8 @@ export class ImagesService {
 					local_image_indexes.push(image_indexes[image_id]);
 				}
 
-				this.addTag(tag_index, local_image_indexes, data.tagmetadata[tag_index], true);
+				this.addTag(tag_index, local_image_indexes, data.tagmetadata[tag_index]);
 			}
-
-			this.setRemainingTags();
 
 			if (this.hasAPI()) {
 				let mismatched_hash = false;
@@ -151,6 +157,52 @@ export class ImagesService {
 						this.numSelected++;
 					}
 				}
+
+				let diffsurl = environment.api + 'diffs';
+				this.http.get(diffsurl).subscribe(data => {
+
+					for (let image_id in data.diffs) {
+						let image_diff = data.diffs[image_id];
+
+						let image_index = this.imageIDIndex[image_id];
+
+						//TODO - What about new tags
+
+						if (image_diff.add) {
+							for (let tag of image_diff.add) {
+								let tag_index = this.tagIndex[tag];
+
+								if (tag_index === undefined) {
+									this.addTag(tag, [image_index]);
+								} else {
+									this.images[image_index].t[tag_index] = true;
+									this.tags[tag_index].i[image_index] = true;
+								}
+							}
+
+						}
+
+						if (image_diff.del) {
+							for (let tag of image_diff.del) {
+								let tag_index = this.tagIndex[tag];
+
+								if (tag_index === undefined) {
+									continue;
+								}
+
+								delete this.images[index_index].t[tag_index];
+								delete this.tags[tag_index].i[image_index];
+							}
+						}
+
+					}
+
+					//TODO - This doesn't work, maybe we need to chain somehow rather than having inside it
+					this.setRemainingTags();
+
+				});
+			} else {
+					this.setRemainingTags();
 			}
 
 			return true;
@@ -340,7 +392,7 @@ export class ImagesService {
 
 	}
 
-	public searchTag(term: string) {
+	public searchTag(term: string, exclude: any) {
 
 		term = term.toLowerCase();
 
@@ -350,15 +402,30 @@ export class ImagesService {
 			return matches;
 		}
 
+		let exclude_lower = exclude.map((tag) => tag.label.toLowerCase());
+
 		for (let [index, tag] of this.tags.entries()) {
 
 			if (tag.m && (tag.m.datetype || tag.m.type == 'camera' || tag.m.type == 'point' || tag.m.type == 'video')) {
 				continue;
 			}
 
+
 			let label = tag.t;
 
 			label = label.toLowerCase();
+
+			let found = false;
+			for (let ex of exclude_lower) {
+				if (ex == label) {
+					found = true;
+					break;
+				}
+			}
+
+			if (found) {
+				continue;
+			}	
 
 			if (label.indexOf(term) != -1) {
 				matches.push({label: tag.t, index: index});
@@ -1106,6 +1173,30 @@ export class ImagesService {
 		return this.tagIndex[tag.t];
 	}
 
+	public applyTagChanges(add_tags, del_tags) {
+
+		if (! environment.api) {
+			return false;
+		}
+
+		let url = environment.api + 'applytags';
+
+		let data = {
+			images: this.currentImages.map((index) => this.images[index].id),
+			add: add_tags,
+			del: del_tags
+		}
+
+		let headers = new HttpHeaders({
+			'Content-Type': 'application/json'
+		});
+
+		this.http.post(url, data, headers).subscribe(data => {
+			console.log(data);
+		});
+
+	}
+
 	private niceTag(tag, countInCurrent?: number) {
 
 		let label = tag.l;
@@ -1260,7 +1351,7 @@ export class ImagesService {
 
 	}
 
-	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
+	private addTag(key: string, imageIndexes: any, metadata: any) {
 		
 		if (this.tagIndex[key] !== undefined) {
 			return false;
@@ -1273,12 +1364,6 @@ export class ImagesService {
 		for (let i = 0; i < imageIndexes.length; i++) {
 			o.i[imageIndexes[i]] = true;
 			this.images[imageIndexes[i]].t[tagIndex] = true;
-
-			if (initialLoad) {
-				this.images[imageIndexes[i]].ot[tagIndex] = true;
-			} else {
-				this.dirty[imageIndexes[i]] = true;
-			}
 		}
 
 		if (metadata) {
