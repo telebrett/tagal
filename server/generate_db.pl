@@ -110,7 +110,7 @@ sub build_db {
 
 	my $SQL_TAGS = "SELECT t.Tag, it.ImageID\n"
 	             . "FROM image i\n"
-	             . " JOIN image_tag it ON it.ImageID = i.id\n"
+	             . " JOIN image_tag it ON it.ImageID = i.id AND it.IsWritten = 1\n"
 	             . " JOIN tag t ON t.id = it.TagID\n";
 
 	my %date_functions = get_date_functions('i.DateTaken');
@@ -150,7 +150,7 @@ sub build_db {
 
 		$SQL_IMAGES .= " JOIN s3user s ON s.Username = ?\n"
 		             . " JOIN s3user_tag s3tag ON s3tag.S3UserID = s.id\n"
-		             . " JOIN image_tag it ON it.TagID = s3tag.TagID AND it.ImageID = i.id\n";
+		             . " JOIN image_tag it ON it.TagID = s3tag.TagID AND it.ImageID = i.id AND it.IsWritten = 1\n";
 
 	}
 

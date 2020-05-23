@@ -11,7 +11,7 @@
  */
 require_once('../lib/init.lib');
 
-class REST_Images extends REST {
+class REST_ApplyTags extends REST {
 
 	protected static $POST_ARGS = array('images'=>true,'add'=>true,'del'=>true);
 
@@ -95,6 +95,14 @@ class REST_Images extends REST {
 				$set = array_slice($this->images, $offset, $chunk);
 				$offset += $chunk;
 
+				$sql = new DELETE_SQL($this->db, 'image_tag');
+				$sql->where("{$sql->getAlias()}.IsDeleted = 1 AND {$sql->getAlias()}.IsWritten = 0");
+				$sql->where("{$sql->getAlias()}.TagID = ?", $tag_id);
+
+				if (! $sql->exec()) {
+					return FALSE;
+				}
+
 				if (! $this->mark_deleted($set, $tag_id, TRUE)) {
 					return FALSE;
 				}
@@ -117,6 +125,7 @@ class REST_Images extends REST {
 		$sql->join('tag'  , "{$JA}.id = {$sql->getAlias()}.TagID AND {$JA}.id = ?", FALSE, $tag_id);
 		$sql->col('IsDeleted',$deleted ? 1 : 0);
 		$sql->where('IsDeleted = ?', $deleted ? 0 : 1);
+		$sql->where('IsWritten = 1');
 
 		return $sql->exec();
 	}
@@ -190,4 +199,4 @@ class REST_Images extends REST {
 
 }
 
-REST_IMAGES::handle();
+REST_ApplyTags::handle();
