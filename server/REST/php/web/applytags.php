@@ -77,7 +77,7 @@ class REST_ApplyTags extends REST {
 
 	private function del_tags() {
 
-		foreach ($this->add_tags as $tag) {
+		foreach ($this->del_tags as $tag) {
 
 			$tag_id = $this->get_tag_id($tag, FALSE);
 
@@ -96,7 +96,7 @@ class REST_ApplyTags extends REST {
 				$offset += $chunk;
 
 				$sql = new DELETE_SQL($this->db, 'image_tag');
-				$sql->where("{$sql->getAlias()}.IsDeleted = 1 AND {$sql->getAlias()}.IsWritten = 0");
+				$sql->where("{$sql->getAlias()}.IsWritten = 0");
 				$sql->where("{$sql->getAlias()}.TagID = ?", $tag_id);
 
 				if (! $sql->exec()) {
@@ -108,6 +108,16 @@ class REST_ApplyTags extends REST {
 				}
 
 			}
+
+			$sql = new DELETE_SQL($this->db, 'tag');
+			$sql->where("NOT EXISTS(SELECT ImageID FROM image_tag WHERE TagID = {$sql->getAlias()}.id)");
+			$sql->where("{$sql->getAlias()}.id = ?", $tag_id);
+
+			if (! $sql->exec()) {
+				return FALSE;
+			}
+
+
 		}
 
 		return TRUE;

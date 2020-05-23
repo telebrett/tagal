@@ -26,6 +26,12 @@ class REST {
 
 		$method = $_SERVER['REQUEST_METHOD'];
 
+		if ($method == 'OPTIONS') {
+			header('Access-Control-Allow-Headers: *');
+			http_response_code(200);
+			exit;
+		}
+
 		if (! method_exists($handler,$method)) {
 			self::send_error_message("$method not supported for $rest_class");
 		}
