@@ -102,113 +102,118 @@ export class ImagesService {
 
 		let database_source = environment.databaseSource;
 
-		return this.http.get(database_source).pipe(map((data:any) => {
-
-			let si = 0;
-			let image_indexes = {};
-			for (let image_id in data.images) {
-
-				let image = data.images[image_id];
-
-				let path = image[0].match(/^(.*)\/(.*)$/);
-
-				let imagehash = {id:image_id, p:path[1],f:path[2],r:image[1],t:{},o:image[2],v:image.length>3};
-
-				image_indexes[image_id] = si;
-
-				//The json file is keyed by the image database id
-				//But we use arrays instead of hashes as array lookups are significantly faster than hash lookups
-				this.images[si++] = imagehash;
-			}
-
-			if (this.hasAPI()) {
-				this.imageIDIndex = image_indexes;
-			}
-
-			for (let tag_index in data.tags) {
-
-				//Map the json indexes to our array indexes
-				let local_image_indexes = [];
-				for (let image_id of data.tags[tag_index]) {
-					local_image_indexes.push(image_indexes[image_id]);
-				}
-
-				this.addTag(tag_index, local_image_indexes, data.tagmetadata[tag_index]);
-			}
-
-			if (this.hasAPI()) {
-				let mismatched_hash = false;
-
-				if (this.storage.has(STORAGE_HASH)) {
-					this.storage.set(STORAGE_HASH, data.hash);
-				} else {
-					let hash = this.storage.get(STORAGE_HASH);
-					if (hash != data.hash) {
-						mismatched_hash = true;
-					}
-				}
-
-				//TODO - What to do on mismatched hash
-				if (this.storage.has(STORAGE_SELECTED)) {
-					let selected = this.storage.get(STORAGE_SELECTED);
-
-					for (let index in selected) {
-						this.images[index].s = true;
-						this.numSelected++;
-					}
-				}
-
-				let diffsurl = environment.api + 'diffs';
-				this.http.get(diffsurl).subscribe(data => {
-
-					for (let image_id in data.diffs) {
-						let image_diff = data.diffs[image_id];
-
-						let image_index = this.imageIDIndex[image_id];
-
-						//TODO - What about new tags
-
-						if (image_diff.add) {
-							for (let tag of image_diff.add) {
-								let tag_index = this.tagIndex[tag];
-
-								if (tag_index === undefined) {
-									this.addTag(tag, [image_index]);
-								} else {
-									this.images[image_index].t[tag_index] = true;
-									this.tags[tag_index].i[image_index] = true;
-								}
-							}
-
-						}
-
-						if (image_diff.del) {
-							for (let tag of image_diff.del) {
-								let tag_index = this.tagIndex[tag];
-
-								if (tag_index === undefined) {
-									continue;
-								}
-
-								delete this.images[index_index].t[tag_index];
-								delete this.tags[tag_index].i[image_index];
-							}
-						}
-
-					}
-
-					//TODO - This doesn't work, maybe we need to chain somehow rather than having inside it
-					this.setRemainingTags();
-
-				});
-			} else {
-					this.setRemainingTags();
-			}
-
-			return true;
-		}));
+		return this.http.get(database_source).pipe(map((data:any) => this.loadDatabase(data)));
 
 	}
+
+	private loadDatabase(data) {
+
+		let si = 0;
+		let image_indexes = {};
+		for (let image_id in data.images) {
+
+			let image = data.images[image_id];
+
+			let path = image[0].match(/^(.*)\/(.*)$/);
+
+			let imagehash = {id:image_id, p:path[1],f:path[2],r:image[1],t:{},o:image[2],v:image.length>3};
+
+			image_indexes[image_id] = si;
+
+			//The json file is keyed by the image database id
+			//But we use arrays instead of hashes as array lookups are significantly faster than hash lookups
+			this.images[si++] = imagehash;
+		}
+
+		if (this.hasAPI()) {
+			this.imageIDIndex = image_indexes;
+		}
+
+		for (let tag_index in data.tags) {
+
+			//Map the json indexes to our array indexes
+			let local_image_indexes = [];
+			for (let image_id of data.tags[tag_index]) {
+				local_image_indexes.push(image_indexes[image_id]);
+			}
+
+			this.addTag(tag_index, local_image_indexes, data.tagmetadata[tag_index]);
+		}
+
+		if (this.hasAPI()) {
+			let mismatched_hash = false;
+
+			if (this.storage.has(STORAGE_HASH)) {
+				this.storage.set(STORAGE_HASH, data.hash);
+			} else {
+				let hash = this.storage.get(STORAGE_HASH);
+				if (hash != data.hash) {
+					mismatched_hash = true;
+				}
+			}
+
+			//TODO - What to do on mismatched hash
+			if (this.storage.has(STORAGE_SELECTED)) {
+				let selected = this.storage.get(STORAGE_SELECTED);
+
+				for (let index in selected) {
+					this.images[index].s = true;
+					this.numSelected++;
+				}
+			}
+
+			let diffsurl = environment.api + 'diffs';
+			this.http.get(diffsurl).subscribe(data => this.loadDiffs(data));
+		} else {
+				this.setRemainingTags();
+		}
+
+		return true;
+	}
+
+	private loadDiffs(data) {
+
+		for (let image_id in data.diffs) {
+			let image_diff = data.diffs[image_id];
+
+			let image_index = this.imageIDIndex[image_id];
+
+			//TODO - What about new tags
+
+			if (image_diff.add) {
+				for (let tag of image_diff.add) {
+					let tag_index = this.tagIndex[tag];
+
+					if (tag_index === undefined) {
+						this.addTag(tag, [image_index]);
+					} else {
+						this.images[image_index].t[tag_index] = true;
+						this.tags[tag_index].i[image_index] = true;
+					}
+				}
+
+			}
+
+			if (image_diff.del) {
+				for (let tag of image_diff.del) {
+					let tag_index = this.tagIndex[tag];
+
+					if (tag_index === undefined) {
+						continue;
+					}
+
+					delete this.images[index_index].t[tag_index];
+					delete this.tags[tag_index].i[image_index];
+				}
+			}
+
+		}
+
+		//TODO - This doesn't work, maybe we need to chain somehow rather than having inside it
+		this.setRemainingTags();
+
+	}
+	
 
 	public storageSet(key: string, value: any) {
 		this.storage.set(key, value);
