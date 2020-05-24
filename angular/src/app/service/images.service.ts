@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
 import {Observable} from "rxjs";
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 import {HttpClient, HttpHeaders} from '@angular/common/http';
@@ -101,8 +101,19 @@ export class ImagesService {
 	public loadImages() : Observable<boolean> {
 
 		let database_source = environment.databaseSource;
+		if (this.hasAPI()) {
+			let diffs_source = environment.api + 'diffs';
 
-		return this.http.get(database_source).pipe(map((data:any) => this.loadDatabase(data)));
+			return this.http.get(database_source).pipe(
+				switchMap(data => {
+					this.loadDatabase(data);
+					return this.http.get(diffs_source).pipe(map(diffs => this.loadDiffs(diffs)));
+				})
+			);
+
+		} else {
+			return this.http.get(database_source).pipe(map((data:any) => this.loadDatabase(data)));
+		}
 
 	}
 
@@ -162,8 +173,6 @@ export class ImagesService {
 				}
 			}
 
-			let diffsurl = environment.api + 'diffs';
-			this.http.get(diffsurl).subscribe(data => this.loadDiffs(data));
 		} else {
 				this.setRemainingTags();
 		}
@@ -202,7 +211,7 @@ export class ImagesService {
 						continue;
 					}
 
-					delete this.images[index_index].t[tag_index];
+					delete this.images[image_index].t[tag_index];
 					delete this.tags[tag_index].i[image_index];
 				}
 			}

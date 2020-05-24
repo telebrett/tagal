@@ -113,7 +113,6 @@ export class BrowserComponent implements OnInit {
 
 	ngOnInit() {
 		this.images.loadImages().subscribe(() => {
-			console.log('foo');
 		 	this.menuTags = this.images.getRemainingTags();
 			this.numSelected = this.images.getNumSelected();
 			this.selectMode = this.images.storageGet('selectMode');
