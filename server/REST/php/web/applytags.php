@@ -95,9 +95,12 @@ class REST_ApplyTags extends REST {
 				$set = array_slice($this->images, $offset, $chunk);
 				$offset += $chunk;
 
+				$in_string = implode(', ', array_fill(0, count($set), '?'));
+
 				$sql = new DELETE_SQL($this->db, 'image_tag');
 				$sql->where("{$sql->getAlias()}.IsWritten = 0");
 				$sql->where("{$sql->getAlias()}.TagID = ?", $tag_id);
+				$sql->where("{$sql->getAlias()}.ImageID IN ({$in_string})", $set);
 
 				if (! $sql->exec()) {
 					return FALSE;

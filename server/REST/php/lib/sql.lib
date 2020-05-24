@@ -34,6 +34,9 @@ abstract class SQL {
 
 	protected $limit_size;
 	protected $limit_offset;
+	
+	protected static $trace = FALSE;
+
 
 	/*
 	 * @param PDO $db
@@ -50,6 +53,10 @@ abstract class SQL {
 	public function getAlias() {
 		return $this->alias;
 	
+	}
+
+	public static function setTrace($trace=TRUE) {
+		self::$trace = TRUE;
 	}
 
 	/**
@@ -101,6 +108,10 @@ abstract class SQL {
 
 	public function exec() {
 
+		if (SQL::$trace) {
+			$this->debug();
+		}
+
 		$this->sth = $this->db->prepare($this);
 
 		if (! $this->sth) {
@@ -123,6 +134,8 @@ abstract class SQL {
 	public function debug() {
 		error_log($this->__toString());
 		error_log(var_export($this->positional_args, TRUE));
+
+		return true;
 	}
 
 	/**
