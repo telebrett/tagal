@@ -117,7 +117,7 @@ export class ImagesService {
 
 	}
 
-	private loadDatabase(data) {
+	private loadDatabase(data) : boolean {
 
 		let si = 0;
 		let image_indexes = {};
@@ -180,21 +180,19 @@ export class ImagesService {
 		return true;
 	}
 
-	private loadDiffs(data) {
+	private loadDiffs(data) : boolean {
 
 		for (let image_id in data.diffs) {
 			let image_diff = data.diffs[image_id];
 
 			let image_index = this.imageIDIndex[image_id];
 
-			//TODO - What about new tags
-
 			if (image_diff.add) {
 				for (let tag of image_diff.add) {
 					let tag_index = this.tagIndex[tag];
 
 					if (tag_index === undefined) {
-						this.addTag(tag, [image_index]);
+						this.addTag(tag, [image_index], null);
 					} else {
 						this.images[image_index].t[tag_index] = true;
 						this.tags[tag_index].i[image_index] = true;
@@ -213,13 +211,18 @@ export class ImagesService {
 
 					delete this.images[image_index].t[tag_index];
 					delete this.tags[tag_index].i[image_index];
+
+					//TODO - If the tag.i is empty, maybe it should be removed?
+					//       but only if it has been removed from the database,
+					//       which would have to be returned in the diffs
 				}
 			}
 
 		}
 
-		//TODO - This doesn't work, maybe we need to chain somehow rather than having inside it
 		this.setRemainingTags();
+
+		return true;
 
 	}
 	
@@ -1205,7 +1208,7 @@ export class ImagesService {
 			'Content-Type': 'application/json'
 		});
 
-		this.http.post(url, data, headers).subscribe(data => {
+		this.http.post(url, data, {headers: headers}).subscribe(data => {
 			console.log(data);
 		});
 
