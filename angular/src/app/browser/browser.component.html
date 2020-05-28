@@ -3,17 +3,20 @@
 </ng-template>
 <ng-template #edittags let-modal>
 	<div class="modal-header">
-		<h4 class="modal-title">Edit tags</h4>
-			<button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
-				<span aria-hidden="true">&times;</span>
-			</button>
+		<div>
+		 <h4 class="modal-title">Edit tags</h4>
+		 <div class="legend">
+		 	<span class="all">All</span>
+		 	<span class="delete">Remove</span>
+		 	<span class="new">New</span>
+		 	<span>Unchanged</span>
+		 </div>
+	   </div>
+		 <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+		 	<span aria-hidden="true">&times;</span>
+		 </button>
 	</div>
 	<div class="modal-body">
-			<div class="legend">
-				<span class="all">All</span>
-				<span class="delete">Remove</span>
-				<span class="new">New</span>
-			</div>
 			<div class="edittagslist">
 				<span *ngFor="let tag of currentEditTags" title="Apply to all?" [ngClass]="{'all': tag.applyAll, 'delete': tag.delete, 'new': tag.index == -1}" (click)="toggleTagAll(tag)">{{tag.label}} 
 					<span class="toggleremove" title="{{tag.delete ? 'Undo ?' : 'Remove from all?'}}" (click)="toggleUnsetTag(tag); $event.stopPropagation()">{{tag.delete ? '+' : 'x' }}</span></span>

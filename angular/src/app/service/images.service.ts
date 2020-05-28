@@ -9,31 +9,21 @@ import {LOCAL_STORAGE, StorageService } from 'ngx-webstorage-service';
 
 /*
 TODO ADMIN MODE
-- Use local storage, but only for the selection, changes will be applied on the server
-  BUT, maybe we could do the following
-  - Generate a JSON DB which is ONLY based off what is in the images (ie exclude rows which IsNew is true and include the rows marked as IsDeleted)
-	- Generate a JSON DB which is based off what is in the database (include rows which IsNew is true and ignore the rows marked as IsDeleted)
-
 - Select images
 - Add a special tag on the left to "Show selected"
 - Then add tools for
-  - Apply union of tags to all selected (eg if some have A, and some have B, after this applies, then ALL will have 
-  - Remove tag X from all
-	- Add tag X to all
   - Rotate 90 CW / CCW (this would operate on the images files directly)
+	  This would have to mark the image in the database to return it's width/height in the "diffs" API call
+	  as well as regenerate the thumbnails / previews
+
  - Right click on a tag to edit it's metadata
    - Geocode - note that a Point could have multiple tags
 	 - IsPerson
 
  REST API CHANGES
- - Add a "build actual images" db - this would return a failure if ANY image record is marked as "dirty"
- - Commit "dirty"
+ - Commit tag changes
  - Rotate images (only handle a single image)
 
- DB changes
- - Remove "IsDirty" from the image
- - Add "IsDeleted" to image_tag - any records for an image marked as IsDeleted will be deleted if import_images.pl / write_images.pl is run (ie when the database is 'synced' to it's image)
- - Change "Written" in image_tag to "IsNew"
 */
 
 const STORAGE_HASH     = 'dbhash';

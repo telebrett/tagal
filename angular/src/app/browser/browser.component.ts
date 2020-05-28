@@ -14,11 +14,35 @@ import { VarouselComponent } from '../varousel/varousel.component';
 /*
  * TODO - Handle window resize
  *      - Is there any reason to have the "Point" tag dropdown?
+ *      - Selection tools. I'm not happy with how the "select all" / "select none" inverts when in "view selected"
+ *      - "View selected" - this should toggle it's label, and also when "viewing the selected", it should grey
+ *        out the selected tags at the top, as that's not what is in the current view
+ *      - When clicking on a year, show the months as sub menus, and inside them, show the days as sub sub menus
+ *        OR have a "tag search" box, if you type a date eg "2019/12/28" it would select "2019" "december" and "28"
+ *        maybe the tag search box should have a calenadar icon on the right, so you get a popup calendar
+ *        to choose from
+ *      - Vertical view mode - clicking on the vblock header "3rd August, 2019" should set the tags for that day
+ *        Also add a "select all" link
  *      - Editing image tags
  *        - Create a new/edit tag form component. Provide a tool to geocode the tag
  *        - Clicking on edit tag should also show a "apply to all selected images" checkbox
  *        - Remove tag from images
  *        - Delete tag completely
+ *        - If the following series of events occurs
+ *          1. Click on tags to show a set eg "2019", "June", "10th"
+ *          2. Click on edit tags
+ *
+ *          then we are editing tags that apply to the current view
+ *
+ *          BUT if we do
+ *          1. Click on tags to show a set eg "2019", "June", "10th"
+ *          2. Select one or more images
+ *          3. Click on edit tags
+ *
+ *          THEN at that point, "edit tags" should ONLY apply to those images I just selected
+ *
+ *          POSSIBLY with the visible images behind the modal ONLY showing the images that the tags will affect
+ *
  *
  * BUGS - Doesn't always happen, but if you click quickly through the images using the "next" button, sometimes it doesn't load the final image
  */
@@ -282,7 +306,8 @@ export class BrowserComponent implements OnInit {
 	}
 
 	public toggleUnsetTag(tag){ 
-		if (tag.index == -1) {
+
+		if (tag.index == -1 || tag.countInCurrent === undefined) {
 
 			for (let [index, searchTag] of this.currentEditTags.entries()) {
 				if (searchTag == tag) {
