@@ -258,9 +258,15 @@ export class BrowserComponent implements OnInit {
 		}
 	}
 
-	public viewSelected() {
-		this.viewingSelected = true;
-		this.images.setCurrentImagesToSelected();
+	public toggleViewSelected() {
+		this.viewingSelected = ! this.viewingSelected;
+
+		if (this.viewingSelected) {
+			this.images.setCurrentImagesToSelected();
+		} else {
+			this.images.setCurrentImagesToTags();
+		}
+
 		this.reset();
 	}
 

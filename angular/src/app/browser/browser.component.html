@@ -53,7 +53,7 @@
 <div id="contentwrapper">
 	<div id="content">
 		<div id="tags">
-			<button *ngIf="showTools" type="button" class="btn btn-primary mb-1" (click)="viewSelected()">View Selected</button>
+			<button *ngIf="showTools" type="button" class="btn btn-primary mb-1" (click)="toggleViewSelected()">{{viewingSelected ? 'View tags' : 'View selected'}}</button>
 			<button type="button" class="btn btn-primary" (click)="toggleMap()">{{isMapMode ? 'Images' : 'Map'}}</button>
 			<ng-container *ngFor="let tag of menuTags">
 				<div *ngIf="tag.tags" ngbDropdown class="mt-1">

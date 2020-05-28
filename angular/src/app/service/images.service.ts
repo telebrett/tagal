@@ -24,6 +24,9 @@ TODO ADMIN MODE
  - Commit tag changes
  - Rotate images (only handle a single image)
 
+TODO - Non admin mode
+- Store the "currenttags" selection in storage
+- Generate links which select tags
 */
 
 const STORAGE_HASH     = 'dbhash';
@@ -746,6 +749,10 @@ export class ImagesService {
 		
 	}
 
+	/**
+	 * Add a new tag to the current selected set and restrict the current
+	 * images
+	 */
 	public selectTag(index: number) {
 
 		if (this.currentTags.indexOf(index) !== -1) {
@@ -754,8 +761,37 @@ export class ImagesService {
 
 		this.currentTags.push(index);
 
-		if (this.currentTags.length == 1) {
-			this.currentImages = Object.keys(this.tags[index].i);
+		this.selectTagSetCurrentImages(this.currentTags.length - 1);
+
+		this.sortCurrentImages();
+		this.setRemainingTags();
+	}
+
+	/**
+	 * Resets the current images based on the current selected tags
+	 */
+	public setCurrentImagesToTags() {
+
+		if (this.currentTags.length == 0) {
+			this.currentImages = [];
+			return;
+		}
+
+		for (let i = 0; i < this.currentTags.length; i++) {
+			this.selectTagSetCurrentImages(i);
+		}
+
+		this.sortCurrentImages();
+		this.setRemainingTags();
+		
+	}
+
+	private selectTagSetCurrentImages(currentTagsIndex) {
+
+		let tag_index = this.currentTags[currentTagsIndex];
+
+		if (currentTagsIndex == 0) {
+			this.currentImages = Object.keys(this.tags[tag_index].i);
 
 			//Object.keys converts the int's to strings
 			for (let i = 0; i < this.currentImages.length; i++) {
@@ -763,12 +799,10 @@ export class ImagesService {
 			}
 
 		} else {
-			let ts = this.tags[index].i;
+			let ts = this.tags[tag_index].i;
 			this.currentImages = this.currentImages.filter(function(v){return ts[v] !== undefined});
 		}
 
-		this.sortCurrentImages();
-		this.setRemainingTags();
 	}
 
 	public setCurrentImagesToSelected() {
