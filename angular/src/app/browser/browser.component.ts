@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
@@ -46,6 +46,11 @@ import { VarouselComponent } from '../varousel/varousel.component';
  *        if a year, month and day are selected then advance one day (need to know the number of days in that month - watch out for leap years)
  *      - Add a "date span" indicator, if I click on "camping" it should show that images go from "Mar 2012 -> Dec 2019"
  *      - Bugs remain with the "apply tags", needs to call something to reload the tags (and close the modal)
+ *      - Edit tags window, clicking on the text for a tag should allow the tag to be modified, watch out for changing to a tag that already exists (that isn't
+ *        the current tag obviously)
+ *      - Add a merge tags feature - once we have labels for geocoded tags, make sure when merging that a warning is issued if one has a geocode and you are about
+ *        to delete that "manual" tag (which is actually the label for the geocode)
+ *        also, warn if the labels are both geocode points for different points
  *     
  *
  *
@@ -98,6 +103,8 @@ export class BrowserComponent implements OnInit {
 	tagFormatter = (tag: {label: string}) => tag.label;
 
 	public tagModel: any;
+
+	public activeModal: NgbActiveModal;
 
 	public imageTags = new FormGroup({
 		addTagName: new FormControl('')
@@ -186,9 +193,7 @@ export class BrowserComponent implements OnInit {
 			this.currentEditTags.push(tag);
 		}
 
-		//TODO - Set focus on the typeahead
-
-		this.modalService.open(this.domModalEditTags, { centered: true});
+		this.activeModal = this.modalService.open(this.domModalEditTags, { centered: true});
 	}
 
 	public clickThumb(thumb) {
@@ -370,14 +375,23 @@ export class BrowserComponent implements OnInit {
 
 		}
 
-		if (del_tags.length == 0 && add_tags.length == 0) {
-			//No changes
-			console.log('No changes');
-		} else {
-			console.log('Delete tags ' + del_tags.join(', '));
-			console.log('Apply tags ' + add_tags.join(', '));
+		if (del_tags.length > 0 || add_tags.length > 0) {
 			this.images.applyTagChanges(add_tags, del_tags);
+
+			console.log('Apply tags done');
+
+			//TODO - reset the tags - but this is complicated
+			//       IF this.viewingSelected then we possibly don't want to change the
+			//       tags
+			//
+			//       But there are definitly problems when the user goes back to "view tags"
+			//       where the new tags don't appear and the deleted tags may sometimes appear
+			//
+			//     - ensure from a timing point of view that apply tag
+			//       changes only returns once the server interactions have completed
 		}
+
+		this.activeModal.close();
 
 	}
 

@@ -36,6 +36,7 @@ TODO ADMIN MODE
 	- IsPerson
 	- SubTag - if this is true, then don't show it until a parent tag has been selected, eg I have three tags "Moore park tigers", "Under 7's", "Under 5's" - If "Under 5's and "Under 7's" were marked as sub tags
 	  then they would only appear when the "Moore park tigers" is set - or some other tag
+	- Add a "view diffs" mode so you can see the changes prior to issuing the "commit" change
 		 
 	 Another one could be "Campsites"
 - Add an "untagged" button. This would return all images that don't have a manually added tag. Eg untagged means an image that has a tag that isn't a camera, date part or 'is video' or geocode
@@ -1270,6 +1271,8 @@ export class ImagesService {
 			//Note, this could be made more performant as the browser module has the image and tag indexes, it translates them to labels
 			//and then the loadDiffs translates them back - but then we need to "loadDiffs" functions
 			this.loadDiffs({diffs:diffs});
+
+			console.log('done');
 
 		});
 
