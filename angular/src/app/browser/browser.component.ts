@@ -45,7 +45,6 @@ import { VarouselComponent } from '../varousel/varousel.component';
  *        if the only date parts are 2019, January, advance goes to february 2019
  *        if a year, month and day are selected then advance one day (need to know the number of days in that month - watch out for leap years)
  *      - Add a "date span" indicator, if I click on "camping" it should show that images go from "Mar 2012 -> Dec 2019"
- *      - Bugs remain with the "apply tags", needs to call something to reload the tags (and close the modal)
  *      - Edit tags window, clicking on the text for a tag should allow the tag to be modified, watch out for changing to a tag that already exists (that isn't
  *        the current tag obviously)
  *      - Add a merge tags feature - once we have labels for geocoded tags, make sure when merging that a warning is issued if one has a geocode and you are about
@@ -376,22 +375,32 @@ export class BrowserComponent implements OnInit {
 		}
 
 		if (del_tags.length > 0 || add_tags.length > 0) {
-			this.images.applyTagChanges(add_tags, del_tags);
+			this.images.applyTagChanges(add_tags, del_tags).subscribe((result) => {
 
-			console.log('Apply tags done');
+				if (result) {
 
-			//TODO - reset the tags - but this is complicated
-			//       IF this.viewingSelected then we possibly don't want to change the
-			//       tags
-			//
-			//       But there are definitly problems when the user goes back to "view tags"
-			//       where the new tags don't appear and the deleted tags may sometimes appear
-			//
-			//     - ensure from a timing point of view that apply tag
-			//       changes only returns once the server interactions have completed
+					this.activeModal.close();
+					this.activeModal = undefined;
+
+					//TODO - reset the tags - but this is complicated
+					//       IF this.viewingSelected then we possibly don't want to change the
+					//       tags
+					//
+					//       But there are definitly problems when the user goes back to "view tags"
+					//       where the new tags don't appear and the deleted tags may sometimes appear
+
+					if (! this.viewingSelected) {
+						this.images.setCurrentTagsFromCurrentImages();
+					}
+
+					this.reset();
+				}
+			});
+
+		} else {
+			this.activeModal.close();
+			this.activeModal = undefined;
 		}
-
-		this.activeModal.close();
 
 	}
 

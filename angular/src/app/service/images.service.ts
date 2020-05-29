@@ -850,6 +850,39 @@ export class ImagesService {
 	}
 
 	/**
+	 * After making changes to the tags, this is called to set
+	 * the current selection of tags from the current image set
+	 */
+	public setCurrentTagsFromCurrentImages() {
+
+		let tags = [];
+
+		for (let image_index of this.currentImages) {
+
+			let image = this.images[image_index];
+
+			if (tags.length == 0) {
+				tags = Object.keys(image.t).map((i) => parseInt(i, 10));
+			} else {
+				tags = tags.filter((i) => {image.t[i] !== undefined});
+			}
+
+		}
+
+		for (let [index, tag_index] of this.currentTags.entries()) {
+			if (tags.indexOf(tag_index) == -1) {
+				this.currentTags.splice(index, 1);
+			}
+		}
+
+		if (this.currentTags.length == 0) {
+			this.setRemainingTags();
+		}
+
+	}
+
+
+	/**
 	 * Add a new tag to the current selected set and restrict the current
 	 * images
 	 */
@@ -1230,10 +1263,11 @@ export class ImagesService {
 		return this.tagIndex[tag.t];
 	}
 
-	public applyTagChanges(add_tags, del_tags) {
+	public applyTagChanges(add_tags, del_tags) : Observable<boolean> {
 
 		if (! environment.api) {
-			return false;
+			//TODO - not sure if this works
+			return new Observable();
 		}
 
 		let url = environment.api + 'applytags';
@@ -1248,33 +1282,32 @@ export class ImagesService {
 			'Content-Type': 'application/json'
 		});
 
-		this.http.post(url, data, {headers: headers}).subscribe(response => {
-			//Generate a diff from what we sent
-			let diffs = {
-				images: {}
-			}
+		return this.http.post(url, data, {headers: headers}).pipe(
+			map(
+				response => {
+					//Generate a diff from what we sent
+					let diffs = {}
 
-			for (let image_id of data.images) {
-				let image_object = {};
+					for (let image_id of data.images) {
+						let image_object = {};
 
-				if (add_tags.length) {
-					image_object['add'] = add_tags;
+						if (add_tags.length) {
+							image_object['add'] = add_tags;
+						}
+
+						if (del_tags.length) {
+							image_object['del'] = del_tags;
+						}
+
+						diffs[image_id] = image_object;
+					}
+
+					this.loadDiffs({diffs:diffs});
+					
+					return true;
 				}
-
-				if (del_tags.length) {
-					image_object['del'] = del_tags;
-				}
-
-				diffs.images[image_id] = image_object;
-			}
-
-			//Note, this could be made more performant as the browser module has the image and tag indexes, it translates them to labels
-			//and then the loadDiffs translates them back - but then we need to "loadDiffs" functions
-			this.loadDiffs({diffs:diffs});
-
-			console.log('done');
-
-		});
+			)
+		);
 
 	}
 
