@@ -9,19 +9,30 @@ import {LOCAL_STORAGE, StorageService } from 'ngx-webstorage-service';
 
 /*
 TODO ADMIN MODE
-- Use local storage, but only for the selection, changes will be applied on the server
-  BUT, maybe we could do the following
-  - Generate a JSON DB which is ONLY based off what is in the images (ie exclude rows which IsNew is true and include the rows marked as IsDeleted)
-	- Generate a JSON DB which is based off what is in the database (include rows which IsNew is true and ignore the rows marked as IsDeleted)
-
 X Select images
 - Add a special tag on the left to "Show selected" (this is done, but need to toggle to be able to go back to the current tagset)
 - Then add tools for
   X Apply union of tags to all selected (eg if some have A, and some have B, after this applies, then ALL will have 
   X Remove tag X from all
 	X Add tag X to all
+  - Correct date
+	 - This should be able to operate on a set, but warn if the set contains multiple dates
+	   Actually, thinking about this, this might be a server side thing. eg
+
+		 correct_dates.pl [camera id] [from] [to] add|minus seconds
+
+		 eg say the dates on a specific camera were behind by 2 months, 3 days and 12 seconds from the 1st of october till the 21st November
+
+		 	 correct_dates.pl goproid [epoch from] [epoch to] +12434534
+
+		 where "epoch from" is the real time, ie I know it was wrong on the 1st, NOT what the gopro is reporting as
+		 
+		 
+
+  - Warn if the "diffs" is getting large, Maybe we can show a "X images modified" on the "Commit changes to files" button
   - Rotate 90 CW / CCW (this would operate on the images files directly), it would also require either
 	  the new dimensions to be in the tagalapi/diffs endpoint OR it would have to modify / rewrite the database.json file
+	- Geocode a "manual" tag / "manual" a geocode tag - BUT, it's possible that you want to have the same "manual" tag for multiple geocode points to preserve accuracy
   - Right click on a tag to edit it's metadata
    - Geocode - note that a Point could have multiple tags
 	 - IsPerson
@@ -29,6 +40,8 @@ X Select images
 	   then they would only appear when the "Moore park tigers" is set - or some other tag
 		 
 		 Another one could be "Campsites"
+- Add an "untagged" button. This would return all images that don't have a manually added tag. Eg untagged means an image that has a tag that isn't a camera, date part or 'is video' or geocode
+- Add an "ungeocoded" button
 
  REST API CHANGES
  - Commit "dirty"
@@ -1208,8 +1221,30 @@ export class ImagesService {
 			'Content-Type': 'application/json'
 		});
 
-		this.http.post(url, data, {headers: headers}).subscribe(data => {
-			console.log(data);
+		this.http.post(url, data, {headers: headers}).subscribe(response => {
+			//Generate a diff from what we sent
+			let diffs = {
+				images: {}
+			}
+
+			for (let image_id of data.images) {
+				let image_object = {};
+
+				if (add_tags.length) {
+					image_object['add'] = add_tags;
+				}
+
+				if (del_tags.length) {
+					image_object['del'] = del_tags;
+				}
+
+				diffs.images[image_id] = image_object;
+			}
+
+			//Note, this could be made more performant as the browser module has the image and tag indexes, it translates them to labels
+			//and then the loadDiffs translates them back - but then we need to "loadDiffs" functions
+			this.loadDiffs({diffs:diffs});
+
 		});
 
 	}

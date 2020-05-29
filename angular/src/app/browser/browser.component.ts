@@ -14,12 +14,14 @@ import { VarouselComponent } from '../varousel/varousel.component';
 /*
  * TODO - Handle window resize
  *      - Is there any reason to have the "Point" tag dropdown?
- *      - Editing image tags
- *        - Create a new/edit tag form component. Provide a tool to geocode the tag
- *        - Clicking on edit tag should also show a "apply to all selected images" checkbox
- *        - Remove tag from images
- *        - Delete tag completely
- *        - Colour in the new tag label green (same as when the user selects it)
+ *      - When viewing a specific image, show the remaining "manual tags"
+ *      - Year / Month / Day tags. When in the "current tags" list, do something to advance, go back from the current datepart combination
+ *        eg if the only date part is the year 2019 selected, advance goes to 2020
+ *        if the only date parts are 2019, January, advance goes to february 2019
+ *        if a year, month and day are selected then advance one day (need to know the number of days in that month - watch out for leap years)
+ *      - Add a "date span" indicator, if I click on "camping" it should show that images go from "Mar 2012 -> Dec 2019"
+ *      - Bugs remain with the "apply tags", needs to call something to reload the tags (and close the modal)
+ *     
  *
  * BUGS - Doesn't always happen, but if you click quickly through the images using the "next" button, sometimes it doesn't load the final image
  */
