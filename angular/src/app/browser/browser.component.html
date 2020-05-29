@@ -101,7 +101,7 @@
 			</div>
 			<ng-container *ngIf="! mainImage">
 				<app-map      *ngIf="isMapMode"  #map (selectedThumb)="selectTagHideMap($event)" (selectedPoint)="selectTagHideMap($event)"></app-map>
-				<app-varousel *ngIf="!isMapMode" #varousel [mainciindex]="mainciindex" [viewingSelected]="viewingSelected" (selectedThumb)="clickThumb($event)"></app-varousel>
+				<app-varousel *ngIf="!isMapMode" #varousel [mainciindex]="mainciindex" [selectMode]="selectMode" (selectedThumb)="clickThumb($event)"></app-varousel>
 			</ng-container>
 		</div>
 	</div>

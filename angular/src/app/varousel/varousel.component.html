@@ -7,7 +7,7 @@
 			<h5>{{thumb.heading}}<span class="headertool">(select all)</span><span class="headertool">(edit tags)</span></h5>
  		</ng-template>
  		<ng-template #vthumb>
-			<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="open(thumb)" [ngClass]="{'selected' : viewingSelected && ! thumb.s || !viewingSelected && thumb.s}" />
+			<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="open(thumb)" [ngClass]="{'selected' : selectMode && thumb.s}" />
  			<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
  		</ng-template>
  	</div>

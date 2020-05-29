@@ -18,7 +18,7 @@ export class VarouselComponent implements OnInit, AfterViewInit {
 	@ViewChild('content') domContent: ElementRef;
 
 	@Input() mainciindex: number;
-	@Input() viewingSelected: boolean;
+	@Input() selectMode: boolean;
 
 	@Output() selectedThumb: EventEmitter<any> = new EventEmitter();
 

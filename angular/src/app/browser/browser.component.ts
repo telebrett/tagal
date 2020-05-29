@@ -15,8 +15,11 @@ import { VarouselComponent } from '../varousel/varousel.component';
  * TODO - Handle window resize
  *      - Is there any reason to have the "Point" tag dropdown?
  *      - Selection tools. I'm not happy with how the "select all" / "select none" inverts when in "view selected"
- *      - "View selected" - this should toggle it's label, and also when "viewing the selected", it should grey
- *        out the selected tags at the top, as that's not what is in the current view
+ *        
+ *        I think what to do here, is do NOT invert, but if we are in "view mode", then don't have the "selected" marker
+ *        on the images (the opacity overlay and red border)
+ *        
+ *
  *      - When clicking on a year, show the months as sub menus, and inside them, show the days as sub sub menus
  *        OR have a "tag search" box, if you type a date eg "2019/12/28" it would select "2019" "december" and "28"
  *        maybe the tag search box should have a calenadar icon on the right, so you get a popup calendar
@@ -201,13 +204,13 @@ export class BrowserComponent implements OnInit {
 
 	public selectAll() {
 		//If we are "viewing selected" than "select" actually deselects
-		this.setSelectAll(this.viewingSelected ? false : true);
+		this.setSelectAll(true);
 		this.numSelected = this.images.getNumSelected();
 	}
 
 	public selectNone() {
 		//If we are "viewing selected" than "deselect" actually selects
-		this.setSelectAll(this.viewingSelected ? true : false);
+		this.setSelectAll(false);
 		this.numSelected = this.images.getNumSelected();
 	}
 
