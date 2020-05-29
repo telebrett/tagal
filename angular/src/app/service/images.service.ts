@@ -864,7 +864,7 @@ export class ImagesService {
 			if (tags.length == 0) {
 				tags = Object.keys(image.t).map((i) => parseInt(i, 10));
 			} else {
-				tags = tags.filter((i) => {image.t[i] !== undefined});
+				tags = tags.filter((i) => image.t[i] !== undefined);
 			}
 
 		}

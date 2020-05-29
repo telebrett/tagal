@@ -34,6 +34,8 @@ import { VarouselComponent } from '../varousel/varousel.component';
  *        THEN at that point, "edit tags" should ONLY apply to those images I just selected
  *
  *        POSSIBLY with the visible images behind the modal ONLY showing the images that the tags will affect
+ *      - When viewing the main image, if you click on "Edit tags" then it only applies to that ONE image
+ *      - In the edit tags modal, show an indicator of how many images this will apply to
  *      - Editing image tags
  *        - Create a new/edit tag form component. Provide a tool to geocode the tag
  *        - Clicking on edit tag should also show a "apply to all selected images" checkbox
