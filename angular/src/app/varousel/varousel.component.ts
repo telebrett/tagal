@@ -21,6 +21,8 @@ export class VarouselComponent implements OnInit, AfterViewInit {
 	@Input() selectMode: boolean;
 
 	@Output() selectedThumb: EventEmitter<any> = new EventEmitter();
+	@Output() selectTags: EventEmitter<any> = new EventEmitter();
+	@Output() selectImages: EventEmitter<any> = new EventEmitter();
 
 	//This is set to the total height of the content we are scrolling through
 	public varouselHeight = 0;
@@ -48,8 +50,27 @@ export class VarouselComponent implements OnInit, AfterViewInit {
 		}
 	}
 
-	public setThumbsSelect(select : boolean) {
+	public setTagsByHeading(heading) {
+		this.selectTags.emit(heading.tagIndexes);
+	}
+
+	public selectByHeading(heading,select:boolean) {
+		this.selectImages.emit({indexes:heading.tagIndexes,select:select});
+	}
+
+	public editTagsByHeading(heading) {
+		console.log('c');
+		console.log(heading);
+	}
+
+	public setThumbsSelect(select : boolean, affected_images?) {
+
 		for (let thumb of this.thumbs) {
+
+			if (affected_images && affected_images.indexOf(thumb.index) == -1) {
+				continue;
+			}
+
 			thumb.s = select;
 		}
 	}

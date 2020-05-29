@@ -49,9 +49,11 @@ import { VarouselComponent } from '../varousel/varousel.component';
  *      - Add a "date span" indicator, if I click on "camping" it should show that images go from "Mar 2012 -> Dec 2019"
  *      - Edit tags window, clicking on the text for a tag should allow the tag to be modified, watch out for changing to a tag that already exists (that isn't
  *        the current tag obviously)
- *      - Add a merge tags feature - once we have labels for geocoded tags, make sure when merging that a warning is issued if one has a geocode and you are about
+ *      - Add a dedupe tags feature - once we have labels for geocoded tags, make sure when merging that a warning is issued if one has a geocode and you are about
  *        to delete that "manual" tag (which is actually the label for the geocode)
  *        also, warn if the labels are both geocode points for different points
+ *      - When viewing a full size image, the carousel should have an indicator around the thumbnail that is currently being shown
+ *      - Provide a full screen mode for the image, video already has this by default
  *     
  *
  *
@@ -195,6 +197,29 @@ export class BrowserComponent implements OnInit {
 		}
 
 		this.activeModal = this.modalService.open(this.domModalEditTags, { centered: true});
+	}
+
+	/**
+	 * Bulk select images based on tags
+	 */
+	public selectImages(tag_indexes, select: boolean) {
+		if (! this.selectMode) {
+			console.error('Not in select mode');
+			return;
+		}
+
+		let affected = this.images.selectImages(tag_indexes, select);
+		this.numSelected = this.images.getNumSelected();
+
+		if (this.varousel) {
+			this.varousel.setThumbsSelect(select, affected);
+		}
+
+		if (this.carousel) {
+			this.carousel.setThumbsSelect(select, affected);
+		}
+
+
 	}
 
 	public clickThumb(thumb) {
@@ -422,23 +447,31 @@ export class BrowserComponent implements OnInit {
 	}
 
 	public selectTagHideMap(event: any) {
-
 		this.isMapMode = false;
 		this.selectTag(event.tag, event.imageIndex);
-
 	}
 
-	public selectTag(tag: any, imageIndex?: number) {
+	public selectTags(tags) {
 
 		this.viewingSelected = false;
 
 		this.mainImage = null;
-		if (tag.index !== undefined) {
-			this.images.selectTag(tag.index);
-		} else {
-			this.images.selectTag(tag);
-		}
+
+		this.images.selectTags(tags);
 		this.reset();
+		
+	}
+
+	public selectTag(tag: any, imageIndex?: number) {
+
+		let tags = [] ;
+
+		if (tag.index !== undefined) {
+			tags.push(tag.index);
+		} else {
+			tags.push(tag);
+		}
+		this.selectTags(tags);
 
 		if (imageIndex) {
 
@@ -448,7 +481,6 @@ export class BrowserComponent implements OnInit {
 			}
 
 		}
-
 	}
 
 	public deselectTag(tag: any) {

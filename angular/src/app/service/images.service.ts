@@ -573,6 +573,59 @@ export class ImagesService {
 
 	}
 
+	/**
+	 * Bulk select from the currentImages for those
+	 * that also have all the passed tag indexes
+	 *
+	 * Returns an array of image indexes affected
+	 */
+	public selectImages(tagIndexes, select) {
+
+		let hash = {};
+
+		if (this.storage.has(STORAGE_SELECTED)) {
+			hash = this.storage.get(STORAGE_SELECTED);
+		}
+
+		let affected = [];
+
+		for (let image_index of this.currentImages) {
+			let image = this.images[image_index];
+
+			let all_found = true;
+
+			for (let tag_index of tagIndexes) {
+				if (! image.t[tag_index]) {
+					all_found = false;
+					break;
+				}
+			}
+
+			if (all_found) {
+
+				affected.push(image_index);
+
+				let prev = image.s;
+				image.s = select;
+
+				if (prev != image.s) {
+					this.numSelected += image.s ? 1 : -1;
+				}
+
+				if (select) {
+					delete hash[image_index];
+				} else {
+					hash[image_index] = true;
+				}
+			}
+		}
+
+		this.storage.set(STORAGE_SELECTED, hash);
+
+		return affected;
+
+	}
+
 	public toggleSelectImageFromIndex(thumb) {
 
 		let index = this.getImageIndex(thumb.ciindex);
@@ -881,20 +934,23 @@ export class ImagesService {
 
 	}
 
-
 	/**
 	 * Add a new tag to the current selected set and restrict the current
 	 * images
 	 */
-	public selectTag(index: number) {
+	public selectTags(indexes: [number]) {
 
-		if (this.currentTags.indexOf(index) !== -1) {
-			return;
+		let index;
+		while (index = indexes.shift()) {
+
+			if (this.currentTags.indexOf(index) !== -1) {
+				continue;
+			}
+
+			this.currentTags.push(index);
+
+			this.selectTagSetCurrentImages(this.currentTags.length - 1);
 		}
-
-		this.currentTags.push(index);
-
-		this.selectTagSetCurrentImages(this.currentTags.length - 1);
 
 		this.sortCurrentImages();
 		this.setRemainingTags();
@@ -1054,6 +1110,7 @@ export class ImagesService {
 
 			let image = this.images[this.currentImages[i]];
 			let image_key = [];
+			let image_datetags = [];
 
 			for (let tagIndex in image.t) {
 				let tag = this.tags[tagIndex];
@@ -1063,9 +1120,9 @@ export class ImagesService {
 				}
 
 				switch (tag.m.datetype) {
-					case 'year' : image_key[0] = tag.m.dateval; break;
-					case 'month': image_key[1] = tag.m.dateval; break;
-					case 'day'  : image_key[2] = tag.m.dateval; break;
+					case 'year' : image_datetags[0] = tagIndex; image_key[0] = tag.m.dateval; break;
+					case 'month': image_datetags[1] = tagIndex; image_key[1] = tag.m.dateval; break;
+					case 'day'  : image_datetags[2] = tagIndex; image_key[2] = tag.m.dateval; break;
 				}
 			}
 
@@ -1085,7 +1142,8 @@ export class ImagesService {
 					tl: top_left, 
 					height: headingHeight,
 					width: maxWidth,
-					heading: this.buildDateLabel(image_key[2], 'day') + ' ' + this.buildDateLabel(image_key[1], 'month') + ', ' + image_key[0]
+					heading: this.buildDateLabel(image_key[2], 'day') + ' ' + this.buildDateLabel(image_key[1], 'month') + ', ' + image_key[0],
+					tagIndexes: image_datetags.map((index) => parseInt(index, 10))
 				};
 
 				//This initial height is the height of the heading, yes it sucks for the service to be tied to the UI in this way, but this needs to know the heights for performance
