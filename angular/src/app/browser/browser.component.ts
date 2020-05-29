@@ -39,6 +39,14 @@ import { VarouselComponent } from '../varousel/varousel.component';
  *        - Clicking on edit tag should also show a "apply to all selected images" checkbox
  *        - Remove tag from images
  *        - Delete tag completely
+ *      - When viewing a specific image, show the remaining "manual tags"
+ *      - Year / Month / Day tags. When in the "current tags" list, do something to advance, go back from the current datepart combination
+ *        eg if the only date part is the year 2019 selected, advance goes to 2020
+ *        if the only date parts are 2019, January, advance goes to february 2019
+ *        if a year, month and day are selected then advance one day (need to know the number of days in that month - watch out for leap years)
+ *      - Add a "date span" indicator, if I click on "camping" it should show that images go from "Mar 2012 -> Dec 2019"
+ *      - Bugs remain with the "apply tags", needs to call something to reload the tags (and close the modal)
+ *     
  *
  *
  * BUGS - Doesn't always happen, but if you click quickly through the images using the "next" button, sometimes it doesn't load the final image
@@ -69,7 +77,7 @@ export class BrowserComponent implements OnInit {
 			map(term => {
 				//TODO - Pass in the tags that the selected set all have already
 				//       so they can be excluded from the results
-				let tags = this.images.searchTag(term);
+				let tags = this.images.searchTag(term, this.currentEditTags);
 				for (let tag of tags) {
 					if (term.toLowerCase() == tag.label.toLowerCase()) {
 						return tags;
@@ -305,11 +313,11 @@ export class BrowserComponent implements OnInit {
 		if (tag.countInCurrent == this.currentImagesLength) {
 			return;
 		}
+
 		tag.applyAll = ! tag.applyAll;
 	}
 
 	public toggleUnsetTag(tag){ 
-
 		if (tag.index == -1 || tag.countInCurrent === undefined) {
 
 			for (let [index, searchTag] of this.currentEditTags.entries()) {
@@ -323,24 +331,54 @@ export class BrowserComponent implements OnInit {
 		}
 
 		tag.delete = ! tag.delete;
-		//this.currentEditTags = this.images.unsetTagAgainstCurrentImages(index);
 	}
 
 	public addTagFromSearch(event) {
-		console.log(event);
-
 		this.tagModel = null;
 		event.preventDefault();
 
-		if (event.item.index == -1) {
-			event.item.countInCurrent = this.currentImagesLength;
-		}
+		event.item.applyAll = true;
 
 		this.currentEditTags.push(event.item);
 	}
 
 	public applyTagChanges() {
-		//TODO - probably need to, you know, do stuff
+
+		let add_tags = [];
+		let del_tags = [];
+
+		for (let editTag of this.currentEditTags) {
+
+			if (editTag.delete) {
+				del_tags.push(editTag.label);
+			} else {
+
+				if (
+					editTag.index != -1
+					&& (
+						! editTag.applyAll
+						|| editTag.countInCurrent == this.currentImagesLength 
+					)
+				) {
+					//This is an existing tag that is not applying to all and the user didn't want to make it apply to all or it's an existing tag that was already applying to all
+					continue;
+				}
+
+				add_tags.push(editTag.label);
+
+			}
+
+		}
+
+		if (del_tags.length == 0 && add_tags.length == 0) {
+			//No changes
+			console.log('No changes');
+		} else {
+			console.log('Delete tags ' + del_tags.join(', '));
+			console.log('Apply tags ' + add_tags.join(', '));
+			this.images.applyTagChanges(add_tags, del_tags);
+		}
+
 	}
 
 	private reset() {

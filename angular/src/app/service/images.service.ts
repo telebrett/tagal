@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
 import {Observable} from "rxjs";
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 import {HttpClient, HttpHeaders} from '@angular/common/http';
@@ -17,16 +17,30 @@ TODO ADMIN MODE
 	  as well as regenerate the thumbnails / previews
 
  - Right click on a tag to edit it's metadata
-   - Geocode - note that a Point could have multiple tags
-	 - IsPerson
+  - Correct date
+	 - This should be able to operate on a set, but warn if the set contains multiple dates
+	   Actually, thinking about this, this might be a server side thing. eg
 
- REST API CHANGES
- - Commit tag changes
- - Rotate images (only handle a single image)
+		 correct_dates.pl [camera id] [from] [to] add|minus seconds
 
-TODO - Non admin mode
-- Store the "currenttags" selection in storage
-- Generate links which select tags
+		 eg say the dates on a specific camera were behind by 2 months, 3 days and 12 seconds from the 1st of october till the 21st November
+
+		 	 correct_dates.pl goproid [epoch from] [epoch to] +12434534
+
+		 where "epoch from" is the real time, ie I know it was wrong on the 1st, NOT what the gopro is reporting as
+		 
+		 
+
+  - Warn if the "diffs" is getting large, Maybe we can show a "X images modified" on the "Commit changes to files" button
+	- Geocode a "manual" tag / "manual" a geocode tag - BUT, it's possible that you want to have the same "manual" tag for multiple geocode points to preserve accuracy
+	- IsPerson
+	- SubTag - if this is true, then don't show it until a parent tag has been selected, eg I have three tags "Moore park tigers", "Under 7's", "Under 5's" - If "Under 5's and "Under 7's" were marked as sub tags
+	  then they would only appear when the "Moore park tigers" is set - or some other tag
+		 
+	 Another one could be "Campsites"
+- Add an "untagged" button. This would return all images that don't have a manually added tag. Eg untagged means an image that has a tag that isn't a camera, date part or 'is video' or geocode
+- Add an "ungeocoded" button
+
 */
 
 const STORAGE_HASH     = 'dbhash';
@@ -45,7 +59,6 @@ export class ImagesService {
 	 * string  f  Image filename eg 'foo.jpg'
 	 * float   r  The ratio of height to width TODO width to height?
 	 * object  t  hash of tag indexes - the tags that have possibly been added / removed
-	 * object  ot hash of tag indexes - this is the list of tags that the image has on disk TODO - This may change
 	 * bool    s  True if the image is currently marked as selected (key may not exist)
 	 * bool    v  True if the image is actually a video.
 	 *
@@ -71,6 +84,12 @@ export class ImagesService {
 	 */
 	private tagIndex = {};
 
+	/**
+	 * Keys are the image ids, values are the index in this.images
+	 * Note, this is only populated if the API is available
+	 */
+	private imageIDIndex = {};
+
 	private monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
 	private dirty;
@@ -90,66 +109,131 @@ export class ImagesService {
 	public loadImages() : Observable<boolean> {
 
 		let database_source = environment.databaseSource;
+		if (this.hasAPI()) {
+			let diffs_source = environment.api + 'diffs';
 
-		return this.http.get(database_source).pipe(map((data:any) => {
+			return this.http.get(database_source).pipe(
+				switchMap(data => {
+					this.loadDatabase(data);
+					return this.http.get(diffs_source).pipe(map(diffs => this.loadDiffs(diffs)));
+				})
+			);
 
-			let si = 0;
-			let image_indexes = {};
-			for (let image_id in data.images) {
-
-				let image = data.images[image_id];
-
-				let path = image[0].match(/^(.*)\/(.*)$/);
-
-				let imagehash = {id:image_id, p:path[1],f:path[2],r:image[1],t:{},ot:{},o:image[2],v:image.length>3};
-
-				image_indexes[image_id] = si;
-
-				//The json file is keyed by the image database id
-				//But we use arrays instead of hashes as array lookups are significantly faster than hash lookups
-				this.images[si++] = imagehash;
-			}
-
-			for (let tag_index in data.tags) {
-
-				//Map the json indexes to our array indexes
-				let local_image_indexes = [];
-				for (let image_id of data.tags[tag_index]) {
-					local_image_indexes.push(image_indexes[image_id]);
-				}
-
-				this.addTag(tag_index, local_image_indexes, data.tagmetadata[tag_index], true);
-			}
-
-			this.setRemainingTags();
-
-			if (this.hasAPI()) {
-				let mismatched_hash = false;
-
-				if (this.storage.has(STORAGE_HASH)) {
-					this.storage.set(STORAGE_HASH, data.hash);
-				} else {
-					let hash = this.storage.get(STORAGE_HASH);
-					if (hash != data.hash) {
-						mismatched_hash = true;
-					}
-				}
-
-				//TODO - What to do on mismatched hash
-				if (this.storage.has(STORAGE_SELECTED)) {
-					let selected = this.storage.get(STORAGE_SELECTED);
-
-					for (let index in selected) {
-						this.images[index].s = true;
-						this.numSelected++;
-					}
-				}
-			}
-
-			return true;
-		}));
+		} else {
+			return this.http.get(database_source).pipe(map((data:any) => this.loadDatabase(data)));
+		}
 
 	}
+
+	private loadDatabase(data) : boolean {
+
+		let si = 0;
+		let image_indexes = {};
+		for (let image_id in data.images) {
+
+			let image = data.images[image_id];
+
+			let path = image[0].match(/^(.*)\/(.*)$/);
+
+			let imagehash = {id:image_id, p:path[1],f:path[2],r:image[1],t:{},o:image[2],v:image.length>3};
+
+			image_indexes[image_id] = si;
+
+			//The json file is keyed by the image database id
+			//But we use arrays instead of hashes as array lookups are significantly faster than hash lookups
+			this.images[si++] = imagehash;
+		}
+
+		if (this.hasAPI()) {
+			this.imageIDIndex = image_indexes;
+		}
+
+		for (let tag_index in data.tags) {
+
+			//Map the json indexes to our array indexes
+			let local_image_indexes = [];
+			for (let image_id of data.tags[tag_index]) {
+				local_image_indexes.push(image_indexes[image_id]);
+			}
+
+			this.addTag(tag_index, local_image_indexes, data.tagmetadata[tag_index]);
+		}
+
+		if (this.hasAPI()) {
+			let mismatched_hash = false;
+
+			if (this.storage.has(STORAGE_HASH)) {
+				this.storage.set(STORAGE_HASH, data.hash);
+			} else {
+				let hash = this.storage.get(STORAGE_HASH);
+				if (hash != data.hash) {
+					mismatched_hash = true;
+				}
+			}
+
+			//TODO - What to do on mismatched hash
+			if (this.storage.has(STORAGE_SELECTED)) {
+				let selected = this.storage.get(STORAGE_SELECTED);
+
+				for (let index in selected) {
+					this.images[index].s = true;
+					this.numSelected++;
+				}
+			}
+
+		} else {
+				this.setRemainingTags();
+		}
+
+		return true;
+	}
+
+	private loadDiffs(data) : boolean {
+
+		for (let image_id in data.diffs) {
+			let image_diff = data.diffs[image_id];
+
+			let image_index = this.imageIDIndex[image_id];
+
+			if (image_diff.add) {
+				for (let tag of image_diff.add) {
+					let tag_index = this.tagIndex[tag];
+
+					if (tag_index === undefined) {
+						this.addTag(tag, [image_index], null);
+					} else {
+						this.images[image_index].t[tag_index] = true;
+						this.tags[tag_index].i[image_index] = true;
+					}
+				}
+
+			}
+
+			if (image_diff.del) {
+				for (let tag of image_diff.del) {
+					let tag_index = this.tagIndex[tag];
+
+					if (tag_index === undefined) {
+						continue;
+					}
+
+					delete this.images[image_index].t[tag_index];
+					delete this.tags[tag_index].i[image_index];
+
+					//TODO - If the tag.i is empty, maybe it should be removed?
+					//       but only if it has been removed from the database,
+					//       which would have to be returned in the diffs
+				}
+			}
+
+		}
+
+		this.setRemainingTags();
+
+		return true;
+
+	}
+	
 
 	public storageSet(key: string, value: any) {
 		this.storage.set(key, value);
@@ -333,7 +417,7 @@ export class ImagesService {
 
 	}
 
-	public searchTag(term: string) {
+	public searchTag(term: string, exclude: any) {
 
 		term = term.toLowerCase();
 
@@ -343,15 +427,30 @@ export class ImagesService {
 			return matches;
 		}
 
+		let exclude_lower = exclude.map((tag) => tag.label.toLowerCase());
+
 		for (let [index, tag] of this.tags.entries()) {
 
 			if (tag.m && (tag.m.datetype || tag.m.type == 'camera' || tag.m.type == 'point' || tag.m.type == 'video')) {
 				continue;
 			}
 
+
 			let label = tag.t;
 
 			label = label.toLowerCase();
+
+			let found = false;
+			for (let ex of exclude_lower) {
+				if (ex == label) {
+					found = true;
+					break;
+				}
+			}
+
+			if (found) {
+				continue;
+			}	
 
 			if (label.indexOf(term) != -1) {
 				matches.push({label: tag.t, index: index});
@@ -1130,6 +1229,52 @@ export class ImagesService {
 		return this.tagIndex[tag.t];
 	}
 
+	public applyTagChanges(add_tags, del_tags) {
+
+		if (! environment.api) {
+			return false;
+		}
+
+		let url = environment.api + 'applytags';
+
+		let data = {
+			images: this.currentImages.map((index) => this.images[index].id),
+			add: add_tags,
+			del: del_tags
+		}
+
+		let headers = new HttpHeaders({
+			'Content-Type': 'application/json'
+		});
+
+		this.http.post(url, data, {headers: headers}).subscribe(response => {
+			//Generate a diff from what we sent
+			let diffs = {
+				images: {}
+			}
+
+			for (let image_id of data.images) {
+				let image_object = {};
+
+				if (add_tags.length) {
+					image_object['add'] = add_tags;
+				}
+
+				if (del_tags.length) {
+					image_object['del'] = del_tags;
+				}
+
+				diffs.images[image_id] = image_object;
+			}
+
+			//Note, this could be made more performant as the browser module has the image and tag indexes, it translates them to labels
+			//and then the loadDiffs translates them back - but then we need to "loadDiffs" functions
+			this.loadDiffs({diffs:diffs});
+
+		});
+
+	}
+
 	private niceTag(tag, countInCurrent?: number) {
 
 		let label = tag.l;
@@ -1284,7 +1429,7 @@ export class ImagesService {
 
 	}
 
-	private addTag(key: string, imageIndexes: any, metadata: any, initialLoad: boolean) {
+	private addTag(key: string, imageIndexes: any, metadata: any) {
 		
 		if (this.tagIndex[key] !== undefined) {
 			return false;
@@ -1297,12 +1442,6 @@ export class ImagesService {
 		for (let i = 0; i < imageIndexes.length; i++) {
 			o.i[imageIndexes[i]] = true;
 			this.images[imageIndexes[i]].t[tagIndex] = true;
-
-			if (initialLoad) {
-				this.images[imageIndexes[i]].ot[tagIndex] = true;
-			} else {
-				this.dirty[imageIndexes[i]] = true;
-			}
 		}
 
 		if (metadata) {
