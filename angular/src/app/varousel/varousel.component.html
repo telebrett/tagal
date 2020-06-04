@@ -5,9 +5,16 @@
  		<ng-container *ngIf="thumb.heading; then vheading; else vthumb"></ng-container>
  		<ng-template #vheading>
 			<h5><span (click)="setTagsByHeading(thumb)">{{thumb.heading}}</span>
-				<span *ngIf="selectMode" class="headertool" (click)="selectByHeading(thumb,true)">(select all)</span>
-				<span *ngIf="selectMode" class="headertool" (click)="selectByHeading(thumb,false)">(select none)</span>
-				<span class="headertool" (click)="editTagsByHeading(thumb)">(edit tags)</span></h5>
+				<span *ngIf="selectMode && ! thumb.allSelected" class="headertool hover" (click)="selectByHeading(thumb,true)" title="Select all" (mouseleave)="headingMouseleave(thumb)">
+					<fa-icon [icon]="['far', 'square']"></fa-icon>
+					<fa-icon [icon]="['far', 'check-square']" class="hover"></fa-icon>
+				</span>
+				<span *ngIf="selectMode && thumb.allSelected" class="headertool hover" (click)="selectByHeading(thumb,false)" title="Select none" (mouseleave)="headingMouseleave(thumb)">
+					<fa-icon [icon]="['far', 'check-square']"></fa-icon>
+					<fa-icon [icon]="['far', 'square']" class="hover"></fa-icon>
+				</span>
+				<span class="headertool fas fas-tags" (click)="editTagsByHeading(thumb)"><fa-icon [icon]="['fas', 'tags']" title="Edit tags"></fa-icon></span>
+			</h5>
  		</ng-template>
  		<ng-template #vthumb>
 			<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="open(thumb)" [ngClass]="{'selected' : selectMode && thumb.s}" />

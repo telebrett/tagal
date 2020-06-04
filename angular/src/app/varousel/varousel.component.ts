@@ -2,9 +2,7 @@ import { Component, ViewChild, ElementRef, Input, Output, EventEmitter, OnInit, 
 import { ImagesService } from '../service/images.service';
 
 /*
- * TODO - Click on the day heading to select that day (and month if no month already selected)
- *      - Select all / none in the current set
- *      - Right click when in select mode to view the image anyway
+ * TODO - Right click when in select mode to view the image
  */
 
 @Component({
@@ -55,7 +53,25 @@ export class VarouselComponent implements OnInit, AfterViewInit {
 	}
 
 	public selectByHeading(heading,select:boolean) {
+
+		if (heading.tmpAllSelected != undefined) {
+			//The user just double clicked, we actually want to do the inverse
+			select = ! heading.tmpAllSelected;
+			heading.allSelected = ! select;
+		}
+
 		this.selectImages.emit({indexes:heading.tagIndexes,select:select});
+
+		//If we change the allSelected in here, it show straight away in the UI
+		//which is weird when the user still has there cursor over it
+		heading.tmpAllSelected = select;
+	}
+
+	public headingMouseleave(heading) {
+		if (heading.tmpAllSelected != undefined) {
+			heading.allSelected = heading.tmpAllSelected;
+			delete heading.tmpAllSelected;
+		}
 	}
 
 	public editTagsByHeading(heading) {

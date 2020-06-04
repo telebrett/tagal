@@ -36,15 +36,21 @@
 		<span class="mr-1">{{numSelected}} selected</span>
 		<div class="btn-group mr-1">
 			<button type="button" class="btn btn-primary" (click)="toggleSelectMode()">{{selectMode ? 'View' : 'Select'}} mode</button>
-			<button *ngIf="selectMode" type="button" class="btn btn-primary" (click)="selectAll()">Select all</button>
-			<button *ngIf="selectMode" type="button" class="btn btn-primary" (click)="selectNone()">Select none</button>
+			<button *ngIf="selectMode && ! currentAllSelected" type="button" class="btn btn-primary hover" (click)="selectAll()" title="Select all" (mouseleave)="changeSelectAllLeave()">
+				<fa-icon [icon]="['far', 'square']"></fa-icon>
+				<fa-icon [icon]="['far', 'check-square']" class="hover"></fa-icon>
+			</button>
+			<button *ngIf="selectMode && currentAllSelected" type="button" class="btn btn-primary hover" (click)="selectNone()" title="Select none" (mouseleave)="changeSelectAllLeave()">
+				<fa-icon [icon]="['far', 'check-square']"></fa-icon>
+				<fa-icon [icon]="['far', 'square']" class="hover"></fa-icon>
+			</button>
 		</div>
 		<div class="btn-group mr-1">
-			<button type="button" class="btn btn-primary" (click)="editTags()">Edit tags</button>
+			<button type="button" class="btn btn-primary" (click)="editTags()"><fa-icon [icon]="['fas', 'tags']" title="Edit tags"></fa-icon></button>
 		</div>
 		<div class="btn-group">
-			<button type="button" class="btn btn-primary">CW</button>
-			<button type="button" class="btn btn-primary">CCW</button>
+			<button type="button" class="btn btn-primary"><fa-icon [icon]="['fas', 'undo']" flip="horizontal" title="Rotate clock wise"></fa-icon></button>
+			<button type="button" class="btn btn-primary"><fa-icon [icon]="['fas', 'undo']" title="Rotate counter clock wise"></fa-icon></button>
 		</div>
 	</div>
 	<!-- TODO - Show the number of images currently showing -->
@@ -74,10 +80,10 @@
 							fileSaver
 							[fileName]="mainImage.name"
 							[url]="mainImage.src"
-							>D</button>
-						<button type="button" class="btn btn-primary" (click)="prevMain()">&lt;</button>
-						<button type="button" class="btn btn-primary" (click)="nextMain()">&gt;</button>
-						<button type="button" class="btn btn-primary" (click)="toggleExifData()">I</button>
+							><fa-icon [icon]="['fas', 'download']" title="Download"></fa-icon></button>
+						<button type="button" class="btn btn-primary" (click)="prevMain()"><fa-icon [icon]="['fas', 'long-arrow-alt-left']" title="Previous"></fa-icon></button>
+						<button type="button" class="btn btn-primary" (click)="nextMain()"><fa-icon [icon]="['fas', 'long-arrow-alt-right']" title="Next"></fa-icon></button>
+						<button type="button" class="btn btn-primary" (click)="toggleExifData()"><fa-icon [icon]="['fas', 'info']" title="EXIF data"></fa-icon></button>
 						<button type="button" class="btn btn-primary" (click)="hideMainImage()">X</button>
 					</div>
 					<div #exif class="exif" [ngStyle]="{'right.px': mainImageExif ? '0' : '-350'}">

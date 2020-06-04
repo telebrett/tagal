@@ -16,6 +16,9 @@ import { VarouselComponent } from './varousel/varousel.component';
 import { DeCamelCase } from './tools/decamelcase-pipe';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FontAwesomeModule, FaIconLibrary } from '@fortawesome/angular-fontawesome';
+import { faSquare, faCheckSquare as farCheckSquare } from '@fortawesome/free-regular-svg-icons';
+import { faTags,faCheckSquare, faUndo, faInfo, faDownload, faLongArrowAltLeft, faLongArrowAltRight } from '@fortawesome/free-solid-svg-icons';
 
 @NgModule({
   declarations: [
@@ -34,9 +37,24 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     FileSaverModule,
     NgbModule,
 		ReactiveFormsModule,
-		FormsModule
+		FormsModule,
+		FontAwesomeModule
   ],
   providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule { 
+
+	constructor(private library: FaIconLibrary) {
+		library.addIcons(faTags);
+		library.addIcons(faSquare);
+		library.addIcons(faCheckSquare);
+		library.addIcons(farCheckSquare);
+		library.addIcons(faUndo);
+		library.addIcons(faInfo);
+		library.addIcons(faDownload);
+		library.addIcons(faLongArrowAltLeft);
+		library.addIcons(faLongArrowAltRight);
+	}
+
+}

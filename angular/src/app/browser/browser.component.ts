@@ -18,6 +18,8 @@ import { VarouselComponent } from '../varousel/varousel.component';
  *        OR have a "tag search" box, if you type a date eg "2019/12/28" it would select "2019" "december" and "28"
  *        maybe the tag search box should have a calenadar icon on the right, so you get a popup calendar
  *        to choose from
+ *      - "Select all" / "Select none" , as per the varousel, show the "tick" if not all images in the current view
+ *        are selected, otherwise, show the empty box icon
  *      - Vertical view mode - clicking on the vblock header "3rd August, 2019" should set the tags for that day
  *        Also add a "select all" link
  *      - If the following series of events occurs
@@ -139,6 +141,8 @@ export class BrowserComponent implements OnInit {
 	public selectMode = false;
 	public viewingSelected = false;
 	public numSelected;
+	public currentAllSelected;
+	public tmpAllSelected;
 
 	public mainImageLoading = false;
 
@@ -153,6 +157,7 @@ export class BrowserComponent implements OnInit {
 		this.images.loadImages().subscribe(() => {
 		 	this.menuTags = this.images.getRemainingTags();
 			this.numSelected = this.images.getNumSelected();
+			this.currentAllSelected = this.images.getCurrentImagesAllSelected();
 			this.selectMode = this.images.storageGet('selectMode');
 		});
 
@@ -210,6 +215,7 @@ export class BrowserComponent implements OnInit {
 
 		let affected = this.images.selectImages(tag_indexes, select);
 		this.numSelected = this.images.getNumSelected();
+		this.currentAllSelected = this.images.getCurrentImagesAllSelected();
 
 		if (this.varousel) {
 			this.varousel.setThumbsSelect(select, affected);
@@ -227,6 +233,7 @@ export class BrowserComponent implements OnInit {
 		if (this.selectMode) {
 			this.images.toggleSelectImageFromIndex(thumb);
 			this.numSelected = this.images.getNumSelected();
+			this.currentAllSelected = this.images.getCurrentImagesAllSelected();
 		} else {
 			//videos don't trigger a 'load' event
 			this.mainImageLoading = ! thumb.v;
@@ -241,6 +248,10 @@ export class BrowserComponent implements OnInit {
 		this.numSelected = this.images.getNumSelected();
 	}
 
+	public changeSelectAllLeave() {
+		this.currentAllSelected = this.images.getCurrentImagesAllSelected();
+	}
+
 	public selectNone() {
 		//If we are "viewing selected" than "deselect" actually selects
 		this.setSelectAll(false);
@@ -248,7 +259,16 @@ export class BrowserComponent implements OnInit {
 	}
 
 	private setSelectAll(select: boolean) {
+
+		if (this.tmpAllSelected != undefined) {
+			//The user just double clicked, so we actually want to do the inverse
+			select = ! this.tmpAllSelected;
+			this.currentAllSelected = ! select;
+		}
+
 		this.images.setCurrentImagesSelect(select);
+
+		this.tmpAllSelected = select;
 
 		if (this.varousel) {
 			this.varousel.setThumbsSelect(select);
@@ -259,6 +279,7 @@ export class BrowserComponent implements OnInit {
 		}
 
 		this.numSelected = this.images.getNumSelected();
+		//this.currentAllSelected = this.images.getCurrentImagesAllSelected();
 	}
 
 	public viewImageFromIndex(ciindex: number) {
@@ -435,6 +456,9 @@ export class BrowserComponent implements OnInit {
 
 		this.menuTags = this.images.getRemainingTags();
 		this.currentTags = this.images.getCurrentTags();
+
+		this.numSelected = this.images.getNumSelected();
+		this.currentAllSelected = this.images.getCurrentImagesAllSelected();
 
 		this.mainImage = this.mainciindex = this.mainImageExif = null;
 

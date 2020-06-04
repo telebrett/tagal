@@ -544,6 +544,25 @@ export class ImagesService {
 		return this.numSelected;
 	}
 
+	public getCurrentImagesAllSelected() {
+
+		//TODO - If we change "numSelected" to ONLY report on the number of images selected in the current set
+		//       then this could simple change to return if numSelected = currentImages.length
+
+		if (this.currentImages.length == 0) {
+			return false;
+		}
+
+		for (let index of this.currentImages) {
+			if (! this.images[index].s) {
+				return false;
+			}
+		}
+
+		return true;
+
+	}
+
 	public setCurrentImagesSelect(select: boolean) {
 
 		let hash = {};
@@ -1143,7 +1162,8 @@ export class ImagesService {
 					height: headingHeight,
 					width: maxWidth,
 					heading: this.buildDateLabel(image_key[2], 'day') + ' ' + this.buildDateLabel(image_key[1], 'month') + ', ' + image_key[0],
-					tagIndexes: image_datetags.map((index) => parseInt(index, 10))
+					tagIndexes: image_datetags.map((index) => parseInt(index, 10)),
+					allSelected: true
 				};
 
 				//This initial height is the height of the heading, yes it sucks for the service to be tied to the UI in this way, but this needs to know the heights for performance
@@ -1154,6 +1174,11 @@ export class ImagesService {
 
 				this.vblocks.push(current_block);
 
+			}
+
+			//This must be checked after the current_block is reset
+			if (! image.s) {
+				current_block.allSelected = false;
 			}
 
 			image.th = thumbnailHeight;
