@@ -9,8 +9,6 @@ import {LOCAL_STORAGE, StorageService } from 'ngx-webstorage-service';
 
 /*
 TODO ADMIN MODE
-- Select images
-- Add a special tag on the left to "Show selected"
 - Then add tools for
   - Rotate 90 CW / CCW (this would operate on the images files directly)
 	  This would have to mark the image in the database to return it's width/height in the "diffs" API call
@@ -41,6 +39,7 @@ TODO ADMIN MODE
 	 Another one could be "Campsites"
 - Add an "untagged" button. This would return all images that don't have a manually added tag. Eg untagged means an image that has a tag that isn't a camera, date part or 'is video' or geocode
 - Add an "ungeocoded" button
+- Some videos are not playing, eg 2002 videos, convert tool?
 
 */
 

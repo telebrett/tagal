@@ -3,6 +3,12 @@ import { ImagesService } from '../service/images.service';
 
 /*
  * TODO - Right click when in select mode to view the image
+ *      - If you click on a heading, at the moment it sets the tags for that heading
+ *
+ *        This will be tricky though, as we probably want to remember the vertical scroll position as well
+ *        maybe add a "CTRL+Z" keypress command
+ *
+ *        This is probably not required, better to work on a "next day" or "previous day" feature in the tags
  */
 
 @Component({

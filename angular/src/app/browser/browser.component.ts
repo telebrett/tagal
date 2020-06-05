@@ -13,15 +13,12 @@ import { VarouselComponent } from '../varousel/varousel.component';
 
 /*
  * TODO - Handle window resize
+ *      - STORAGE, remember the current selected tags
  *      - Is there any reason to have the "Point" tag dropdown?
  *      - When clicking on a year, show the months as sub menus, and inside them, show the days as sub sub menus
  *        OR have a "tag search" box, if you type a date eg "2019/12/28" it would select "2019" "december" and "28"
  *        maybe the tag search box should have a calenadar icon on the right, so you get a popup calendar
  *        to choose from
- *      - "Select all" / "Select none" , as per the varousel, show the "tick" if not all images in the current view
- *        are selected, otherwise, show the empty box icon
- *      - Vertical view mode - clicking on the vblock header "3rd August, 2019" should set the tags for that day
- *        Also add a "select all" link
  *      - If the following series of events occurs
  *        1. Click on tags to show a set eg "2019", "June", "10th"
  *        2. Click on edit tags
@@ -36,7 +33,12 @@ import { VarouselComponent } from '../varousel/varousel.component';
  *        THEN at that point, "edit tags" should ONLY apply to those images I just selected
  *
  *        POSSIBLY with the visible images behind the modal ONLY showing the images that the tags will affect
- *      - When viewing the main image, if you click on "Edit tags" then it only applies to that ONE image
+ *      - When viewing the main image
+ *        - if you click on "Edit tags" then it only applies to that ONE image
+ *        - Show main info without having to click on the Info icon, info to show
+ *          - Date
+ *          - Camera
+ *          - Tags (with clickable links to set that tag)
  *      - In the edit tags modal, show an indicator of how many images this will apply to
  *      - Editing image tags
  *        - Create a new/edit tag form component. Provide a tool to geocode the tag

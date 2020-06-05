@@ -1,6 +1,11 @@
 import { Component, ViewChild, ElementRef, Input, Output, EventEmitter, OnInit, AfterViewInit, OnChanges } from '@angular/core';
 import { ImagesService } from '../service/images.service';
 
+//TODO - Bug when viewing a main image, if this has multiple images to the left, and the main image
+//       is the second visible thumbnail, clicking on the first thumbnail causes
+//       the carousel to slide so that the just clicked on thumbnail
+//       is now at the far right
+
 @Component({
   selector: 'app-carousel',
   templateUrl: './carousel.component.html',
