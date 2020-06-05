@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
@@ -14,11 +14,48 @@ import { VarouselComponent } from '../varousel/varousel.component';
 /*
  * TODO - Handle window resize
  *      - Is there any reason to have the "Point" tag dropdown?
+ *      - When clicking on a year, show the months as sub menus, and inside them, show the days as sub sub menus
+ *        OR have a "tag search" box, if you type a date eg "2019/12/28" it would select "2019" "december" and "28"
+ *        maybe the tag search box should have a calenadar icon on the right, so you get a popup calendar
+ *        to choose from
+ *      - Vertical view mode - clicking on the vblock header "3rd August, 2019" should set the tags for that day
+ *        Also add a "select all" link
+ *      - If the following series of events occurs
+ *        1. Click on tags to show a set eg "2019", "June", "10th"
+ *        2. Click on edit tags
+ *
+ *        then we are editing tags that apply to the current view
+ *
+ *        BUT if we do
+ *        1. Click on tags to show a set eg "2019", "June", "10th"
+ *        2. Select one or more images
+ *        3. Click on edit tags
+ *
+ *        THEN at that point, "edit tags" should ONLY apply to those images I just selected
+ *
+ *        POSSIBLY with the visible images behind the modal ONLY showing the images that the tags will affect
+ *      - When viewing the main image, if you click on "Edit tags" then it only applies to that ONE image
+ *      - In the edit tags modal, show an indicator of how many images this will apply to
  *      - Editing image tags
  *        - Create a new/edit tag form component. Provide a tool to geocode the tag
  *        - Clicking on edit tag should also show a "apply to all selected images" checkbox
  *        - Remove tag from images
  *        - Delete tag completely
+ *      - When viewing a specific image, show the remaining "manual tags"
+ *      - Year / Month / Day tags. When in the "current tags" list, do something to advance, go back from the current datepart combination
+ *        eg if the only date part is the year 2019 selected, advance goes to 2020
+ *        if the only date parts are 2019, January, advance goes to february 2019
+ *        if a year, month and day are selected then advance one day (need to know the number of days in that month - watch out for leap years)
+ *      - Add a "date span" indicator, if I click on "camping" it should show that images go from "Mar 2012 -> Dec 2019"
+ *      - Edit tags window, clicking on the text for a tag should allow the tag to be modified, watch out for changing to a tag that already exists (that isn't
+ *        the current tag obviously)
+ *      - Add a dedupe tags feature - once we have labels for geocoded tags, make sure when merging that a warning is issued if one has a geocode and you are about
+ *        to delete that "manual" tag (which is actually the label for the geocode)
+ *        also, warn if the labels are both geocode points for different points
+ *      - When viewing a full size image, the carousel should have an indicator around the thumbnail that is currently being shown
+ *      - Provide a full screen mode for the image, video already has this by default
+ *     
+ *
  *
  * BUGS - Doesn't always happen, but if you click quickly through the images using the "next" button, sometimes it doesn't load the final image
  */
@@ -48,7 +85,7 @@ export class BrowserComponent implements OnInit {
 			map(term => {
 				//TODO - Pass in the tags that the selected set all have already
 				//       so they can be excluded from the results
-				let tags = this.images.searchTag(term);
+				let tags = this.images.searchTag(term, this.currentEditTags);
 				for (let tag of tags) {
 					if (term.toLowerCase() == tag.label.toLowerCase()) {
 						return tags;
@@ -69,6 +106,8 @@ export class BrowserComponent implements OnInit {
 	tagFormatter = (tag: {label: string}) => tag.label;
 
 	public tagModel: any;
+
+	public activeModal: NgbActiveModal;
 
 	public imageTags = new FormGroup({
 		addTagName: new FormControl('')
@@ -157,9 +196,30 @@ export class BrowserComponent implements OnInit {
 			this.currentEditTags.push(tag);
 		}
 
-		//TODO - Set focus on the typeahead
+		this.activeModal = this.modalService.open(this.domModalEditTags, { centered: true});
+	}
 
-		this.modalService.open(this.domModalEditTags, { centered: true});
+	/**
+	 * Bulk select images based on tags
+	 */
+	public selectImages(tag_indexes, select: boolean) {
+		if (! this.selectMode) {
+			console.error('Not in select mode');
+			return;
+		}
+
+		let affected = this.images.selectImages(tag_indexes, select);
+		this.numSelected = this.images.getNumSelected();
+
+		if (this.varousel) {
+			this.varousel.setThumbsSelect(select, affected);
+		}
+
+		if (this.carousel) {
+			this.carousel.setThumbsSelect(select, affected);
+		}
+
+
 	}
 
 	public clickThumb(thumb) {
@@ -177,13 +237,13 @@ export class BrowserComponent implements OnInit {
 
 	public selectAll() {
 		//If we are "viewing selected" than "select" actually deselects
-		this.setSelectAll(this.viewingSelected ? false : true);
+		this.setSelectAll(true);
 		this.numSelected = this.images.getNumSelected();
 	}
 
 	public selectNone() {
 		//If we are "viewing selected" than "deselect" actually selects
-		this.setSelectAll(this.viewingSelected ? true : false);
+		this.setSelectAll(false);
 		this.numSelected = this.images.getNumSelected();
 	}
 
@@ -234,9 +294,15 @@ export class BrowserComponent implements OnInit {
 		}
 	}
 
-	public viewSelected() {
-		this.viewingSelected = true;
-		this.images.setCurrentImagesToSelected();
+	public toggleViewSelected() {
+		this.viewingSelected = ! this.viewingSelected;
+
+		if (this.viewingSelected) {
+			this.images.setCurrentImagesToSelected();
+		} else {
+			this.images.setCurrentImagesToTags();
+		}
+
 		this.reset();
 	}
 
@@ -278,11 +344,12 @@ export class BrowserComponent implements OnInit {
 		if (tag.countInCurrent == this.currentImagesLength) {
 			return;
 		}
+
 		tag.applyAll = ! tag.applyAll;
 	}
 
 	public toggleUnsetTag(tag){ 
-		if (tag.index == -1) {
+		if (tag.index == -1 || tag.countInCurrent === undefined) {
 
 			for (let [index, searchTag] of this.currentEditTags.entries()) {
 				if (searchTag == tag) {
@@ -295,24 +362,73 @@ export class BrowserComponent implements OnInit {
 		}
 
 		tag.delete = ! tag.delete;
-		//this.currentEditTags = this.images.unsetTagAgainstCurrentImages(index);
 	}
 
 	public addTagFromSearch(event) {
-		console.log(event);
-
 		this.tagModel = null;
 		event.preventDefault();
 
-		if (event.item.index == -1) {
-			event.item.countInCurrent = this.currentImagesLength;
-		}
+		event.item.applyAll = true;
 
 		this.currentEditTags.push(event.item);
 	}
 
 	public applyTagChanges() {
-		//TODO - probably need to, you know, do stuff
+
+		let add_tags = [];
+		let del_tags = [];
+
+		for (let editTag of this.currentEditTags) {
+
+			if (editTag.delete) {
+				del_tags.push(editTag.label);
+			} else {
+
+				if (
+					editTag.index != -1
+					&& (
+						! editTag.applyAll
+						|| editTag.countInCurrent == this.currentImagesLength 
+					)
+				) {
+					//This is an existing tag that is not applying to all and the user didn't want to make it apply to all or it's an existing tag that was already applying to all
+					continue;
+				}
+
+				add_tags.push(editTag.label);
+
+			}
+
+		}
+
+		if (del_tags.length > 0 || add_tags.length > 0) {
+			this.images.applyTagChanges(add_tags, del_tags).subscribe((result) => {
+
+				if (result) {
+
+					this.activeModal.close();
+					this.activeModal = undefined;
+
+					//TODO - reset the tags - but this is complicated
+					//       IF this.viewingSelected then we possibly don't want to change the
+					//       tags
+					//
+					//       But there are definitly problems when the user goes back to "view tags"
+					//       where the new tags don't appear and the deleted tags may sometimes appear
+
+					if (! this.viewingSelected) {
+						this.images.setCurrentTagsFromCurrentImages();
+					}
+
+					this.reset();
+				}
+			});
+
+		} else {
+			this.activeModal.close();
+			this.activeModal = undefined;
+		}
+
 	}
 
 	private reset() {
@@ -331,23 +447,31 @@ export class BrowserComponent implements OnInit {
 	}
 
 	public selectTagHideMap(event: any) {
-
 		this.isMapMode = false;
 		this.selectTag(event.tag, event.imageIndex);
-
 	}
 
-	public selectTag(tag: any, imageIndex?: number) {
+	public selectTags(tags) {
 
 		this.viewingSelected = false;
 
 		this.mainImage = null;
-		if (tag.index !== undefined) {
-			this.images.selectTag(tag.index);
-		} else {
-			this.images.selectTag(tag);
-		}
+
+		this.images.selectTags(tags);
 		this.reset();
+		
+	}
+
+	public selectTag(tag: any, imageIndex?: number) {
+
+		let tags = [] ;
+
+		if (tag.index !== undefined) {
+			tags.push(tag.index);
+		} else {
+			tags.push(tag);
+		}
+		this.selectTags(tags);
 
 		if (imageIndex) {
 
@@ -357,7 +481,6 @@ export class BrowserComponent implements OnInit {
 			}
 
 		}
-
 	}
 
 	public deselectTag(tag: any) {

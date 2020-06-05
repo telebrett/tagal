@@ -76,8 +76,13 @@ export class CarouselComponent implements OnInit, AfterViewInit, OnChanges {
 		this.getWindow();
 	}
 
-	public setThumbsSelect(select : boolean) {
+	public setThumbsSelect(select : boolean, affected_images?) {
 		for (let thumb of this.thumbs) {
+
+			if (affected_images && affected_images.indexOf(thumb.index) == -1) {
+				continue;
+			}
+
 			thumb.s = select;
 		}
 	}
