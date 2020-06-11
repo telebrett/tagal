@@ -8,6 +8,7 @@ class REST {
 
 	protected static $GET_ARGS  = array();
 	protected static $POST_ARGS = array();
+	protected static $PUT_ARGS = array();
 
 	private $_config;
 	protected $db;
@@ -28,6 +29,7 @@ class REST {
 
 		if ($method == 'OPTIONS') {
 			header('Access-Control-Allow-Headers: *');
+			header('Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE');
 			http_response_code(200);
 			exit;
 		}
@@ -48,18 +50,22 @@ class REST {
 		}
 
 		switch ($method) {
+			case 'PUT':
 			case 'POST':
+				$contents = file_get_contents('php://input');
+				if ($contents) {
+					$source = json_decode($contents, TRUE);
+					if ($source === NULL) {
+						self::send_error_message('Invalid JSON');
+					}
+				}
 				
-				//PHP does not understand application/json,
-				//thought about using the PECL json_post but that would require
-				//a system wide change or a specific PHP handler, eg php-fpm, too much effort required
-
-				$source = json_decode(file_get_contents('php://input'), TRUE);
-				if ($source === NULL) {
-					self::send_error_message('Invalid JSON');
+				if ($method == 'POST') {
+					$list   =  static::$POST_ARGS;
+				} else if($method == 'PUT') {
+					$list   =  static::$PUT_ARGS;
 				}
 
-				$list   =  static::$POST_ARGS;
 				break;
 			case 'GET':
 				$source =& $_GET;
@@ -92,7 +98,43 @@ class REST {
 			self::send_error_message('Missing required arguments ' . implode(', ',$required_args_error_message));
 		}
 
+
 		call_user_func_array(array($handler,$method),$arguments);
+
+	}
+
+	protected function invokeperl($script, $args) {
+
+		$script_path = "../../../$script";
+
+		if (! is_executable($script_path)) {
+			error_log("Could not execute $script_path");
+			return false;
+		}
+
+		$command = $script_path;
+
+		foreach ($args as $arg) {
+			$command .= ' ' . escapeshellarg($arg);
+		}
+
+		$spec = array(
+			1 => array('pipe', 'w'),
+			2 => array('pipe', 'w')
+		);
+
+		$process   = proc_open($command, $spec, $pipes);
+
+		//Note, this won't handle large amounts of stderr / stdout as one will block on the other
+		$stdout = stream_get_contents($pipes[1]);
+		fclose($pipes[1]);
+
+		$stderr = stream_get_contents($pipes[2]);
+		fclose($pipes[2]);
+
+		$exit_code = proc_close($process);
+
+		return [$exit_code, $stdout, $stderr];
 
 	}
 
@@ -148,11 +190,10 @@ class REST {
 		//TODO - rollback DB if required
 
 		if ($message) {
-			print $message . "\n";
-			//TODO - custom header?
-			//     - JSON?
+			print json_encode(["error" => $message]);
 
 		}
+
 		http_response_code($code);
 		exit(0);
 	}

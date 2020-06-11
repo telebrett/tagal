@@ -14,13 +14,19 @@ class REST_Diffs extends REST {
 	public function GET() {
 
 		$images = array();
+		
+		$primary_sql = $this->primary_sql();
 
-		$add_tags_sql = $this->get_sql(FALSE);
+		while ($row = $primary_sql->getnext()) {
+			$images[$row->id]['ratio']  = $row->Width / $row->Height;
+		}
+
+		$add_tags_sql = $this->get_tags_sql(FALSE);
 		while ($row = $add_tags_sql->getnext()) {
 			$images[$row->ImageID]['add'][] = $row->Tag;
 		}
 
-		$del_tags_sql = $this->get_sql(TRUE);
+		$del_tags_sql = $this->get_tags_sql(TRUE);
 		while ($row = $del_tags_sql->getnext()) {
 			$images[$row->ImageID]['del'][] = $row->Tag;
 		}
@@ -31,7 +37,18 @@ class REST_Diffs extends REST {
 
 	}
 
-	private function get_sql($deleted) {
+	private function primary_sql() {
+		
+		$sql = new SELECT_SQL($this->db, 'image');
+		$sql->col("{$sql->getAlias()}.id");
+		$sql->col("{$sql->getAlias()}.Width");
+		$sql->col("{$sql->getAlias()}.Height");
+		$sql->where("{$sql->getAlias()}.IsDiffFromPrimaryJSONDB = 1");
+
+		return $sql;
+	}
+
+	private function get_tags_sql($deleted) {
 		$JA = SQL::JA;
 
 		$sql = new SELECT_SQL($this->db, 'image');

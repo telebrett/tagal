@@ -1,16 +1,21 @@
 #!/usr/bin/perl -w
 use strict;
 
+BEGIN {
+	use Cwd;
+	use File::Basename;
+	my $realpath = dirname(Cwd::realpath($0));
+	push @INC, $realpath . '/perllib';
+}
+
 use File::stat qw(stat);
 use File::MimeInfo::Magic qw/magic/;
 use File::Path qw(make_path);
 use Getopt::Long;
 use Pod::Usage;
-use Config::IniFiles;
-use Cwd qw(abs_path getcwd);
-use File::Basename;
 
-tie my %config, 'Config::IniFiles',(-file=>abs_path(dirname(abs_path($0)) . '/../config.ini'));
+use Tagal::Config;
+my %config = Tagal::Config::config();
 
 #should NOT have a trailing slash
 my $base_directory =  $config{images}{basedir};

@@ -1,7 +1,13 @@
 #!/usr/bin/perl -w
 use strict;
 
-use DBI;
+BEGIN {
+	use Cwd;
+	use File::Basename;
+	my $realpath = dirname(Cwd::realpath($0));
+	push @INC, $realpath . '/perllib';
+}
+
 use DateTime;
 use DateTime::Format::MySQL;
 use File::stat qw(stat);
@@ -15,6 +21,9 @@ use File::Basename;
 use File::Temp qw/tempfile tempdir/;
 use POSIX;
 
+use Tagal::VideoThumbnail;
+use Tagal::DB;
+
 use IPC::Open3;
 use POSIX qw/:sys_wait_h floor/;
 use String::ShellQuote qw(shell_quote);
@@ -22,11 +31,9 @@ use String::ShellQuote qw(shell_quote);
 use IPC::Cmd qw/can_run/;
 
 die "exiftool is required" unless can_run('exiftool');
-die "ffmpeg is required" unless can_run('ffmpeg');
-die "apngasm is required" unless can_run('apngasm');
 
-use Config::IniFiles;
-tie my %config, 'Config::IniFiles',(-file=>abs_path(dirname(abs_path($0)) . '/../config.ini'));
+use Tagal::Config;
+my %config = Tagal::Config::config();
 
 if (! $config{db}) {
 	print STDERR "Could not find db section in ini file\n";
@@ -85,6 +92,19 @@ if ($OPT_EXIFDATA) {
 my $tz = DateTime::TimeZone->new(name=>'local');
 
 get_db();
+
+#TODO - It's possible we could add a "new images only" mode which
+#       would insert the image with a "IsDiffFromPrimaryJSONDB" = 1
+#       and ignore any image that existed already
+#
+#       if this is done, it MUST not set the "last run date" as subsequent
+#       runs would miss modified images
+my $changes = $dbh->selectrow_hashref('SELECT 1 AS UncommittedChanges FROM image WHERE IsDiffFromPrimaryJSONDB UNION SELECT 1 AS UncommittedChanges FROM image_tag WHERE IsWritten = 0 LIMIT 1 UNION SELECT 1 AS UncommittedChanges FROM image_tag WHERE IsDeleted = 1 LIMIT 1');
+
+if (defined $changes) {
+	print STDERR "Uncommitted changes in the database that running an import could clear. Commit or clear the changes\n";
+	exit 1;
+}
 
 my $last_run = get_setting('LastRun');
 if ($last_run){
@@ -222,16 +242,7 @@ sub get_db {
 		return $dbh;
 	}
 
-	$database_type = $config{db}{type} || 'mysql';
-
-	$dbh = DBI->connect('DBI:' . $database_type . ':' . $config{db}{name},,$config{db}{user},$config{db}{pass},{RaiseError=>1}) || die("Could not connect to imagegallery database $!");
-
-	#This is so the handle doesn't get closed by the forked child processes
-	$dbh->{AutoInactiveDestroy} = 1;
-
-	$dbh->{FetchHashKeyName} = 'NAME_uc';
-
-	$database_type = lc $database_type;
+	($dbh, $database_type) = Tagal::DB::get_db(%config);
 }
 
 sub get_sth {
@@ -485,7 +496,7 @@ sub import_directory {
 						#create_video_preview($info, $thumbnail, $preview, $conv_height, 200);
 
 						my $conv_width = $width / ($height / 200);
-						create_video_preview($info, $thumbnail, $preview, 200, $conv_width);
+						Tagal::Video::create_thumbnail($info, $thumbnail, $preview, 200, $conv_width);
 
 					}
 				} else {
@@ -705,88 +716,6 @@ sub get_camera {
 }
 
 #Note this also creates the thumbnail
-sub create_video_preview {
-
-	my $exifdata = shift;
-	my $thumbnail = shift;
-	my $preview = shift;
-
-	#There could be a JPG file with the same name except or the suffix
-	#$thumbnail =~ s/\.\w+$/-movie\.png/;
-	#$preview =~ s/\.\w+$/-movie\.png/;
-
-	my $height = shift;
-	my $width = shift;
-
-	my $fullpath = $exifdata->{Directory} . '/' . $exifdata->{FileName};
-
-	my $length = 0;
-
-	if ($exifdata->{Duration} =~ m/^(\d+\.\d+) s$/) {
-		$length = $1;
-	} elsif ($exifdata->{Duration} =~ m/^(\d+):(\d+):(\d+)$/) {
-		$length = $3 + $2 * 60 + $1 * 3600;
-	}
-
-	#Extract 20 frames, with a minimum of 5 seconds between, eg if only 20 seconds, then there will only be 4 frames
-	my $frames = 20;
-	my $gap = 5;
-
-	#minimum of $gap seconds between frames
-	if ($frames * $gap > $length) {
-		$frames = floor($length / $gap) + 1;
-	} else {
-		$gap = floor($length / $frames);
-	}
-
-	my $frame_dir = tempdir(CLEANUP => 1);
-	my @join_cmd = ('apngasm', '-o', shell_quote($preview));
-
-	for (my $i = 0; $i < $frames; $i++) {
-
-		my $frame_path = $frame_dir . "/frame${i}.png";
-
-		my @cmd = (
-			'ffmpeg',
-			'-ss', $i * $gap,
-			'-i', shell_quote($fullpath),
-			'-vf', "scale=${width}:${height}",
-			'-vframes', 1,
-			'-q:v', 2,
-			'-tune', 'stillimage',
-			shell_quote($frame_path)
-		);
-
-		if (! call_system("Generating frame $i for video preview ", @cmd)) {
-			warn "Failed to generate image from movie for $fullpath\n";
-		}
-
-		#TODO BUG whereby ffmpeg fails to encode as we have gone past the end of the video, but still exits with 0 (WTF!!), so check that the file, you know, actually exists
-		if ( -e $frame_path) {
-			push @join_cmd, $frame_path;
-		}
-
-		if ($i == 0) {
-			copy($frame_path, $thumbnail);
-		}
-	}
-
-	if ($frames == 1) {
-		copy($thumbnail, $preview);
-	} else {
-		#Force overwrite
-		push @join_cmd, '-F';
-
-		#number of milliseconds between each frame
-		push @join_cmd, '-d', 1000;
-
-		if (! call_system("Generating animated png ", @join_cmd)) {
-			warn "Failed to generate animated png for $fullpath\n";
-			warn join(' ', @join_cmd) . "\n";
-		}
-	}
-
-}
 
 sub call_system {
 

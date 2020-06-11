@@ -43,9 +43,13 @@ CREATE TABLE image (
 ,IsVideo tinyint(1) UNSIGNED NOT NULL DEFAULT '0'
 ,CameraID int(10) unsigned
 ,GeometryID int(10) unsigned
+,IsDiffFromPrimaryJSONDB tinyint(1) UNSIGNED NOT NULL DEFAULT '0'
 ,PRIMARY KEY(id)
 ,FOREIGN KEY(CameraID) REFERENCES camera(id)
 ,FOREIGN KEY(GeometryID) REFERENCES geometry(id)
+,INDEX(IsPublic)
+,INDEX(IsVideo)
+,INDEX(IsDiffFromPrimaryJSONDB)
 ) ENGINE=InnoDB CHARSET=UTF8;
 
 CREATE TABLE image_tag (

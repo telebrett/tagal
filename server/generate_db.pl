@@ -32,6 +32,7 @@ my $HELP = undef;
 my $FORCE = 0;
 
 my $RESTRICTPATH = undef;
+my $CLEAR_IMAGE_DIFFS = 0;
 
 my $database_type;
 
@@ -53,6 +54,7 @@ if ($S3USER && ! $OUTPUT) {
 	pod2usage(1);
 }
 
+
 if ($OUTPUT) {
 	if (-e $OUTPUT && ! $FORCE) {
 		print "File $OUTPUT exists. Do you want to overwrite? ";
@@ -73,12 +75,28 @@ if ($OUTPUT) {
 		pod2usage(1);
 	}
 
+	//This is presumed to be the primary database for local admin, tagging, rotation etc
+	$CLEAR_IMAGE_DIFFS = 1;
+
 	print "Writing to $OUTPUT\n";
 
 }
 
 get_db();
 build_db();
+
+if ($CLEAR_IMAGE_DIFFS) {
+	clear_image_diffs();
+}
+
+sub clear_image_diffs {
+	
+	#If images have their primary data modified since the last time we
+	#generated the db, they are output in the diffs API call until this
+	#flag is cleared
+	$dbh->do('UPDATE image SET IsDiffFromPrimaryJSONDB = 0 WHERE IsDiffFromPrimaryJSONDB = 1');
+
+}
 
 sub get_date_functions {
 

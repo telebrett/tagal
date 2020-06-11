@@ -58,6 +58,8 @@ class REST_Preview extends REST {
 
 		$preview_file = $this->getPreviewFile();
 		
+		//TODO - Compare last mod dates of the preview file to the actual image
+		//       As the image might have been rotated
 		if (file_exists($preview_file)) {
 			return;
 		}
