@@ -12,8 +12,16 @@ import { VarouselComponent } from '../varousel/varousel.component';
 
 
 /*
- * TODO - Handle window resize
- *      - STORAGE, remember the current selected tags
+ * TODO 
+ *      - Rotate buttons
+ *        If viewing a main image, then rotate only that image
+ *        Otherwise, rotate the entire set AFTER confirming. The confirmation should also have the number of images that are going to be rotated
+ *
+ *        One thing we could also do is a "rotate tool", so you click the tool, and any thumbnail you click on is rotated?
+ *
+ *      - Handle window resize
+ *      - Add a "clear changes" option for admin mode
+ *      - Add a "Show diffs" option for admin mode
  *      - Is there any reason to have the "Point" tag dropdown?
  *      - When clicking on a year, show the months as sub menus, and inside them, show the days as sub sub menus
  *        OR have a "tag search" box, if you type a date eg "2019/12/28" it would select "2019" "december" and "28"
@@ -315,6 +323,7 @@ export class BrowserComponent implements OnInit {
 				this.domVideo.nativeElement.load();
 			}
 		}
+
 	}
 
 	public toggleViewSelected() {
@@ -470,6 +479,38 @@ export class BrowserComponent implements OnInit {
 			this.varousel.reset();
 		}
 
+	}
+
+	public rotate(clockwise: boolean) {
+
+		if (! this.mainImage) {
+			alert('TODO - Only supports rotating when viewing an image');
+			return;
+		}
+
+		this.images.rotate(this.mainImage, clockwise).subscribe((result) => {
+			if (result) {
+				if (this.mainImage) {
+					this.viewImageFromIndex(this.mainciindex);
+				}
+
+				if (this.carousel) {
+					this.carousel.ngOnInit();
+				}
+
+				if (this.varousel) {
+					this.varousel.reset();
+				}
+
+			}
+		});
+
+	}
+
+	public openContextThumb(event, thumb) {
+		//TODO - This needs to show the context menu
+		console.log(event);
+		console.log(thumb);
 	}
 
 	public selectTagHideMap(event: any) {

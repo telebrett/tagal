@@ -17,7 +17,9 @@
 			</h5>
  		</ng-template>
  		<ng-template #vthumb>
-			<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="open(thumb)" [ngClass]="{'selected' : selectMode && thumb.s}" />
+			<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="open(thumb)" [ngClass]="{'selected' : selectMode && thumb.s}" 
+			 (contextmenu)="contextThumb.emit({event:$event, thumb:thumb})"
+			/>
  			<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
  		</ng-template>
  	</div>

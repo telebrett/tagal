@@ -1,3 +1,10 @@
+<ng-template #contextThumb>
+	<ul>
+		<li>Delete</li>
+		<li>Rotate clockwise</li>
+		<li>Rotate anticlockwise</li>
+	</ul>
+</ng-template>
 <ng-template #tagresult let-r="result" let-t="term">
 	<ngb-highlight [result]="r.label" [term]="t"></ngb-highlight>
 </ng-template>
@@ -49,8 +56,8 @@
 			<button type="button" class="btn btn-primary" (click)="editTags()"><fa-icon [icon]="['fas', 'tags']" title="Edit tags"></fa-icon></button>
 		</div>
 		<div class="btn-group">
-			<button type="button" class="btn btn-primary"><fa-icon [icon]="['fas', 'undo']" flip="horizontal" title="Rotate clock wise"></fa-icon></button>
-			<button type="button" class="btn btn-primary"><fa-icon [icon]="['fas', 'undo']" title="Rotate counter clock wise"></fa-icon></button>
+			<button type="button" class="btn btn-primary" (click)="rotate(true)"><fa-icon [icon]="['fas', 'undo']" flip="horizontal" title="Rotate clock wise"></fa-icon></button>
+			<button type="button" class="btn btn-primary" (click)="rotate(false)"><fa-icon [icon]="['fas', 'undo']" title="Rotate counter clock wise"></fa-icon></button>
 		</div>
 	</div>
 	<!-- TODO - Show the number of images currently showing -->
@@ -111,6 +118,7 @@
 					(selectedThumb)="clickThumb($event)"
 					(selectTags)="selectTags($event)"
 					(selectImages)="selectImages($event.indexes, $event.select)"
+					(contextThumb)="openContextThumb($event.event, $event.thumb)"
 					></app-varousel>
 			</ng-container>
 		</div>

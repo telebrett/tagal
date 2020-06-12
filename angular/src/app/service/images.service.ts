@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
 import {Observable} from "rxjs";
-import { map, switchMap } from 'rxjs/operators';
+import { map, switchMap, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 import {HttpClient, HttpHeaders} from '@angular/common/http';
@@ -10,24 +10,42 @@ import {LOCAL_STORAGE, StorageService } from 'ngx-webstorage-service';
 /*
 TODO ADMIN MODE
 - Then add tools for
+  - Add a warning that admin mode should NOT be used in chrome because it's FITH
+    Basically, chrome ignores cache headers for sub resources (eg thumbnails)
+	  it does a sample and if it gets back 304, then it doesn't check the rest of them
+
+	  SO, we could store a "last modified" diff, or "IsDiffFromPrimaryJSONDB" could be a timestamp
+	  and we return that in the diffs and add it to the querystring of the thumbnail / preview
+
+	- BUG in rotation mode, rotate an image twice (ie make it upside down) The thumbnail is upside down (correct)
+	  but the preview is right way up (incorrect)
+
   - Rotate 90 CW / CCW (this would operate on the images files directly)
 	  This would have to mark the image in the database to return it's width/height in the "diffs" API call
 	  as well as regenerate the thumbnails / previews
 
  - Right click on a tag to edit it's metadata
   - Correct date
-	 - This should be able to operate on a set, but warn if the set contains multiple dates
-	   Actually, thinking about this, this might be a server side thing. eg
+    
+    This should be a "date shift" operation, possibly CLI only
 
-		 correct_dates.pl [camera id] [from] [to] add|minus seconds
+	  dateshift.pl --camera "go pro" --start-date <A> --finish-date <B> --corrected-start-date <C>
 
-		 eg say the dates on a specific camera were behind by 2 months, 3 days and 12 seconds from the 1st of october till the 21st November
+	  A = The search start date to correct images for - this is the "bad date"
+	  B = The search end date to correct images for - this is the "bad date"
+	  C = The corrected start date - this is the real date
 
-		 	 correct_dates.pl goproid [epoch from] [epoch to] +12434534
+	  eg
 
-		 where "epoch from" is the real time, ie I know it was wrong on the 1st, NOT what the gopro is reporting as
-		 
-		 
+	  dateshift.pl --camera "go pro" --start-date "2019-05-01 10:30:00" --finish-date "2019-06-08 10:50:00" --corrected-start-date "2019-05-23 15:23:00"
+
+	  This script should have a confirmation step and list how many images will be affected
+
+	  The script would calculate the difference in time between A and C, and apply to all images that it finds
+	  between A and B
+
+	  The files would have to be moved (this should be an option in the config.ini, as import_to_basedir.pl is optional
+	  ie, the files might not be in a YYYY/MM/DD folder structure - maybe we could auto detect this from the path?
 
   - Warn if the "diffs" is getting large, Maybe we can show a "X images modified" on the "Commit changes to files" button
 	- Geocode a "manual" tag / "manual" a geocode tag - BUT, it's possible that you want to have the same "manual" tag for multiple geocode points to preserve accuracy
@@ -41,6 +59,10 @@ TODO ADMIN MODE
 - Add an "ungeocoded" button
 - Some videos are not playing, eg 2002 videos, convert tool?
 
+TODO S3
+ - When on S3, the urls should have the database hash appended to them, that way, if a images have been rotated etc,
+   then the changes will appear and we can cache aggressively
+
 */
 
 const STORAGE_HASH     = 'dbhash';
@@ -50,6 +72,8 @@ const STORAGE_SELECTED = 'selected';
   providedIn: 'root'
 })
 export class ImagesService {
+
+	private dbhash;
 
 	/**
 	 * Each element is a hash with keys
@@ -61,6 +85,11 @@ export class ImagesService {
 	 * object  t  hash of tag indexes - the tags that have possibly been added / removed
 	 * bool    s  True if the image is currently marked as selected (key may not exist)
 	 * bool    v  True if the image is actually a video.
+	 * int     cb Cachebuster. Because Chrome has decided that devs can't be trusted, it will
+	 *            not honour cache headers for large sets of sub resources. It will only perform
+	 *            a small sample of retrievals and if it gets 304's, will retrieve the rest from cache
+	 *
+	 *            Fuck you chrome, fuck you very much
 	 *
 	 * The following keys are set by setThumbnails and will change - eg tl
 	 * int tw Thumbnail width
@@ -126,6 +155,8 @@ export class ImagesService {
 	}
 
 	private loadDatabase(data) : boolean {
+
+		this.dbhash = data.hash;
 
 		let si = 0;
 		let image_indexes = {};
@@ -195,6 +226,17 @@ export class ImagesService {
 
 			let image_index = this.imageIDIndex[image_id];
 
+			let image = this.images[image_index];
+
+			//Image has been rotated
+			if (image_diff.r) {
+				image.r = image_diff.r;
+			}
+
+			if (image_diff.cb) {
+				image.cb = image_diff.cb;
+			}
+
 			if (image_diff.add) {
 				for (let tag of image_diff.add) {
 					let tag_index = this.tagIndex[tag];
@@ -202,11 +244,10 @@ export class ImagesService {
 					if (tag_index === undefined) {
 						this.addTag(tag, [image_index], null);
 					} else {
-						this.images[image_index].t[tag_index] = true;
+						image.t[tag_index] = true;
 						this.tags[tag_index].i[image_index] = true;
 					}
 				}
-
 			}
 
 			if (image_diff.del) {
@@ -217,12 +258,14 @@ export class ImagesService {
 						continue;
 					}
 
-					delete this.images[image_index].t[tag_index];
+					delete image.t[tag_index];
 					delete this.tags[tag_index].i[image_index];
 
 					//TODO - If the tag.i is empty, maybe it should be removed?
 					//       but only if it has been removed from the database,
 					//       which would have to be returned in the diffs
+					//
+					//       possibly, but ONLY do this after all images have been processed
 				}
 			}
 
@@ -513,6 +556,12 @@ export class ImagesService {
 				thumb.src = src;
 			//}
 
+			if (image.cb) {
+				thumb.src += "?cb=" + image.cb;
+			} else {
+				thumb.src += "?cb=" + this.dbhash;
+			}
+
 			win.push(thumb);
 		}
 		
@@ -737,6 +786,12 @@ export class ImagesService {
 
 			src = environment.imageSource + src;
 
+			if (image.cb) {
+				src += "?cb=" + image.cb;
+			} else {
+				src += "?cb=" + this.dbhash;
+			}
+
 			let thumb = {
 				width    : Math.round(image.tw),
 				height   : Math.round(image.th),
@@ -940,6 +995,8 @@ export class ImagesService {
 
 		}
 
+		//TODO - I think this is a bug, if more than one entry is removed
+		//       all except the first index are incorrect
 		for (let [index, tag_index] of this.currentTags.entries()) {
 			if (tags.indexOf(tag_index) == -1) {
 				this.currentTags.splice(index, 1);
@@ -1343,6 +1400,35 @@ export class ImagesService {
 
 	public getTagIndex(tag) {
 		return this.tagIndex[tag.t];
+	}
+
+	public rotate(image, clockwise: boolean) : Observable<boolean> {
+
+		if (! environment.api) {
+			//TODO - not sure if this works
+			return new Observable();
+		}
+
+		let url = environment.api + 'rotateimage/' + this.images[image.index].id + '/' + (clockwise ? 'cw' : 'ccw');
+
+		let headers = new HttpHeaders({
+			'Content-Type': 'application/json'
+		});
+
+		//TODO - Need to handle errors, eg videos,
+		//       see browser.component.ts, the error can be handled
+		//       there. Surely we can trap the error here (see the
+		//       code in my other projects for suggestions)
+		return this.http.put(url, {}, {headers: headers}).pipe(
+			map(
+				response => {
+					this.images[image.index].r = 1 / this.images[image.index].r;
+					this.images[image.index].cb = Date.now();
+					return true;
+				}
+			)
+		);
+
 	}
 
 	public applyTagChanges(add_tags, del_tags) : Observable<boolean> {

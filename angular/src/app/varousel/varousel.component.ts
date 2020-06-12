@@ -27,6 +27,7 @@ export class VarouselComponent implements OnInit, AfterViewInit {
 	@Output() selectedThumb: EventEmitter<any> = new EventEmitter();
 	@Output() selectTags: EventEmitter<any> = new EventEmitter();
 	@Output() selectImages: EventEmitter<any> = new EventEmitter();
+	@Output() contextThumb: EventEmitter<any> = new EventEmitter();
 
 	//This is set to the total height of the content we are scrolling through
 	public varouselHeight = 0;
