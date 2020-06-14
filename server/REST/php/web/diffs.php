@@ -18,7 +18,14 @@ class REST_Diffs extends REST {
 		$primary_sql = $this->primary_sql();
 
 		while ($row = $primary_sql->getnext()) {
-			$images[$row->id]['ratio']  = $row->Width / $row->Height;
+
+			$images[$row->id]['r']  = $row->Width / $row->Height;
+
+			//Last mod time
+			$fullpath = $this->config('images','basedir') . $row->Location;
+			$stat = stat($fullpath);
+			$images[$row->id]['cb'] = $stat[9];
+
 		}
 
 		$add_tags_sql = $this->get_tags_sql(FALSE);
@@ -41,6 +48,7 @@ class REST_Diffs extends REST {
 		
 		$sql = new SELECT_SQL($this->db, 'image');
 		$sql->col("{$sql->getAlias()}.id");
+		$sql->col("{$sql->getAlias()}.Location");
 		$sql->col("{$sql->getAlias()}.Width");
 		$sql->col("{$sql->getAlias()}.Height");
 		$sql->where("{$sql->getAlias()}.IsDiffFromPrimaryJSONDB = 1");

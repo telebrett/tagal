@@ -75,7 +75,7 @@ if ($OUTPUT) {
 		pod2usage(1);
 	}
 
-	//This is presumed to be the primary database for local admin, tagging, rotation etc
+	#This is presumed to be the primary database for local admin, tagging, rotation etc
 	$CLEAR_IMAGE_DIFFS = 1;
 
 	print "Writing to $OUTPUT\n";

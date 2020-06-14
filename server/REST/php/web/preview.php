@@ -1,6 +1,8 @@
 <?php
 /**
  * GET preview/id
+ * 
+ * TODO - HEAD requests to return a 304 should probably be built but not urgent
  */
 
 require_once('../lib/init.lib');
@@ -50,6 +52,7 @@ class REST_Preview extends REST {
 
 	private function sendPreview() {
 		header('Content-type: image/jpeg');
+		header('Cache-Control: must-revalidate');
 		print file_get_contents($this->getPreviewFile());
 		exit(0);
 	}
