@@ -12,6 +12,7 @@
   "private": true,
   "dependencies": {
     "@angular/animations": "~9.0.0",
+    "@angular/cdk": "^9.2.4",
     "@angular/common": "~9.0.0",
     "@angular/compiler": "~9.0.0",
     "@angular/core": "~9.0.0",
@@ -32,6 +33,7 @@
     "file-saver": "^2.0.2",
     "jquery": "^3.4.1",
     "ng-bootstrap": "^1.6.3",
+    "ngx-contextmenu": "^5.4.0",
     "ngx-filesaver": "^9.0.0",
     "ngx-webstorage-service": "^4.1.0",
     "popper": "^1.0.1",

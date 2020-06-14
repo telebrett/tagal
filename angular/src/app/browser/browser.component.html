@@ -1,10 +1,18 @@
-<ng-template #contextThumb>
-	<ul>
-		<li>Delete</li>
-		<li>Rotate clockwise</li>
-		<li>Rotate anticlockwise</li>
-	</ul>
-</ng-template>
+<context-menu #contextThumb>
+	<ng-template contextMenuItem passive="true">
+		<div class="btn-group">
+			<button type="button" class="btn btn-primary btn-sm">
+				<fa-icon [icon]="['fas', 'undo']" flip="horizontal" title="Rotate clock wise"></fa-icon>
+			</button>
+			<button type="button" class="btn btn-primary btn-sm">
+				<fa-icon [icon]="['fas', 'undo']" title="Rotate counter clock wise"></fa-icon>
+			</button>
+		</div>
+	</ng-template>
+	<!--
+	<ng-template contextMenuItem passive="true" let-item>{{item.src}}</ng-template>
+	-->
+</context-menu>
 <ng-template #tagresult let-r="result" let-t="term">
 	<ngb-highlight [result]="r.label" [term]="t"></ngb-highlight>
 </ng-template>

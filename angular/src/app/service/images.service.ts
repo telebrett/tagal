@@ -728,6 +728,38 @@ export class ImagesService {
 		this.storage.set(STORAGE_SELECTED, hash);
 	}
 
+	private buildVBlock(vblock_index) {
+		//the vblock extra_tags array includes the current selected tag set
+		//we want to strip this to the remaining tags
+		//BUT we only need to do this when the vblock heading is displayed
+		//so we do it at runtime
+	
+		let vblock = this.vblocks[vblock_index];
+
+		if (! vblock.extraDisplayTags.length) {
+			for (let key in vblock.extraTags) {
+
+				let tag_index = parseInt(key, 10);
+
+				if (this.currentTags.includes(tag_index)) {
+					continue;
+				}
+
+				let tag = this.tags[tag_index];
+				if (tag.m && (tag.m.type == 'camera' || tag.m.type == 'point' || tag.m.type == 'video')) {
+					continue;
+				}
+
+				vblock.extraDisplayTags.push(this.niceTag(tag));
+
+			}
+
+		}
+
+		return vblock;
+
+	}
+
 	public getThumbnailWindowByTop(top: number, maxHeight: number) {
 
 		let start_index = this.calcTopIndex(top);
@@ -756,10 +788,10 @@ export class ImagesService {
 		}
 
 		if (start_index == 0) {
-			thumbs.push(this.vblocks[vblock_index++]);
+			thumbs.push(this.buildVBlock(vblock_index++));
 		} else {
 			if (this.images[this.currentImages[start_index -1]].tl < this.vblocks[vblock_index].tl) {
-				thumbs.push(this.vblocks[vblock_index++]);
+				thumbs.push(this.buildVBlock(vblock_index++));
 			} else {
 				//The heading for the starting index is too far up to show
 				vblock_index++;
@@ -807,7 +839,7 @@ export class ImagesService {
 				vblock_index < this.vblocks.length
 				&& this.vblocks[vblock_index].tl < image.tl
 			) {
-				thumbs.push(this.vblocks[vblock_index++]);
+				thumbs.push(this.buildVBlock(vblock_index++));
 			}
 
 			thumbs.push(thumb);
@@ -1187,10 +1219,13 @@ export class ImagesService {
 			let image_key = [];
 			let image_datetags = [];
 
+			let extra_tags = [];
+
 			for (let tagIndex in image.t) {
 				let tag = this.tags[tagIndex];
 
 				if (! tag.m || ! tag.m.datetype) {
+					extra_tags.push(tagIndex);
 					continue;
 				}
 
@@ -1209,6 +1244,7 @@ export class ImagesService {
 
 				if (current_block) {
 					top_left += borderandpadding;
+					//Clean up the extra tags
 				}
 
 				current_block = {
@@ -1219,6 +1255,8 @@ export class ImagesService {
 					width: maxWidth,
 					heading: this.buildDateLabel(image_key[2], 'day') + ' ' + this.buildDateLabel(image_key[1], 'month') + ', ' + image_key[0],
 					tagIndexes: image_datetags.map((index) => parseInt(index, 10)),
+					extraTags:{},
+					extraDisplayTags:[],
 					allSelected: true
 				};
 
@@ -1230,6 +1268,10 @@ export class ImagesService {
 
 				this.vblocks.push(current_block);
 
+			}
+
+			for (let extraTagIndex of extra_tags) {
+				current_block.extraTags[extraTagIndex] = true;
 			}
 
 			//This must be checked after the current_block is reset

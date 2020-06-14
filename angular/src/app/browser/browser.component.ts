@@ -4,6 +4,8 @@ import { FormGroup, FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
 
+import { ContextMenuService, ContextMenuComponent } from 'ngx-contextmenu';
+
 import { ImagesService } from '../service/images.service';
 
 import { MapComponent }      from '../map/map.component';
@@ -15,10 +17,9 @@ import { VarouselComponent } from '../varousel/varousel.component';
  * TODO 
  *      - Rotate buttons
  *        If viewing a main image, then rotate only that image
- *        Otherwise, rotate the entire set AFTER confirming. The confirmation should also have the number of images that are going to be rotated
- *
- *        One thing we could also do is a "rotate tool", so you click the tool, and any thumbnail you click on is rotated?
- *
+ *        Otherwise, it should "depress" the clicked on rotate button, the cursor should change to a crosshair
+ *        and when you hover over a thumbnail, it should add a transparent overlay to that thumbnail with
+ *        the rotate icon displayed, clicking would rotate that image instead of opening it
  *      - Handle window resize
  *      - Add a "clear changes" option for admin mode
  *      - Add a "Show diffs" option for admin mode
@@ -89,6 +90,8 @@ export class BrowserComponent implements OnInit {
 	@ViewChild('exif') domExif: ElementRef;
 
 	@ViewChild('edittags') domModalEditTags: ElementRef;
+
+	@ViewChild('contextThumb') domContextThumb: ContextMenuComponent;
 
 	searchTag = (text$: Observable<string>) => 
 		text$.pipe(
@@ -161,7 +164,7 @@ export class BrowserComponent implements OnInit {
 
 	private scrollTimeout;
 
-	constructor(private images: ImagesService, private modalService: NgbModal) { }
+	constructor(private images: ImagesService, private modalService: NgbModal, private contextMenuService: ContextMenuService) { }
 
 	ngOnInit() {
 		this.images.loadImages().subscribe(() => {
@@ -508,9 +511,20 @@ export class BrowserComponent implements OnInit {
 	}
 
 	public openContextThumb(event, thumb) {
-		//TODO - This needs to show the context menu
-		console.log(event);
-		console.log(thumb);
+
+		//TODO - doesn't look that great, and not important right now, can
+		//       rotate via the main image and see TODO list at the top
+		//       of this file for a "bulk" way to do it as well
+		return;
+
+		this.contextMenuService.show.next({
+			contextMenu: this.domContextThumb,
+			event: event,
+			item: thumb
+		});
+
+		event.preventDefault();
+		event.stopPropagation();
 	}
 
 	public selectTagHideMap(event: any) {

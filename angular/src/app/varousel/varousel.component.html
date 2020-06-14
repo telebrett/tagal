@@ -14,6 +14,7 @@
 					<fa-icon [icon]="['far', 'square']" class="hover"></fa-icon>
 				</span>
 				<span class="headertool fas fas-tags" (click)="editTagsByHeading(thumb)"><fa-icon [icon]="['fas', 'tags']" title="Edit tags"></fa-icon></span>
+				<button class="headertool btn btn-primary btn-sm" *ngFor="let tag of thumb.extraDisplayTags" (click)="selectTags.emit([tag.index])">{{tag.label}}</button>
 			</h5>
  		</ng-template>
  		<ng-template #vthumb>

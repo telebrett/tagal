@@ -2,6 +2,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FileSaverModule } from 'ngx-filesaver';
+import { ContextMenuModule } from 'ngx-contextmenu';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -38,7 +39,8 @@ import { faTags,faCheckSquare, faUndo, faInfo, faDownload, faLongArrowAltLeft, f
     NgbModule,
 		ReactiveFormsModule,
 		FormsModule,
-		FontAwesomeModule
+		FontAwesomeModule,
+		ContextMenuModule.forRoot()
   ],
   providers: [],
   bootstrap: [AppComponent]
