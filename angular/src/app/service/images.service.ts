@@ -1110,6 +1110,9 @@ export class ImagesService {
 				this.currentImages.push(index);
 			}
 		}
+
+		this.sortCurrentImages();
+
 	}
 
 	public getCurrentImagesLength() {

@@ -67,6 +67,7 @@ import { VarouselComponent } from '../varousel/varousel.component';
  *        also, warn if the labels are both geocode points for different points
  *      - When viewing a full size image, the carousel should have an indicator around the thumbnail that is currently being shown
  *      - Provide a full screen mode for the image, video already has this by default
+ *      - Geocoded tags - these should have a visual indicator that they are geocoded
  *     
  *
  *
