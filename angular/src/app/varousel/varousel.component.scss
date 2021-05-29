@@ -1,0 +1,55 @@
+.varousel {
+	height:100%;
+	width:100%;
+	overflow-y:auto;
+	position:relative;
+}
+
+.window {
+	position:absolute;
+	top:0px;
+	width:100%;
+	overflow-y:hidden;
+	overflow-x:hidden;
+
+	h5 {
+		border-bottom:1px solid black;
+		font-size:1em;
+		height:25px;
+		margin:0px;
+		padding:0px;
+
+		span {
+			cursor:pointer;
+
+			&.headertool {
+				margin-left:0.5em;
+			}
+
+		}
+
+		button.headertool {
+			padding: 0.25em .25rem;
+			font-size: 0.7em;
+			line-height: 0.8;
+			border-radius: .2rem;
+			margin-left:0.5em;
+		}
+	}
+
+	img {
+		border:1px solid black;
+
+		&.selected {
+			border-color:red;
+			opacity:70%;
+		}
+	}
+
+}
+
+.divthumb {
+	//margin:0px;
+	margin:5px;
+	float:left;
+}

@@ -1,0 +1,29 @@
+<div #scroller class="varousel" (scroll)="scroll()">
+ <div #content class="content" [ngStyle]="{'height.px': varouselHeight}">
+  <div class="window" #window [ngStyle]="{'marginTop.px':windowTop, 'height.px':windowHeight, 'width.px':windowWidth}">
+ 	<div *ngFor="let thumb of thumbs" class="divthumb" [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}">
+ 		<ng-container *ngIf="thumb.heading; then vheading; else vthumb"></ng-container>
+ 		<ng-template #vheading>
+			<h5><span (click)="setTagsByHeading(thumb)">{{thumb.heading}}</span>
+				<span *ngIf="selectMode && ! thumb.allSelected" class="headertool hover" (click)="selectByHeading(thumb,true)" title="Select all" (mouseleave)="headingMouseleave(thumb)">
+					<fa-icon [icon]="['far', 'square']"></fa-icon>
+					<fa-icon [icon]="['far', 'check-square']" class="hover"></fa-icon>
+				</span>
+				<span *ngIf="selectMode && thumb.allSelected" class="headertool hover" (click)="selectByHeading(thumb,false)" title="Select none" (mouseleave)="headingMouseleave(thumb)">
+					<fa-icon [icon]="['far', 'check-square']"></fa-icon>
+					<fa-icon [icon]="['far', 'square']" class="hover"></fa-icon>
+				</span>
+				<span class="headertool fas fas-tags" (click)="editTagsByHeading(thumb)"><fa-icon [icon]="['fas', 'tags']" title="Edit tags"></fa-icon></span>
+				<button class="headertool btn btn-primary btn-sm" *ngFor="let tag of thumb.extraDisplayTags" (click)="selectTags.emit([tag.index])">{{tag.label}}</button>
+			</h5>
+ 		</ng-template>
+ 		<ng-template #vthumb>
+			<img src="{{thumb.src}}" height="{{thumb.height}}" width="{{thumb.width}}" (click)="open(thumb)" [ngClass]="{'selected' : selectMode && thumb.s}" 
+			 (contextmenu)="contextThumb.emit({event:$event, thumb:thumb})"
+			/>
+ 			<!-- <div [ngStyle]="{'width.px':thumb.width, 'height.px':thumb.height}" class="reportblock" (click)="thumbReport($event)">{{thumb.ciindex}} - {{thumb.tl}}</div> -->
+ 		</ng-template>
+ 	</div>
+  </div>
+ </div>
+</div>

@@ -1,0 +1,18 @@
+/* You can add global styles to this file, and also import other style files */
+@import 'variables';
+@import '../node_modules/bootstrap/scss/bootstrap';
+
+button.hover, span.hover {
+ 	fa-icon.hover {
+		display:none;
+	}
+
+	&:hover fa-icon {
+		display:none;
+
+		&.hover {
+			display:inherit;
+		}
+
+	}
+}

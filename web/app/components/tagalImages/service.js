@@ -164,65 +164,10 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 	 * object b see tag definition above
 	 */
 	function sortTags(a,b) {
-		if (a.m && a.m.datetype && (! b.m || ! b.m.datetype)) {
-			//a is a "year", "month" or "day" marker
-			return -1;
-		} else if (b.m && b.m.datetype && (! a.m || ! a.m.datetype)) {
-			//b is a "year", "month" or "day" marker
-			return 1;
-		} else if (a.m && a.m.datetype && b.m && b.m.datetype) {
-			if (a.m.datetype != b.m.datetype) {
-				//Years before months before days
-
-				if (a.m.datetype == 'year' || b.m.datetype == 'year') {
-					return a.m.datetype == 'year' ? -1 : 1;
-				}
-
-				if (a.m.datetype == 'month' || b.m.datetype == 'month') {
-					return a.m.datetype == 'month' ? -1 : 1;
-				}
-			}
-
-			var as = parseInt(a.m.dateval);
-			var bs = parseInt(b.m.dateval);
-			
-			if (a.m.datetype == 'year') {
-				//year descending
-				return as > bs ? -1 : 1;
-			} else {
-				//both is a "month" or "day" marker
-				return as < bs ? -1 : 1;
-			}
-		}
-
-		var al = a.l !== undefined ? a.l : a.t
-		var bl = b.l !== undefined ? b.l : b.t
-
-		return al.toLowerCase() < bl.toLowerCase() ? -1 : 1;
 	}
 
 	function niceTag(tag) {
 
-		var o = {
-			index:_tagIndex[tag.t],
-			label:tag.l === undefined ? tag.t : tag.l,
-		};
-
-		if (tag.m && tag.m.datetype) {
-			switch (tag.m.datetype) {
-				case 'year':
-					o.type = 'y';
-					break;
-				case 'month':
-					o.type = 'm';
-					break;
-				case 'day':
-					o.type = 'd';
-					break;
-			}
-		}
-
-		return o;
 	}
 
 	//Sets the remainingTags from the tags from the _currentImages
@@ -775,74 +720,9 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		 */
 		,selectTag : function(index) {
 
-			if (_currentTags.indexOf(index) !== -1) {
-				return;
-			}
-
-			_currentTags.push(index);
-
-			if (_currentTags.length == 1) {
-				_currentImages = Object.keys(_tags[index].i);
-			} else {
-				var ts = _tags[index].i;
-				_currentImages = _currentImages.filter(function(v){return ts[v] !== undefined});
-			}
-
-			_currentImages.sort(function(a_index,b_index) {
-				var a_o = _images[a_index].o;
-				var b_o = _images[b_index].o;
-
-				if (a_o == b_o) {
-					return 0;
-				} else if(a_o < b_o) {
-					return -1;
-				} else {
-					return 1;
-				}
-
-			});
-
-			setRemainingTags();
-
 		}
 		,deselectTag: function(index) {
 
-			var ct_index = _currentTags.indexOf(parseInt(index,10));
-
-			if (ct_index != -1) {
-				_currentTags.splice(ct_index,1);
-			}
-
-			_currentImages = [];
-
-			if (_currentTags.length == 0) {
-				_remainingTags = [];
-				//values need to be ints so can't use Object.keys
-				for (var i = 0; i < _tags.length; i++) {
-					_remainingTags.push(i);
-				}
-				return;
-			}
-
-			var images;
-
-			for (var i = 0; i < _currentTags.length; i++) {
-				var newimages = {};
-				for (var x in _tags[_currentTags[i]].i) {
-					if (i > 0 && ! images[x]) {
-						continue;
-					}
-					newimages[x] = true;
-				}
-
-				images = newimages;
-			}
-
-			for (var i in images) {
-				_currentImages.push(parseInt(i));
-			}
-
-			setRemainingTags();
 		}
 		
 		/**
@@ -852,25 +732,6 @@ angular.module('tagal').service('tagalImages',function($http,$route,$q){
 		 */
 		,setThumbnailHeights(height) {
 
-			var totalWidth = 0;
-
-			_thumbnailAvgWidth = height * 1.25;
-
-			//TODO - could possible do some performance improvements here, cache the height
-			//       and if the same as the last time, just reset the tl property
-
-			for (var i = 0; i < _currentImages.length; i++) {
-				var image = _images[_currentImages[i]];
-
-				image.th = height;
-				image.tw = Math.ceil(image.r * height);
-				image.tl = totalWidth;
-
-				//The 1px is for the right border
-				totalWidth += image.tw + 1;
-			}
-
-			return totalWidth;
 		}
 
 		/**

@@ -1,0 +1,7 @@
+<div class="carousel" (scroll)="scroll($event)">
+	<div #width class="width" [ngStyle]="{'width.px': thumbsWidth}">
+		<div class="block" [ngStyle]="{'marginLeft.px':left}">
+			<img *ngFor="let thumb of thumbs" src="{{thumb.src}}" width="{{thumb.width}}" height="{{thumb.height}}" (click)="open(thumb)" />
+		</div>
+	</div>
+</div>

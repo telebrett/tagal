@@ -34,6 +34,8 @@ Getting started
 	 Require all granted
 	</Location>
 
+#TODO - Change this for angular
+
 6. Bower install
 
    install bower then 

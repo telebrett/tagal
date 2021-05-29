@@ -1,3 +1,5 @@
 config.ini
 web/app/database.json
 web/app/pictures
+
+angular/src/environments/environment.local.ts

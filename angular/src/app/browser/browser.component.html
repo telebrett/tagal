@@ -1,0 +1,143 @@
+<context-menu #contextThumb>
+	<ng-template contextMenuItem passive="true">
+		<div class="btn-group">
+			<button type="button" class="btn btn-primary btn-sm">
+				<fa-icon [icon]="['fas', 'undo']" flip="horizontal" title="Rotate clock wise"></fa-icon>
+			</button>
+			<button type="button" class="btn btn-primary btn-sm">
+				<fa-icon [icon]="['fas', 'undo']" title="Rotate counter clock wise"></fa-icon>
+			</button>
+		</div>
+	</ng-template>
+	<!--
+	<ng-template contextMenuItem passive="true" let-item>{{item.src}}</ng-template>
+	-->
+</context-menu>
+<ng-template #tagresult let-r="result" let-t="term">
+	<ngb-highlight [result]="r.label" [term]="t"></ngb-highlight>
+</ng-template>
+<ng-template #edittags let-modal>
+	<div class="modal-header">
+		<div>
+		 <h4 class="modal-title">Edit tags</h4>
+		 <div class="legend">
+		 	<span class="all">All</span>
+		 	<span class="delete">Remove</span>
+		 	<span class="new">New</span>
+		 	<span>Unchanged</span>
+		 </div>
+	   </div>
+		 <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+		 	<span aria-hidden="true">&times;</span>
+		 </button>
+	</div>
+	<div class="modal-body">
+			<div class="edittagslist">
+				<span *ngFor="let tag of currentEditTags" title="Apply to all?" [ngClass]="{'all': tag.applyAll, 'delete': tag.delete, 'new': tag.index == -1}" (click)="toggleTagAll(tag)">{{tag.label}} 
+					<span class="toggleremove" title="{{tag.delete ? 'Undo ?' : 'Remove from all?'}}" (click)="toggleUnsetTag(tag); $event.stopPropagation()">{{tag.delete ? '+' : 'x' }}</span></span>
+				<input type="text" id="addTagName" ngbAutofocus
+				 [ngbTypeahead]="searchTag" (selectItem)="addTagFromSearch($event)"
+				 [(ngModel)]="tagModel" [inputFormatter]="tagFormatter" [resultTemplate]="tagresult"
+				 />
+			</div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-light" (click)="applyTagChanges()">Apply changes</button>
+		<button type="button" class="btn btn-light" (click)="modal.close('Close click')">Cancel</button>
+	</div>
+</ng-template>
+<!-- 
+<div id="header" class="mobile">
+-->
+<div id="header">
+	<div class="tools" *ngIf="showTools">
+		<span class="mr-1">{{numSelected}} selected</span>
+		<div class="btn-group mr-1">
+			<button type="button" class="btn btn-primary" (click)="toggleSelectMode()">{{selectMode ? 'View' : 'Select'}} mode</button>
+			<button *ngIf="selectMode && ! currentAllSelected" type="button" class="btn btn-primary hover" (click)="selectAll()" title="Select all" (mouseleave)="changeSelectAllLeave()">
+				<fa-icon [icon]="['far', 'square']"></fa-icon>
+				<fa-icon [icon]="['far', 'check-square']" class="hover"></fa-icon>
+			</button>
+			<button *ngIf="selectMode && currentAllSelected" type="button" class="btn btn-primary hover" (click)="selectNone()" title="Select none" (mouseleave)="changeSelectAllLeave()">
+				<fa-icon [icon]="['far', 'check-square']"></fa-icon>
+				<fa-icon [icon]="['far', 'square']" class="hover"></fa-icon>
+			</button>
+		</div>
+		<div class="btn-group mr-1">
+			<button type="button" class="btn btn-primary" (click)="editTags()"><fa-icon [icon]="['fas', 'tags']" title="Edit tags"></fa-icon></button>
+		</div>
+		<div class="btn-group">
+			<button type="button" class="btn btn-primary" (click)="rotate(true)"><fa-icon [icon]="['fas', 'undo']" flip="horizontal" title="Rotate clock wise"></fa-icon></button>
+			<button type="button" class="btn btn-primary" (click)="rotate(false)"><fa-icon [icon]="['fas', 'undo']" title="Rotate counter clock wise"></fa-icon></button>
+		</div>
+	</div>
+	<!-- TODO - Show the number of images currently showing -->
+	<button *ngFor="let tag of currentTags" type="button" class="btn btn-primary" (click)="deselectTag(tag)">{{tag.label}}</button>
+</div>
+<div id="contentwrapper">
+	<div id="content">
+		<!--
+		<div id="tags" class="mobile">
+		-->
+		<div id="tags">
+			<button *ngIf="showTools" type="button" class="btn btn-primary mb-1" (click)="toggleViewSelected()">{{viewingSelected ? 'View tags' : 'View selected'}}</button>
+			<button type="button" class="btn btn-primary" (click)="toggleMap()">{{isMapMode ? 'Images' : 'Map'}}</button>
+			<ng-container *ngFor="let tag of menuTags">
+				<div *ngIf="tag.tags" ngbDropdown class="mt-1">
+					<button ngbDropdownToggle class="btn btn-sm btn-primary" type="button">{{tag.type}}</button>
+					<div ngbDropdownMenu>
+						<a *ngFor="let subtag of tag.tags" class="dropdown-item" href="#" (click)="selectTag(subtag)">{{subtag.label}}</a>
+					</div>
+				</div>
+				<button *ngIf="! tag.tags" type="button" class="btn btn-sm {{tag.primary ? 'btn-primary' : 'btn-secondary'}} mt-1" (click)="selectTag(tag)">{{tag.label}}</button>
+			</ng-container>
+	  </div>
+
+		<!--
+		<div id="main" #main class="mobile">
+		-->
+		<div id="main" #main>
+			<div *ngIf="mainImage">
+				<div id="image">
+					<div class="controls btn-group">
+						<button type="button" class="btn btn-primary"
+							fileSaver
+							[fileName]="mainImage.name"
+							[url]="mainImage.src"
+							><fa-icon [icon]="['fas', 'download']" title="Download"></fa-icon></button>
+						<button type="button" class="btn btn-primary" (click)="prevMain()"><fa-icon [icon]="['fas', 'long-arrow-alt-left']" title="Previous"></fa-icon></button>
+						<button type="button" class="btn btn-primary" (click)="nextMain()"><fa-icon [icon]="['fas', 'long-arrow-alt-right']" title="Next"></fa-icon></button>
+						<button type="button" class="btn btn-primary" (click)="toggleExifData()"><fa-icon [icon]="['fas', 'info']" title="EXIF data"></fa-icon></button>
+						<button type="button" class="btn btn-primary" (click)="hideMainImage()">X</button>
+					</div>
+					<div #exif class="exif" [ngStyle]="{'right.px': mainImageExif ? '0' : '-350'}">
+						<div class="content">
+							<table>
+								<tr *ngFor="let item of mainImageExif | keyvalue">
+									<td>{{item.key | decamelcase}}</td>
+									<td>{{item.value}}</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+					<img *ngIf="mainImage && ! mainImage.v" class="rounded" [src]="mainImage.previewSrc ? mainImage.previewSrc : mainImage.src" [height]="mainImageHeight" [width]="mainImageWidth" (load)="mainImageLoaded()" (click)="hideMainImage()" />
+					<video *ngIf="mainImage && mainImage.v" #video controls="controls" autoplay="autoplay" name="media" [height]="mainImageHeight" [width]="mainImageWidth">
+						<source src="{{mainImage.src}}" />
+					</video>
+				</div>
+				<div id="thumbnails">
+					<app-carousel #carousel [mainciindex]="mainciindex" (selectedThumb)="clickThumb($event)"></app-carousel>
+				</div>
+			</div>
+			<ng-container *ngIf="! mainImage">
+				<app-map      *ngIf="isMapMode"  #map (selectedThumb)="selectTagHideMap($event)" (selectedPoint)="selectTagHideMap($event)"></app-map>
+				<app-varousel *ngIf="!isMapMode" #varousel [mainciindex]="mainciindex" [selectMode]="selectMode"
+					(selectedThumb)="clickThumb($event)"
+					(selectTags)="selectTags($event)"
+					(selectImages)="selectImages($event.indexes, $event.select)"
+					(contextThumb)="openContextThumb($event.event, $event.thumb)"
+					></app-varousel>
+			</ng-container>
+		</div>
+	</div>
+</div>

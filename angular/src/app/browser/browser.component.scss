@@ -1,0 +1,244 @@
+@import '../../variables';
+@import '../../../node_modules/bootstrap/scss/bootstrap';
+
+$tags-width: 200px;
+$thumbnail-height: 150px;
+
+$tags-width-mobile: 100px;
+$thumbnail-height-mobile: 100px;
+
+#header {
+	height:60px;
+	position:absolute;
+	width:100%;
+	top:0px;
+	left:0px;
+	padding:5px;
+
+	&.mobile {
+		zoom:0.5;
+	}
+}
+
+#contentwrapper {
+	height:100vh;
+	box-sizing:border-box;
+	padding-top:60px;
+	overflow:hidden;
+}
+
+#content {
+	height:100%;
+	box-sizing:content-box;
+	padding:0px;
+	position:relative;
+}
+
+#tags {
+	@extend .bg-light;
+
+	overflow-y:auto;
+	height:100%;
+	width:$tags-width;
+	position:absolute;
+	left:0px;
+	top:0px;
+	padding-left:5px;
+	padding-right:5px;
+
+	button {
+		display:block;
+		width:100%;
+		text-align:left;
+	}
+
+	.dropdown-toggle:after {
+		position:absolute;
+		right:0.255em;
+		top:0.35em;
+		font-size:2em;
+	}
+
+	&.mobile {
+
+		width: $tags-width-mobile;
+		zoom:0.5;
+
+		/*
+		width:$tags-width-mobile;
+		button {
+			font-size:0.8rem;
+			line-height:1;
+		}
+		*/
+	}
+
+}
+
+#main {
+	height:100%;
+	margin-left: $tags-width;
+
+	&.mobile {
+		margin-left: $tags-width-mobile;
+	}
+
+	position:relative;
+
+	.controls {
+		position:absolute;
+		right:0px;
+		top:0px;
+		z-index:2;
+	}
+
+	.exif {
+		position:absolute;
+		z-index:2;
+		width:350px;
+		right:-350px;
+
+		font-size:9pt;
+
+		transition: right 0.25s;
+		-webkit-transition: right 0.25s;
+		
+		.content {
+			background-color:white;
+			height:100%;
+			overflow-y:scroll;
+		}
+
+		table {
+			border-collapse:collapse;
+		}
+
+		table, td {
+			border:1px solid black;
+		}
+	}
+
+}
+
+#main.horizontal {
+	padding-bottom:$thumbnail-height;
+}
+
+#main.vertical.hideThumbs {
+	overflow-y:hidden;
+}
+
+
+div.reportblock {
+	border:1px solid black;
+	background-color:green;
+}
+
+#thumbnails {
+	@extend .bg-light;
+	position:absolute;
+	bottom:0px;
+	width:100%;
+	height:$thumbnail-height;
+}
+
+#image {
+	height:100%;
+}
+
+#verticalimage {
+	background-color:white;
+	height:100%;
+	box-sizing:border-box;
+	position:absolute;
+}
+#verticalimage.loading {
+		background-image:url('/assets/Spinner-1s-200px.png');
+		background-position:center;
+		background-repeat:no-repeat;
+}
+
+.tools {
+	float:right;
+}
+
+.edittagslist, .legend {
+	font-size:9pt;
+
+	input {
+		border:0px;
+		outline-width:0;
+		background-color:transparent;
+		margin-right:5px;
+		padding:5px;
+	}
+
+	input:focus {
+		outline-width:0;
+	}
+
+
+	span {
+		background-color: $secondary;
+		color: white;
+		border-radius: 0.25em;
+		border: 1px solid $secondary;
+		padding: 2px;
+		padding-left:4px;
+		padding-right:4px;
+		font-size:9pt;
+		margin-right:5px;
+		margin-bottom:5px;
+		cursor:pointer;
+
+		display:inline-block;
+	
+		.toggleremove {
+			padding:0px;
+			margin:0px;
+			margin-left:5px;
+		}
+
+	}
+
+	span.all {
+		background-color: $primary;
+		border-color:$primary;
+
+		.toggleremove {
+			background-color: $primary;
+			border-color:$primary;
+		}
+	}
+
+	span.delete {
+		background-color: red;
+		border-color:red;
+
+		.toggleremove {
+			background-color: red;
+			border-color:red;
+		}
+	}
+
+	span.new {
+		background-color: green;
+		border-color:green;
+
+		.toggleremove {
+			background-color: green;
+			border-color:green;
+		}
+	}
+}
+
+.legend {
+
+	border-bottom:1px solid #dee2e6;
+	margin-bottom:5px;
+
+	span {
+		cursor: default;
+		font-size:0.8em;
+	}
+}
