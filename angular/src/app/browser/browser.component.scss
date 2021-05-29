@@ -4,6 +4,9 @@
 $tags-width: 200px;
 $thumbnail-height: 150px;
 
+$tags-width-mobile: 100px;
+$thumbnail-height-mobile: 100px;
+
 #header {
 	height:60px;
 	position:absolute;
@@ -11,6 +14,10 @@ $thumbnail-height: 150px;
 	top:0px;
 	left:0px;
 	padding:5px;
+
+	&.mobile {
+		zoom:0.5;
+	}
 }
 
 #contentwrapper {
@@ -51,11 +58,31 @@ $thumbnail-height: 150px;
 		top:0.35em;
 		font-size:2em;
 	}
+
+	&.mobile {
+
+		width: $tags-width-mobile;
+		zoom:0.5;
+
+		/*
+		width:$tags-width-mobile;
+		button {
+			font-size:0.8rem;
+			line-height:1;
+		}
+		*/
+	}
+
 }
 
 #main {
 	height:100%;
-	margin-left:$tags-width;
+	margin-left: $tags-width;
+
+	&.mobile {
+		margin-left: $tags-width-mobile;
+	}
+
 	position:relative;
 
 	.controls {

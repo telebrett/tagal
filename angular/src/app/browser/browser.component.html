@@ -46,6 +46,9 @@
 		<button type="button" class="btn btn-light" (click)="modal.close('Close click')">Cancel</button>
 	</div>
 </ng-template>
+<!-- 
+<div id="header" class="mobile">
+-->
 <div id="header">
 	<div class="tools" *ngIf="showTools">
 		<span class="mr-1">{{numSelected}} selected</span>
@@ -73,6 +76,9 @@
 </div>
 <div id="contentwrapper">
 	<div id="content">
+		<!--
+		<div id="tags" class="mobile">
+		-->
 		<div id="tags">
 			<button *ngIf="showTools" type="button" class="btn btn-primary mb-1" (click)="toggleViewSelected()">{{viewingSelected ? 'View tags' : 'View selected'}}</button>
 			<button type="button" class="btn btn-primary" (click)="toggleMap()">{{isMapMode ? 'Images' : 'Map'}}</button>
@@ -87,6 +93,9 @@
 			</ng-container>
 	  </div>
 
+		<!--
+		<div id="main" #main class="mobile">
+		-->
 		<div id="main" #main>
 			<div *ngIf="mainImage">
 				<div id="image">
