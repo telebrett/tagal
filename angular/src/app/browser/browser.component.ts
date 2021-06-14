@@ -15,19 +15,15 @@ import { VarouselComponent } from '../varousel/varousel.component';
 
 /*
  * TODO 
- *      - Rotate buttons
- *        If viewing a main image, then rotate only that image
- *        Otherwise, it should "depress" the clicked on rotate button, the cursor should change to a crosshair
- *        and when you hover over a thumbnail, it should add a transparent overlay to that thumbnail with
- *        the rotate icon displayed, clicking would rotate that image instead of opening it
  *      - Handle window resize
- *      - Add a "clear changes" option for admin mode
+ *      - In select mode, right click on an image to show the full image, at the moment you have to
+ *
+ *        Toggle view mode
+ *        Open the image
+ *        Toggle back to select mode
+ *
  *      - Add a "Show diffs" option for admin mode
  *      - Is there any reason to have the "Point" tag dropdown?
- *      - When clicking on a year, show the months as sub menus, and inside them, show the days as sub sub menus
- *        OR have a "tag search" box, if you type a date eg "2019/12/28" it would select "2019" "december" and "28"
- *        maybe the tag search box should have a calenadar icon on the right, so you get a popup calendar
- *        to choose from
  *      - If the following series of events occurs
  *        1. Click on tags to show a set eg "2019", "June", "10th"
  *        2. Click on edit tags
@@ -169,7 +165,7 @@ export class BrowserComponent implements OnInit {
 
 	ngOnInit() {
 		this.images.loadImages().subscribe(() => {
-		 	this.menuTags = this.images.getRemainingTags();
+			this.menuTags = this.getRemainingTags();
 			this.numSelected = this.images.getNumSelected();
 			this.currentAllSelected = this.images.getCurrentImagesAllSelected();
 			this.selectMode = this.images.storageGet('selectMode');
@@ -469,7 +465,7 @@ export class BrowserComponent implements OnInit {
 
 	private reset() {
 
-		this.menuTags = this.images.getRemainingTags();
+		this.menuTags = this.getRemainingTags();
 		this.currentTags = this.images.getCurrentTags();
 
 		this.numSelected = this.images.getNumSelected();
@@ -482,6 +478,45 @@ export class BrowserComponent implements OnInit {
 		} else if(this.varousel) {
 			this.varousel.reset();
 		}
+
+	}
+
+	private getRemainingTags() {
+
+		let tags = this.images.getRemainingTags();
+
+		if (tags.length > 15) {
+
+			let new_tags = [];
+			let index = {};
+
+			for (let tag of tags) {
+				if (tag.primary || tag.tags) {
+					new_tags.push(tag);
+					continue;
+				}
+
+				let key = tag.label[0].toLowerCase();
+
+				if (key.charCodeAt(0) >= 48 && key.charCodeAt(0) <= 57) {
+					key = 'Number';
+				}
+
+				if (!(key in index)) {
+
+					let container = {tags:[],type:key.length == 1 ? key.toUpperCase() : key}
+					index[key] = container;
+					new_tags.push(container);
+				}
+
+				index[key].tags.push(tag);
+			}
+			
+			tags = new_tags;
+
+		}
+
+		return tags;
 
 	}
 
@@ -568,7 +603,7 @@ export class BrowserComponent implements OnInit {
 	public deselectTag(tag: any) {
 		this.mainImage = null;
 		this.viewingSelected = false;
-		this.images.deselectTag(tag.index);
+		this.images.deselectTag(tag.index === undefined ? tag : tag.index);
 		this.reset();
 	}
 

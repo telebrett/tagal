@@ -122,6 +122,9 @@ export class ImagesService {
 	private monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 
 	private dirty;
+
+	private hideTagged = false;
+
 	private currentTags = [];
 	private remainingTags = [];
 
@@ -381,8 +384,20 @@ export class ImagesService {
 			tags.push(this.niceTag(sorted[i]));
 		}
 
+		if (! this.hideTagged) {
+			tags.unshift(this.getUntaggedTag());
+		}
+
 		return tags;
 		
+	}
+
+	private getUntaggedTag() {
+		return {
+			untagged: true,
+			label:'No tags',
+			primary: true
+		};
 	}
 
 	public getCurrentTags() {
@@ -391,6 +406,10 @@ export class ImagesService {
 
 		for (let i = 0; i < this.currentTags.length; i++) {
 			tags.push(this.niceTag(this.tags[this.currentTags[i]]));
+		}
+
+		if (this.hideTagged) {
+			tags.unshift(this.getUntaggedTag());
 		}
 
 		return tags;
@@ -1045,18 +1064,28 @@ export class ImagesService {
 	 * Add a new tag to the current selected set and restrict the current
 	 * images
 	 */
-	public selectTags(indexes: [number]) {
+	public selectTags(indexes: [number|any]) {
 
 		let index;
 		while (index = indexes.shift()) {
 
-			if (this.currentTags.indexOf(index) !== -1) {
-				continue;
+			if (typeof index == 'object') {
+
+				if (index.untagged) {
+					this.hideTagged = true;
+				}
+
+				this.hideTaggedImages();
+
+			} else {
+				if (this.currentTags.indexOf(index) !== -1) {
+					continue;
+				}
+
+				this.currentTags.push(index);
+
+				this.selectTagSetCurrentImages(this.currentTags.length - 1);
 			}
-
-			this.currentTags.push(index);
-
-			this.selectTagSetCurrentImages(this.currentTags.length - 1);
 		}
 
 		this.sortCurrentImages();
@@ -1077,9 +1106,34 @@ export class ImagesService {
 			this.selectTagSetCurrentImages(i);
 		}
 
+		if (this.hideTagged) {
+			this.hideTaggedImages();
+		}
+
 		this.sortCurrentImages();
 		this.setRemainingTags();
 		
+	}
+
+	//Of the current images, remove those that have further, non primary tags, then the current set
+	private hideTaggedImages() {
+
+		this.currentImages = this.currentImages.filter((image_index: number) => {
+
+			let image_tags = this.images[image_index].t;
+			
+			let extra = Object.keys(image_tags).filter(index => ! this.currentTags.includes(index));
+
+			for (let index of extra) {
+				if (! this.tags[index].m) {
+					return false;
+				}
+			}
+
+			return true;
+
+		});
+
 	}
 
 	private selectTagSetCurrentImages(currentTagsIndex) {
@@ -1153,23 +1207,30 @@ export class ImagesService {
 
 	}
 
-	public deselectTag(index: number) {
+	public deselectTag(index: number|any) {
 
-		let ct_index = this.currentTags.indexOf(index);
-
-		if (ct_index != -1) {
-			this.currentTags.splice(ct_index,1);
-		}
-
-		this.currentImages = [];
-
-		if (this.currentTags.length == 0) {
-			this.remainingTags = [];
-			//values need to be ints so can't use Object.keys
-			for (let i = 0; i < this.tags.length; i++) {
-				this.remainingTags.push(i);
+		if (typeof index == 'object') {
+			if (index.untagged) {
+				this.hideTagged = false;
 			}
-			return;
+		} else {
+
+			let ct_index = this.currentTags.indexOf(index);
+
+			if (ct_index != -1) {
+				this.currentTags.splice(ct_index,1);
+			}
+
+			this.currentImages = [];
+
+			if (this.currentTags.length == 0) {
+				this.remainingTags = [];
+				//values need to be ints so can't use Object.keys
+				for (let i = 0; i < this.tags.length; i++) {
+					this.remainingTags.push(i);
+				}
+				return;
+			}
 		}
 
 		let images;
@@ -1188,6 +1249,10 @@ export class ImagesService {
 
 		for (let i in images) {
 			this.currentImages.push(parseInt(i));
+		}
+
+		if (this.hideTagged) {
+			this.hideTaggedImages();
 		}
 
 		this.sortCurrentImages();
@@ -1542,22 +1607,6 @@ export class ImagesService {
 			primary: tag.m !== undefined,
 			countInCurrent: countInCurrent
 		};
-
-		/*
-		if (tag.m && tag.m.datetype) {
-			switch (tag.m.datetype) {
-				case 'year':
-					o['type'] = 'y';
-					break;
-				case 'month':
-					o['type'] = 'm';
-					break;
-				case 'day':
-					o['type'] = 'd';
-					break;
-			}
-		}
-	 	*/
 
 		return o;
 	}
