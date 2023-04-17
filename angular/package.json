@@ -31,7 +31,7 @@
     "bootstrap": "^4.4.1",
     "component": "^1.1.0",
     "file-saver": "^2.0.2",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "ng-bootstrap": "^1.6.3",
     "ngx-contextmenu": "^5.4.0",
     "ngx-filesaver": "^9.0.0",
